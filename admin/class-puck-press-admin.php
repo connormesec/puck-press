@@ -54,6 +54,7 @@ class Puck_Press_Admin
 		$this->version = $version;
 
 		add_action('admin_menu', [$this, 'add_admin_menu']);
+		$this->check_for_updates();
 	}
 
 	// Add Admin Menu Page
