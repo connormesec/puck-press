@@ -64,5 +64,8 @@ class Puck_Press_Admin_Loader {
 
 		// Insta Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/insta-post-importer/instagram-post-admin-display.php';
+
+		//update checker
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/update.php';
 	}
 }
