@@ -1,0 +1,9 @@
+.pp-form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.pp-form-group {
+    flex: 1;
+}

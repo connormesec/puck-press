@@ -1,0 +1,322 @@
+.accordion.active .accordion_title_right_content:after {
+  border-bottom-color: var(--pp-accordion-month_text);
+}
+.accordion:before {
+  background: var(--pp-accordion-border);
+}
+.accordion_game_month_title,
+.accordion_title_right_content,
+.accordion {
+  color: var(--pp-accordion-month_text);
+  background: var(--pp-accordion-header_bg);
+}
+.accordion_date,
+.accordion_time,
+.accordion_vs,
+.accordion_team_title,
+.accordion_game_outcome {
+  color: var(--pp-accordion-content_text);
+}
+.accordion_game_list {
+  border-bottom-color: var(--pp-accordion-border);
+}
+.accordion_panel {
+  background-color: var(--pp-accordion-container_bg);
+}
+
+@media screen and (min-width: 1200px) {
+  #accordion_section {
+    width: 1200px;
+    margin: 0 auto;
+    margin-top: 0px;
+    margin-right: auto;
+    margin-bottom: 0px;
+    margin-left: auto;
+    clear: both;
+  }
+  .accordion_schedule_row {
+    width: 100%;
+  }
+  #accordion_title_row,
+  #accordion_row {
+    padding: 20px 20px 20px 20px;
+  }
+  #accordion_button_row {
+    padding: 0 20px 0 20px;
+  }
+}
+
+@media screen and (min-width: 790px) and (max-width: 1200px) {
+  #accordion_section {
+    width: 780px;
+    margin: 0 auto;
+    margin-top: 0px;
+    margin-right: auto;
+    margin-bottom: 0px;
+    margin-left: auto;
+    clear: both;
+  }
+  .accordion_schedule_row {
+    width: 100%;
+  }
+  #accordion_title_row,
+  #accordion_accordion_row {
+    padding: 20px 10px 20px 10px;
+  }
+  #accordion_button_row {
+    padding: 0 10px 0 10px;
+  }
+}
+
+@media screen and (max-width: 790px) {
+  #accordion_section {
+    max-width: 780px;
+    margin: 0 auto;
+    margin-top: 0px;
+    margin-right: auto;
+    margin-bottom: 0px;
+    margin-left: auto;
+    clear: both;
+    padding: 0px !important;
+  }
+  .accordion_game_detail {
+    width: 20% !important;
+  }
+  .accordion_date-time {
+    width: 25% !important;
+  }
+  .accordion_team_info {
+    padding-left: 5px !important;
+    width: 55% !important;
+  }
+  .accordion_team_title {
+    display: none !important;
+  }
+}
+
+@media screen and (max-width: 590px) {
+  .accordion_date-time,
+  .accordion_game_outcome,
+  .accordion_vs {
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+  }
+  .accordion_team_info > img {
+    padding-top: 10px !important;
+    height: 50px !important;
+  }
+  .accordion_vs {
+    padding: 18px 6px 18px 6px !important;
+  }
+}
+
+.css-transitions-only-after-page-load * {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+.accordion_month_container {
+  width: 100%;
+  margin-bottom: 20px;
+  overflow: hidden;
+  min-height: 60px;
+  height: 100%;
+  position: relative;
+  z-index: 3;
+}
+
+.accordion_game_month_title {
+  letter-spacing: 1.5px;
+  font-size: 16px;
+  text-transform: uppercase;
+  font-weight: 400;
+  padding: 0 17px;
+  margin: 0;
+  display: inline-block;
+  position: relative;
+}
+
+.accordion_title_right_content {
+  position: absolute;
+  top: 0;
+  padding: 0 15px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  right: 18px;
+  min-width: 65px;
+}
+
+.accordion .accordion_title_right_content:after {
+  position: absolute;
+  content: "";
+  right: -5px;
+  top: 26px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top-width: 6px;
+  border-top-style: solid;
+  transition: all 175ms linear;
+}
+
+.accordion.active .accordion_title_right_content:after {
+  border-top: 0;
+  border-bottom-width: 6px;
+  border-bottom-style: solid;
+}
+
+.accordion {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 60px;
+  line-height: 60px;
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  transition: 0.5s;
+  border-radius: 10px;
+  transition-delay: 0.4s;
+}
+
+.accordion:before {
+  width: calc(100% - 60px);
+  height: 1px;
+  display: block;
+  content: "";
+  opacity: 0.3;
+  transform: translate(30px, 30px);
+  -ms-transform: translate(30px, 30px);
+  -webkit-transform: translate(30px, 30px);
+}
+
+.accordion.active {
+  transition-delay: 0s;
+  border-radius: 10px 10px 0 0;
+}
+
+.accordion_panel {
+  padding: 0 18px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out;
+  border-radius: 0 0 10px 10px;
+  margin-top: 60px;
+}
+
+.accordion_game_list {
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  width: 100%;
+  clear: both;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  padding: 20px 0;
+  float: left;
+  text-transform: uppercase;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  z-index: 1;
+}
+.accordion_game_list:last-child {
+  border-bottom-style: none;
+}
+
+.accordion_game_list > div {
+  float: left;
+}
+
+.accordion_vs,
+.accordion_team_title {
+  padding: 18px;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  text-align: center;
+  display: block;
+  float: left;
+}
+.accordion_game_outcome {
+  padding-top: 18px;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  text-align: left;
+  display: block;
+}
+
+.accordion_game_detail {
+  width: 13%;
+  float: right !important;
+  text-align: center;
+}
+
+.accordion_team_info {
+  padding-left: 20px;
+  width: 74%;
+}
+
+.accordion_team_info > img {
+  height: 60px;
+  display: block;
+  float: left;
+}
+
+.accordion_date-time {
+  display: flex;
+  flex-direction: column;
+  width: 13%;
+  text-align: center;
+  padding-top: 5px;
+}
+
+.accordion_game_promotions_container {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.accordion_game_detail_reveal,
+.accordion_game_promotion_item {
+  display: flex;
+}
+
+.accordion_game_promotion_image {
+  flex: 1 1 30%;
+  max-width: 30%;
+  height: auto;
+  object-fit: cover;
+}
+
+.accordion_game_promotion_image img {
+  width: 100%; /* Makes image fit the div */
+  height: auto; /* Maintains aspect ratio */
+  display: block;
+}
+
+.accordion_game_promotion_body {
+  flex: 1;
+  min-width: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .accordion_game_promotions_container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .accordion_game_promotion_image,
+  .accordion_game_promotion_body {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .accordion_game_promotion_image {
+    margin-bottom: 1rem;
+  }
+}

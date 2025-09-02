@@ -1,0 +1,293 @@
+.home{
+  color: var(--pp-pill-home_tab_text);
+  background-color: var(--pp-pill-home_tab_bg);
+}
+.game_month_title, .btn_header_wrap, .header_btn {
+  color: var(--pp-pill-month_text);
+}
+.game_date, .op_nickname, .op_name, .game_time, .arena, .Chevron, .promotion, .promo_dropdown_header, .promotion_text {
+  color:  var(--pp-pill-text); 
+}
+.game_container, .accordion-content {
+  background-color:  var(--pp-pill-container_bg);
+}
+
+.game_container {
+  height: 80px;
+  border-radius: 0.25rem;
+  width: 100%;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
+  position: relative;
+  margin-top: 1rem;
+  display: flex;
+}
+
+.btn_header_wrap {
+  padding-bottom: 0.75rem;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0.75rem;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  border-top: none;
+  border-right: none;
+  border-left: none;
+  border-bottom: 2px solid;
+}
+
+#past_games_btn {
+  opacity: 0.5;
+}
+
+.header_btn {
+  margin-right: 0.75rem;
+  font-weight: 700;
+  font-size: 20px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-style: none;
+  padding: 0 5px;
+}
+
+.game_month_title {
+  margin-top: 1.5rem;
+  margin-bottom: -0.5rem;
+  text-transform: uppercase;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.home_away_container {
+  width: 3rem;
+  padding-right: 0.5rem;
+  margin-right: 1rem;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  height: 80px;
+}
+.home_away_text {
+  transform: translateY(100%) rotate(-90deg);
+  transform-origin: 20% 0%;
+  font-weight: 700;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  display: inline-block;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 18px;
+}
+.home_away_text:before {
+  content: "";
+  float: left;
+  margin-top: 100%;
+}
+
+.away {
+  background-color: #f3f3f3;
+  color: #888888;
+}
+.date_time_location {
+  display: flex;
+  align-items: center;
+}
+.date_time_container {
+  min-width: 120px;
+}
+.game_date {
+  text-transform: uppercase;
+  /* color: #000000; */
+  font-weight: 700;
+}
+.game_time {
+  font-size: 16px;
+}
+.op_logo_name {
+  justify-content: flex-start;
+  align-items: center;
+  display: flex;
+  min-width: 400px;
+}
+.op_logo {
+  height: 4rem;
+  margin-right: 1rem;
+  width: auto;
+}
+.op_name_nickname {
+  min-width: 80px;
+}
+.op_name {
+  font-size: 18px;
+}
+.op_nickname {
+  font-size: 18px;
+  font-weight: 700;
+}
+.arena {
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-right: 1.5rem;
+  width: auto;
+  display: flex;
+  max-width: 200px;
+}
+
+.promotion {
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  width: auto;
+  display: flex;
+}
+.results {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  width: auto;
+}
+.results_wrap {
+  display: block;
+  min-width: 110px;
+  text-align: center;
+}
+.results_text_wrap {
+  display: inline;
+}
+.results_text_WL {
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgb(12 104 15);
+  font-size: 22px;
+}
+.win_or_loss_W {
+  color: rgb(12 104 15);
+}
+.win_or_loss_L, .win_or_loss_SOL {
+  color: rgb(211 3 15);
+}
+.results_text_score {
+  font-size: 20px;
+}
+
+.promotion,
+.promo_dropdown_header {
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.arrow_wrap {
+  text-align: center;
+  padding: 0.25rem;
+  margin-right: 2.25rem;
+  margin-left: auto;
+  margin-top: auto;
+  margin-bottom: auto;
+  height: 1.5rem;
+}
+
+.Chevron {
+  position: relative;
+  display: block;
+}
+.Chevron:after {
+  position: absolute;
+  display: block;
+  content: "❯";
+  font-size: 30px;
+  transform: rotate(90deg);
+}
+
+.game_container.is-open .arrow_wrap .Chevron:after {
+  transform: rotate(-90deg);
+}
+
+.pill_accordion {
+  cursor: pointer;
+}
+
+.accordion-content {
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-in-out;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 10%), 0 1px 2px 0 rgb(0 0 0 / 6%);
+  border-radius: 0.25rem;
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.promo_group {
+  padding: 10px;
+  margin-bottom: 10px;
+  flex: 50%;
+}
+
+.promo_dropdown_header {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.game_promotion_image {
+  flex: 1 1 30%;
+  max-width: 30%;
+  height: auto;
+  object-fit: cover;
+}
+
+.game_promotion_image img {
+  width: 100%; /* Makes image fit the div */
+  height: auto; /* Maintains aspect ratio */
+  display: block;
+}
+
+/* .promotion_text {
+  
+  } */
+
+@media screen and (max-width: 980px) {
+  .arena,
+  .op_name {
+    display: none;
+  }
+  .op_logo_name {
+    align-items: center;
+    min-width: 100px;
+  }
+}
+@media screen and (max-width: 730px) {
+  .promotion {
+    display: none;
+  }
+}
+@media screen and (max-width: 500px) {
+  .op_nickname {
+    display: none;
+  }
+  .home_away_container {
+    width: 2rem;
+    margin-right: 0.5rem;
+  }
+  .home_away_text {
+    font-size: 12px;
+    transform-origin: 30% 15%;
+  }
+  .game_date,
+  .game_time {
+    font-size: 12px;
+  }
+  .date_time_container {
+    min-width: 80px;
+  }
+  .results_wrap {
+    text-align: left;
+  }
+  .accordion-content {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,277 @@
+/*3 upcoming games shortcodes*/
+
+@media screen and (min-width: 800px) and (max-width: 1200px) {
+    .glider-contain {
+      width: 780px;
+      margin: 0 auto;
+    }
+  }
+  
+  .entry {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      border-width: 1px;
+      border-color: var(--pp-gameslider-border_color);
+      border-style: solid;
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: var(--pp-gameslider-body_bg_color);
+  }
+  .game_vs_message {
+      text-transform: uppercase;
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 1px;
+      position: absolute;
+      top: 40px;
+      left: 0;
+      text-align: center;
+      width: 100%;
+      color: var(--pp-gameslider-body_text_color)
+  }
+  .home_or_away {
+      font-size: 13px;
+  }
+  .vs {
+      font-size: 30px;
+      line-height: 30px;
+  }
+  .hometeam > .thumb {
+      display: block;
+      position: absolute;
+      top: 36px;
+      right: 5%;
+      width: 72px;
+      height: 72px;
+      line-height: 72px;
+      background: #ffffff;
+      text-align: center;
+      z-index: 2;
+      overflow: hidden;
+  }
+  
+  @media screen and (min-width: 1200px){
+    .hometeam > .thumb {
+      margin-right: 10%;
+    }
+    .awayteam_active > .thumb {
+      margin-left: 10%;
+    }
+  }
+  
+  @media screen and (max-width: 650px) and (min-width: 360px) {
+    .hometeam > .thumb {
+      margin-right: 10%;
+    }
+    .awayteam_active > .thumb {
+      margin-left: 10%;
+    }
+  }
+  
+  .thumb > img {
+      max-height: 100%;
+      max-width: 100%;
+      vertical-align: middle;
+      object-fit: contain;
+  }
+  .awayteam_active > .thumb {
+      display: block;
+      left: 5%;
+      right: auto;
+      position: absolute;
+      top: 36px;
+      width: 72px;
+      height: 72px;
+      line-height: 72px;
+      background: #ffffff;
+      text-align: center;
+      z-index: 2;
+      overflow: hidden;
+  }
+  .details {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 25px;
+      width: 100%;
+  }
+  .time {
+      display: block;
+      font-size: 15px;
+      text-transform: uppercase;
+      line-height: 32px;
+      height: 35px;
+      text-align: center;
+      z-index: 1;
+      color: var(--pp-gameslider-header_text_color);
+      background: var(--pp-gameslider-header_bg_color);
+  }
+  
+  
+  .glider,
+  .glider-contain {
+      margin: 0 auto;
+      position: relative
+  }
+  
+  .glider,
+  .glider-track {
+      transform: translateZ(0)
+  }
+  
+  .glider-dot,
+  .glider-next,
+  .glider-prev {
+      border: 0;
+      padding: 0;
+      user-select: none;
+      outline: 0;
+      cursor: pointer;
+  -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Chrome/Safari/Opera */
+       -khtml-user-select: none; /* Konqueror */
+         -moz-user-select: none; /* Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    not supported by any browser */
+      width: 20px;
+      height: 120px;
+      position: absolute;
+      top: 0;
+      font-size: 0;
+      visibility: hidden;
+      background: var(--pp-gameslider-nav_arrow_color);
+  }
+  
+  .glider-contain:hover .glider-next,.glider-contain:hover .glider-prev{
+      visibility: visible;
+  }
+  
+  .glider-prev {
+      border-radius: 10px 0px 0px 10px;
+      z-index: 4;
+  }
+  
+  .glider-prev:after{
+      display: block;
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-right: 8px solid var(--pp-gameslider-body_bg_color);
+      content: '';
+      position: absolute;
+      top: 50%;
+      margin-top: -8px;
+      left: 12px;
+      cursor: pointer;
+  }
+  
+  .glider-next{
+      border-radius: 0px 10px 10px 0px;
+      z-index: 4;
+  }
+  
+  .glider-next:after {
+      display: block;
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      content: '';
+      position: absolute;
+      top: 50%;
+      margin-top: -8px;
+      cursor: pointer;
+      left: 0;
+      border-right: 0;
+      border-left: 8px solid var(--pp-gameslider-body_bg_color);
+  }
+  
+  .glider-contain {
+      width: 100%;
+      border-radius: 10px;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+  
+  .glider {
+      overflow: hidden;
+      -webkit-overflow-scrolling: touch;
+      -ms-overflow-style: none;
+      margin-left: -10px !important;
+  }
+  
+  .glider-track {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      z-index: 1
+  }
+  
+  .glider.draggable {
+      user-select: none;
+      cursor: -webkit-grab;
+      cursor: grab
+  }
+  
+  .glider.draggable .glider-slide img {
+      user-select: none;
+      pointer-events: none
+  }
+  
+  .glider.drag {
+      cursor: -webkit-grabbing;
+      cursor: grabbing
+  }
+  
+  .glider-slide {
+      user-select: none;
+      justify-content: center;
+      align-content: center;
+      width: 100%;
+      min-width: 150px;
+      margin-left: 10px;
+  }
+  
+  .glider-slide img {
+      max-width: 100%
+  }
+  
+  .glider::-webkit-scrollbar {
+      opacity: 0;
+      height: 0
+  }
+  
+  .glider-next {
+      right: 0px;
+      left: auto
+  }
+  
+  .glider-next.disabled,
+  .glider-prev.disabled {
+      opacity: .25;
+      color: #666;
+      cursor: default
+  }
+  
+  .glider-hide {
+      opacity: 0
+  }
+  
+  @media(max-width:800px) {
+      .glider::-webkit-scrollbar {
+          opacity: 1;
+          -webkit-appearance: none;
+          width: 7px;
+          height: 3px
+      }
+      .glider::-webkit-scrollbar-thumb {
+          opacity: 1;
+          border-radius: 99px;
+          background-color: rgba(156, 156, 156, .25);
+          -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .25);
+          box-shadow: 0 0 1px rgba(255, 255, 255, .25)
+      }
+  }
