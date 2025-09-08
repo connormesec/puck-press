@@ -27,6 +27,12 @@ class Puck_Press_Instagram_Post_Importer
             $b64_image = isset($post_data['image_buffer']) ? $post_data['image_buffer'] : '';
             $image_name = 'insta-' . $post_data['slug'] . '.jpg';
             $slug = isset($post_data['slug']) ? $post_data['slug'] : '';
+            
+            // Double check to make sure slug doesn't already exist | also accounts for -1, -2, etc. suffixes
+            if (in_array($slug, $existing_post_slugs, true) || preg_grep('/^' . preg_quote($slug, '/') . '-/', $existing_post_slugs)) {
+                $messages[] = 'Post with slug ' . $slug . ' already exists.';
+                continue;
+            }
 
             // Create the post
             $post_id = $this->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name);
