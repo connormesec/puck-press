@@ -99,6 +99,7 @@ class AccordionTemplate extends PuckPressTemplate
     private function renderAccordionGameRow(array $game, string $vs_at, string $promotion_section, string $result_message): string
     {
         $opponent_logo_html = '';
+        $this->console_log($game);
 
         if (! empty($game['opponent_team_logo'])) {
             $opponent_logo_html = '<img src="' . esc_url($game['opponent_team_logo']) . '" decoding="async" loading="lazy" alt="Opponent Team Logo" />';
@@ -108,7 +109,7 @@ class AccordionTemplate extends PuckPressTemplate
         <div class="accordion_game_list">
             <div class="accordion_date-time">
                 <span class="accordion_date">' . esc_html($game['game_date_day']) . '</span>
-                <span class="accordion_time">' . esc_html($game['game_status']) . '</span>
+                <span class="accordion_time">' . esc_html($game['game_time']) . '</span>
             </div>
             <div class="accordion_team_info">
                 <img class="accordion_msu_thumb" src="' . esc_url($game['target_team_logo']) . '" decoding="async" loading="lazy" alt="Target Team Logo" />
