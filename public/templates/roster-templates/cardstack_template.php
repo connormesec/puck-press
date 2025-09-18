@@ -64,7 +64,7 @@ class CardStackTemplate extends PuckPressTemplate
         //forwards
         $content .= '<div class="player_group">';
         $content .= '<div class="player_position_title"><h2>Forwards</h2></div>';
-        $forwards = $this->getPlayersByPosition($players, 'F');
+        $forwards = $this->getPlayersByPositions($players, ['F', 'C', 'LW', 'RW']);
         foreach ($forwards as $player) {
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
         }
@@ -72,7 +72,7 @@ class CardStackTemplate extends PuckPressTemplate
 
         $content .= '<div class="player_group">';
         $content .= '<div class="player_position_title"><h2>Defense</h2></div>';
-        $defense = $this->getPlayersByPosition($players, 'D');
+        $defense = $this->getPlayersByPositions($players, ['D', 'LD', 'RD']);
         foreach ($defense as $player) {
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
         }
@@ -80,7 +80,7 @@ class CardStackTemplate extends PuckPressTemplate
 
         $content .= '<div class="player_group">';
         $content .= '<div class="player_position_title"><h2>Goalies</h2></div>';
-        $goalies = $this->getPlayersByPosition($players, 'G');
+        $goalies = $this->getPlayersByPositions($players, ['G']);
         foreach ($goalies as $player) {
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
         }
@@ -92,9 +92,47 @@ class CardStackTemplate extends PuckPressTemplate
         return $content;
     }
 
-    private function createPlayerCard($id, $player_id, $headshot_image, $number, $name, $position, $hometown, $ht, $wt, $shoots, $year_in_school = null, $last_team = null, $major = null)
-    {
+    private function createPlayerCard(
+        $id,
+        $player_id,
+        $headshot_image,
+        $number,
+        $name,
+        $position,
+        $hometown,
+        $ht,
+        $wt,
+        $shoots,
+        $year_in_school = null,
+        $last_team = null,
+        $major = null
+    ) {
         $fallback_headshot = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
+
+        // Clean up hometown (remove trailing country labels)
+        if (!empty($hometown)) {
+            $hometown = str_replace(
+                [', United States', ', Canada'],
+                '',
+                $hometown
+            );
+            $hometown = "Hometown: {$hometown}";
+        } else {
+            $hometown = '';
+        }
+
+        $shoots   = !empty($shoots) ? "Shoots: {$shoots}" : '';
+
+        // Height/Weight logic
+        if (!empty($ht) && !empty($wt)) {
+            $htwt = "HT/WT: {$ht} / {$wt}";
+        } elseif (!empty($ht)) {
+            $htwt = "HT: {$ht}";
+        } elseif (!empty($wt)) {
+            $htwt = "WT: {$wt}";
+        } else {
+            $htwt = '';
+        }
 
         $year_html = $year_in_school ? "<span class=\"year\">Year: {$year_in_school}</span>" : '';
         $last_team_html = $last_team ? "<div><span class=\"prev_team\">Last Team: {$last_team}</span></div>" : '';
@@ -110,11 +148,11 @@ class CardStackTemplate extends PuckPressTemplate
                 <div class="position">{$position}</div>
                 <div class="player_data">
                     <div>
-                        <span class="shoots">Shoots: {$shoots}</span>
-                        <span class="hometown">Hometown: {$hometown}</span>
+                        <span class="shoots">{$shoots}</span>
+                        <span class="hometown">{$hometown}</span>
                     </div>
                     <div>
-                        <span class="height">HT/WT: {$ht} / {$wt}</span>
+                        <span class="height">{$htwt}</span>
                         {$year_html}
                     </div>
                     {$last_team_html}
@@ -126,11 +164,15 @@ class CardStackTemplate extends PuckPressTemplate
         return $card;
     }
 
-    private function getPlayersByPosition(array $players, string $position): array
+
+    private function getPlayersByPositions(array $players, array $positions): array
     {
+        // Normalize positions to uppercase for consistent comparison
+        $positions = array_map('strtoupper', $positions);
+
         // Filter players by position
-        $filtered = array_filter($players, function ($player) use ($position) {
-            return isset($player['pos']) && strtoupper($player['pos']) === strtoupper($position);
+        $filtered = array_filter($players, function ($player) use ($positions) {
+            return isset($player['pos']) && in_array(strtoupper($player['pos']), $positions, true);
         });
 
         // Sort by 'number' ascending
