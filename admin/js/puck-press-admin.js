@@ -112,11 +112,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function formatDate(dateString) {
-	const date = new Date(dateString);
-	return date.toLocaleDateString('en-US', {
-		year: 'numeric',
-		month: 'short',
-		day: '2-digit'
-	});
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+    });
 }
 

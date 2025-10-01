@@ -99,7 +99,6 @@ class AccordionTemplate extends PuckPressTemplate
     private function renderAccordionGameRow(array $game, string $vs_at, string $promotion_section, string $result_message): string
     {
         $opponent_logo_html = '';
-        $this->console_log($game);
 
         if (! empty($game['opponent_team_logo'])) {
             $opponent_logo_html = '<img src="' . esc_url($game['opponent_team_logo']) . '" decoding="async" loading="lazy" alt="Opponent Team Logo" />';

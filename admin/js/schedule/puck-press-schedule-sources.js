@@ -392,7 +392,7 @@
 					$button.html(originalHtml);
 					$button.prop('disabled', false);
 
-					alert('An unexpected error occurred. Please try again.');
+					console.error('An unexpected error occurred. Please try again.');
 				}
 			).then(() => {
 				restoreGameListStyles();

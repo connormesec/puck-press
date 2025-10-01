@@ -93,7 +93,7 @@ class Puck_Press_Schedule_Source_Importer
                         [
                             'source' => $source->name,
                             'source_type' => $source->type,
-                            'game_id' => "custom_game_{$game_timestamp}",
+                            'game_id' => "custom_game_{$game_timestamp}_{$source->name}",
                             'target_team_name' => $other_data['target']['name'],
                             'target_team_nickname' => $other_data['target']['nickname'],
                             'target_team_logo' => $other_data['target']['logo'],
@@ -106,7 +106,7 @@ class Puck_Press_Schedule_Source_Importer
                             'opponent_score' => $other_data['opponent_score'],
                             'game_status' => $this->format_game_status($other_data['game_status'], $other_data['gameTime']),
                             'game_date_day' => $date_day,
-                            'game_time' => $other_data['gameTime'],
+                            'game_time' => date("g:i a", strtotime($other_data['gameTime'])),
                             'game_timestamp' => $game_timestamp,
                             'home_or_away' => $other_data['home_or_away'],
                             'venue' => $other_data['venue']

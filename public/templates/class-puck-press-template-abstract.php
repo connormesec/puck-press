@@ -221,6 +221,14 @@ abstract class PuckPressTemplate
             return $month_year_keys[$a] - $month_year_keys[$b];
         });
 
+        // Sort games within each month
+        foreach ($grouped_games as $month_year => &$games_in_month) {
+            usort($games_in_month, function ($a, $b) {
+                return strtotime($a['game_timestamp']) <=> strtotime($b['game_timestamp']);
+            });
+        }
+        unset($games_in_month);
+
         // If removing year from the keys
         if ($remove_year_from_keys) {
             // If you want to remove the year from the keys but keep the order
