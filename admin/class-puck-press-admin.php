@@ -90,7 +90,6 @@ class Puck_Press_Admin
 
 		$importer = new Puck_Press_Schedule_Source_Importer();
 		$raw_table_results = $importer->populate_raw_schedule_table_from_sources();
-		$importer->sanitize_raw_games_table();
 		$display_game_table_results = $importer->apply_edits_and_save_to_display_table();
 
 		$refresh_game_table_ui = new Puck_Press_Schedule_Admin_Games_Table_Card;
@@ -103,20 +102,32 @@ class Puck_Press_Admin
 		$refresh_slider_preview_html = $refresh_slider_preview->get_all_templates_html();
 
 
-		if ($raw_table_results !== false && $display_game_table_results !== false) {
-			wp_send_json_success(array(
-				'raw_game_table_results' => $raw_table_results,
-				'display_game_table_results' => $display_game_table_results,
-				'refreshed_game_table_ui' => $refreshed_game_table_ui,
-				'refreshed_game_preview_html' => $refresh_game_preview_html,
-				'refreshed_slider_preview_html' => $refresh_slider_preview_html
-			));
-		} else if ($raw_table_results['messages'][0] === 'No active sources to import.') {
-			wp_send_json_error(array('message' => 'No active sources to import.', 'raw_table_results' => $raw_table_results, 'display_game_table_results' => $display_game_table_results));
-			wp_die(); // Properly end the AJAX request
+		$response_data = array(
+			'raw_game_table_results'      => $raw_table_results,
+			'display_game_table_results'  => $display_game_table_results,
+			'refreshed_game_table_ui'     => $refreshed_game_table_ui,
+			'refreshed_game_preview_html' => $refresh_game_preview_html,
+			'refreshed_slider_preview_html' => $refresh_slider_preview_html,
+		);
+
+		// "No active sources" is a valid state (all sources toggled off). Send success
+		// so the JS updates the DOM with the now-empty preview HTML.
+		$no_active_sources = is_array( $raw_table_results )
+			&& in_array( 'No active sources to import.', $raw_table_results['messages'] ?? [] );
+
+		if ( $no_active_sources || ( $raw_table_results !== false && $display_game_table_results !== false ) ) {
+			if ( $no_active_sources ) {
+				$response_data['message'] = 'No active sources to import.';
+			}
+			wp_send_json_success( $response_data );
 		} else {
-			wp_send_json_error(array('message' => 'Failed to refresh data sources from database', 'error' => $wpdb->last_error, 'raw_table_results' => $raw_table_results, 'display_game_table_results' => $display_game_table_results));
-			wp_die(); // Properly end the AJAX request
+			wp_send_json_error( array(
+				'message'                    => 'Failed to refresh data sources from database',
+				'error'                      => $wpdb->last_error,
+				'raw_game_table_results'     => $raw_table_results,
+				'display_game_table_results' => $display_game_table_results,
+			) );
+			wp_die();
 		}
 	}
 
@@ -138,24 +149,31 @@ class Puck_Press_Admin
 		$refresh_roster_preview = Puck_Press_Roster_Admin_Preview_Card::create_and_init();
 		$refresh_roster_preview_html = $refresh_roster_preview->get_all_templates_html();
 
-		if ($raw_table_results !== false && $display_roster_table_results !== false) {
-			wp_send_json_success(array(
-				'raw_roster_table_results' => $raw_table_results,
-				'display_roster_table_results' => $display_roster_table_results,
-				'refreshed_roster_table_ui' => $refreshed_roster_table_ui,
-				'refreshed_roster_preview_html' => $refresh_roster_preview_html
-			));
-		} else if ($raw_table_results['messages'][0] === 'No active sources to import.') {
-			wp_send_json_error(array('message' => 'No active sources to import.', 'raw_table_results' => $raw_table_results, 'display_game_table_results' => $display_roster_table_results));
-			wp_die(); // Properly end the AJAX request
+		$response_data = array(
+			'raw_roster_table_results'     => $raw_table_results,
+			'display_roster_table_results' => $display_roster_table_results,
+			'refreshed_roster_table_ui'    => $refreshed_roster_table_ui,
+			'refreshed_roster_preview_html' => $refresh_roster_preview_html,
+		);
+
+		// "No active sources" is a valid state. Send success so the JS updates
+		// the DOM with the now-empty preview HTML.
+		$no_active_sources = is_array( $raw_table_results )
+			&& in_array( 'No active sources to import.', $raw_table_results['messages'] ?? [] );
+
+		if ( $no_active_sources || ( $raw_table_results !== false && $display_roster_table_results !== false ) ) {
+			if ( $no_active_sources ) {
+				$response_data['message'] = 'No active sources to import.';
+			}
+			wp_send_json_success( $response_data );
 		} else {
-			wp_send_json_error(array(
-				'message' => 'Failed to refresh roster data sources from database',
-				'error' => $wpdb->last_error,
-				'raw_roster_table_results' => $raw_table_results,
-				'display_roster_table_results' => $display_roster_table_results
-			));
-			wp_die(); // Properly end the AJAX request
+			wp_send_json_error( array(
+				'message'                      => 'Failed to refresh roster data sources from database',
+				'error'                        => $wpdb->last_error,
+				'raw_roster_table_results'     => $raw_table_results,
+				'display_roster_table_results' => $display_roster_table_results,
+			) );
+			wp_die();
 		}
 	}
 

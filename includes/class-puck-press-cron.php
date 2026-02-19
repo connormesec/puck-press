@@ -162,8 +162,6 @@ class Puck_Press_Cron
 
             $importer = new Puck_Press_Schedule_Source_Importer();
             $raw_table_results = $importer->populate_raw_schedule_table_from_sources();
-
-            $importer->sanitize_raw_games_table();
             $display_game_table_results = $importer->apply_edits_and_save_to_display_table();
 
             $r_utils = new Puck_Press_Roster_Wpdb_Utils;

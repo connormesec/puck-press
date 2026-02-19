@@ -145,10 +145,7 @@ class Puck_Press_Roster_Source_Importer
         $table_c = 'pp_roster_for_display'; // Result
 
         // Fetch all base data
-        $originals = $this->roster_db_utils->get_all_table_data($table_a, 'ARRAY_A');
-        if (empty($originals)) {
-            return false;
-        }
+        $originals = $this->roster_db_utils->get_all_table_data($table_a, 'ARRAY_A') ?? [];
 
         // Fetch all edits
         $edits = $this->roster_db_utils->get_all_table_data($table_b, 'ARRAY_A');
