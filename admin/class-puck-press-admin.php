@@ -306,6 +306,7 @@ class Puck_Press_Admin
 			default: // Schedule tab (null or unspecified)
 				wp_enqueue_script('puck-press-schedule-sources', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-edits-table', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-edits-table.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-add-game', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-add-game.js', array('jquery', 'puck-press-admin-shared', 'select2-js'), $this->version, false);
 				wp_enqueue_script('puck-press-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-color-picker.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-slider-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-preview', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-preview.js', array('jquery'), $this->version, false);
@@ -380,6 +381,7 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_update_game_promos', [$data_edits_card, 'ajax_save_game_edit_callback']);
 		add_action('wp_ajax_ajax_delete_game_edit', [$data_edits_card, 'ajax_delete_game_edit_callback']);
 		add_action('wp_ajax_ajax_refresh_edits_table_card', [$data_edits_card, 'ajax_refresh_edits_table_card_callback']);
+		add_action('wp_ajax_pp_get_game_data', [$data_edits_card, 'ajax_get_game_data_callback']);
 
 		$roster_sources_card = new Puck_Press_Roster_Admin_Data_Sources_Card();
 		add_action('wp_ajax_pp_add_roster_source', [$roster_sources_card, 'ajax_add_roster_source']);
@@ -399,6 +401,10 @@ class Puck_Press_Admin
 		$insta_post_display = new Puck_Press_Admin_Instagram_Post_Importer_Display();
 		add_action('wp_ajax_pp_get_example_posts', [$insta_post_display, 'ajax_get_example_posts']);
 		add_action('wp_ajax_pp_get_example_posts_and_create', [$insta_post_display, 'ajax_get_example_posts_and_create']);
+
+		$games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
+		add_action('wp_ajax_pp_add_manual_game',    [$games_table_card, 'ajax_add_manual_game_callback']);
+		add_action('wp_ajax_pp_delete_manual_game', [$games_table_card, 'ajax_delete_manual_game_callback']);
 
 		// Register the AJAX action for refreshing all sources
 		add_action('wp_ajax_pp_refresh_all_sources', [$this, 'ajax_refresh_all_sources_callback']);

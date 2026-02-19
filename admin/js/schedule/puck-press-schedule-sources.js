@@ -80,28 +80,6 @@
 						const file = $('#pp-schedule-fileInput')[0].files[0];
 						if (!file) throw new Error('Please select a CSV file.');
 						data.csv = file;
-					} else if (type === 'customGame') {
-						const extract = sel => {
-							const $opt = $(sel).find('option:selected');
-							return {
-								id: $opt.data('id'),
-								name: $opt.data('name'),
-								nickname: $opt.data('nickname'),
-								logo: $opt.data('logo')
-							};
-						};
-
-						data.other_data = JSON.stringify({
-							target: extract('#pp-game-target'),
-							opponent: extract('#pp-game-opponent'),
-							gameDate: formatDate($('#pp-game-date').val()),
-							gameTime: $('#pp-game-time').val(),
-							home_or_away: $('#pp-home-or-away').val(),
-							target_score: $('#pp-game-target-score').val(),
-							opponent_score: $('#pp-game-opponent-score').val(),
-							game_status: $('#pp-game-status').val(),
-							venue: $('#pp-game-venue').val()
-						});
 					}
 
 					return data;
@@ -312,9 +290,6 @@
 				},
 				csv: {
 					required: ['#pp-schedule-fileInput']
-				},
-				customGame: {
-					required: ['#pp-game-date']
 				}
 			};
 

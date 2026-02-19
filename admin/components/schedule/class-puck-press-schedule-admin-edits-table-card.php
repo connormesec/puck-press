@@ -2,7 +2,7 @@
 class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abstract
 {
     public $table_name = 'pp_game_schedule_mods';
-    
+
     public function render_content()
     {
         return $this->render_edits_table();
@@ -11,7 +11,7 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
     {
         return '';
     }
-    
+
     public function render_edits_table()
     {
         $schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils;
@@ -35,7 +35,8 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
             </thead>
             <tbody>
                 <?php foreach ($edits as $edit) :
-                    $edit_data = json_decode($edit['edit_data'], true); // Decode the JSON into an array
+                    $edit_data = json_decode($edit['edit_data'], true);
+                    $can_edit = ($edit['edit_action'] === 'update');
                 ?>
                     <tr data-edit-id="<?php echo esc_html($edit['id']) ?>">
                         <td class="pp-td"><?php echo esc_html($edit['edit_action']); ?></td>
@@ -44,13 +45,15 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                             <?php if (!empty($edit_data)) : ?>
                                 <?php foreach ($edit_data as $key => $value) : ?>
                                     <?php
-                                    $display_value = (strlen($value) > 20)
-                                        ? esc_html(substr($value, 0, 20)) . '...'
-                                        : esc_html($value);
+                                    // Skip internal computed/raw fields from the tag display
+                                    if (in_array($key, ['game_timestamp', 'game_date_day', 'external_id'], true)) continue;
+                                    $display_value = (strlen((string)$value) > 20)
+                                        ? esc_html(substr((string)$value, 0, 20)) . '...'
+                                        : esc_html((string)$value);
                                     ?>
                                     <span
                                         class="pp-tag pp-tag-<?php echo sanitize_html_class(strtolower($key)); ?>"
-                                        title="<?php echo esc_attr($value); ?>">
+                                        title="<?php echo esc_attr((string)$value); ?>">
                                         <?php echo esc_html(ucfirst($key)) . ': ' . $display_value; ?>
                                     </span>
                                 <?php endforeach; ?>
@@ -58,6 +61,12 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                         </td>
                         <td class="pp-td">
                             <div class="pp-flex-small-gap">
+                                <?php if ($can_edit) : ?>
+                                    <button
+                                        class="pp-button-icon"
+                                        id="pp-edit-edit-button"
+                                        data-game-id="<?php echo esc_attr($edit['external_id']); ?>">✏️</button>
+                                <?php endif; ?>
                                 <button class="pp-button-icon" id="pp-delete-edit-button" data-edit-id="<?php echo esc_attr($edit['id']); ?>">🗑️</button>
                             </div>
                         </td>
@@ -68,7 +77,7 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
 <?php
         return ob_get_clean();
     }
-    
+
     function ajax_refresh_edits_table_card_callback(){
         $response_html = $this->render_edits_table();
         if ($response_html !== false) {
@@ -76,65 +85,115 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
         } else {
             wp_send_json_error(['message' => 'Edits table refresh failed']);
         }
-        wp_die(); // Always required for AJAX handlers
+        wp_die();
+    }
 
+    function ajax_get_game_data_callback() {
+        global $wpdb;
+
+        $game_id = sanitize_text_field($_POST['game_id'] ?? '');
+        if (empty($game_id)) {
+            wp_send_json_error(['message' => 'Missing game_id']);
+            wp_die();
+        }
+
+        $display_table = $wpdb->prefix . 'pp_game_schedule_for_display';
+        $game = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $display_table WHERE game_id = %s LIMIT 1",
+            $game_id
+        ), ARRAY_A);
+
+        $mods_table = $wpdb->prefix . 'pp_game_schedule_mods';
+        $mod = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $mods_table WHERE external_id = %s AND edit_action = 'update' LIMIT 1",
+            $game_id
+        ), ARRAY_A);
+
+        $existing_edit = $mod ? json_decode($mod['edit_data'], true) : [];
+
+        wp_send_json_success([
+            'game'          => $game,
+            'existing_edit' => $existing_edit,
+        ]);
+        wp_die();
     }
 
     function ajax_save_game_edit_callback() {
         global $wpdb;
 
-        // Table name (make sure it's set correctly in your class/namespace)
         $table = $wpdb->prefix . 'pp_game_schedule_mods';
-    
-        // Check for posted data
+
         if (!isset($_POST['edit_data'])) {
             wp_send_json_error(['message' => 'Missing edit_data']);
             wp_die();
         }
-    
-        // Parse the incoming JSON string from FormData
+
         $parsed_data = json_decode(stripslashes($_POST['edit_data']), true);
-    
-        if (json_last_error() !== JSON_ERROR_NONE || 
+
+        if (json_last_error() !== JSON_ERROR_NONE ||
             !isset($parsed_data['edit_action'], $parsed_data['fields']['external_id'])) {
             wp_send_json_error(['message' => 'Invalid or incomplete edit_data']);
             wp_die();
         }
-    
-        // Extract and sanitize
+
         $edit_action = sanitize_text_field($parsed_data['edit_action']);
-        $external_id = sanitize_text_field($parsed_data['fields']['external_id']); // game ID
+        $external_id = sanitize_text_field($parsed_data['fields']['external_id']);
+
+        // Recompute game_timestamp and game_date_day when date/time are provided
+        if (!empty($parsed_data['fields']['game_date'])) {
+            $game_date = sanitize_text_field($parsed_data['fields']['game_date']);
+            $game_time = sanitize_text_field($parsed_data['fields']['game_time'] ?? '');
+
+            $parsed_data['fields']['game_timestamp'] = Puck_Press_Schedule_Source_Importer::get_game_timestamp($game_date, $game_time);
+            $parsed_data['fields']['game_date_day']  = Puck_Press_Schedule_Source_Importer::format_game_date_day($game_date, $game_time);
+
+            // Format game_time for display (e.g. "7:30 PM"); clear it if a final status is set
+            $raw_status = sanitize_text_field($parsed_data['fields']['game_status'] ?? '');
+            if ($raw_status !== '' && $raw_status !== 'none') {
+                $parsed_data['fields']['game_time'] = null;
+            } elseif (!empty($game_time)) {
+                $parsed_data['fields']['game_time'] = date('g:i A', strtotime($game_time));
+            }
+        }
+
+        // Format game_status for display
+        if (isset($parsed_data['fields']['game_status']) && $parsed_data['fields']['game_status'] !== '') {
+            $raw_status = $parsed_data['fields']['game_status'];
+            if ($raw_status === 'none') {
+                $parsed_data['fields']['game_status'] = null;
+            } else {
+                $parsed_data['fields']['game_status'] = Puck_Press_Schedule_Source_Importer::format_game_status($raw_status, null);
+            }
+        }
+
         $edit_data_json = wp_json_encode($parsed_data['fields']);
-    
-        // Check if there's already a record for this external_id + action
+
         $existing_row_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM $table WHERE external_id = %s AND edit_action = %s LIMIT 1",
             $external_id, $edit_action
         ));
-    
+
         $current_time = current_time('mysql');
-    
+
         if ($existing_row_id) {
-            // Update existing row
             $result = $wpdb->update(
                 $table,
                 [
-                    'edit_data'   => $edit_data_json,
-                    'updated_at'  => $current_time,
+                    'edit_data'  => $edit_data_json,
+                    'updated_at' => $current_time,
                 ],
                 ['id' => $existing_row_id]
             );
-    
+
             if ($result !== false) {
                 wp_send_json_success([
                     'message' => 'Edit updated',
-                    'id' => $existing_row_id
+                    'id'      => $existing_row_id,
                 ]);
             } else {
                 wp_send_json_error(['message' => 'Update failed']);
             }
         } else {
-            // Insert new row
             $result = $wpdb->insert(
                 $table,
                 [
@@ -145,57 +204,50 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                     'updated_at'  => $current_time,
                 ]
             );
-    
+
             if ($result) {
                 wp_send_json_success([
                     'message' => 'Edit recorded',
-                    'id' => $wpdb->insert_id
+                    'id'      => $wpdb->insert_id,
                 ]);
             } else {
                 wp_send_json_error(['message' => 'Insert failed']);
             }
         }
-    
-        wp_die(); // Always required for AJAX handlers
+
+        wp_die();
     }
 
     function ajax_delete_game_edit_callback() {
         global $wpdb;
-    
+
         $table = $wpdb->prefix . 'pp_game_schedule_mods';
-    
-        // Ensure required fields are provided
+
         $id = isset($_POST['id']) ? sanitize_text_field($_POST['id']) : '';
-    
+
         if (empty($id)) {
             wp_send_json_error(['message' => 'Missing required fields']);
             wp_die();
         }
-    
-        // Attempt to delete the record
+
         $result = $wpdb->delete(
             $table,
-            [
-                'id' => $id
-            ],
-            [
-                '%s'
-            ]
+            ['id' => $id],
+            ['%s']
         );
-    
+
         if ($result !== false) {
             wp_send_json_success(['message' => 'Edit deleted']);
         } else {
             wp_send_json_error(['message' => 'Delete failed or record not found']);
         }
-    
-        wp_die(); // Always terminate after AJAX callbacks
+
+        wp_die();
     }
 
     function console_log($output, $with_script_tags = true)
     {
-        $js_code = 'console.log(' . json_encode($output, JSON_HEX_TAG) .
-            ');';
+        $js_code = 'console.log(' . json_encode($output, JSON_HEX_TAG) . ');';
         if ($with_script_tags) {
             $js_code = '<script>' . $js_code . '</script>';
         }

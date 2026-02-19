@@ -377,6 +377,16 @@
   margin-bottom: 8px;
 }
 
+.pp-form-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin: 12px 0 4px;
+  padding: 0;
+}
+
 .pp-form-input,
 .pp-form-select {
   width: 100%;

@@ -52,6 +52,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-games-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-preview-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-slider-preview-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/schedule-add-game-modal.php';
 
 		// Roster Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-data-sources-card.php';
