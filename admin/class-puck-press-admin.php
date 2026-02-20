@@ -382,6 +382,8 @@ class Puck_Press_Admin
 		add_action('wp_ajax_ajax_delete_game_edit', [$data_edits_card, 'ajax_delete_game_edit_callback']);
 		add_action('wp_ajax_ajax_refresh_edits_table_card', [$data_edits_card, 'ajax_refresh_edits_table_card_callback']);
 		add_action('wp_ajax_pp_get_game_data', [$data_edits_card, 'ajax_get_game_data_callback']);
+		add_action('wp_ajax_pp_revert_game_field', [$data_edits_card, 'ajax_revert_game_field_callback']);
+		add_action('wp_ajax_pp_reset_all_game_edits', [$data_edits_card, 'ajax_reset_all_edits_callback']);
 
 		$roster_sources_card = new Puck_Press_Roster_Admin_Data_Sources_Card();
 		add_action('wp_ajax_pp_add_roster_source', [$roster_sources_card, 'ajax_add_roster_source']);

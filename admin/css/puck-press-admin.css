@@ -705,6 +705,73 @@ input[type="file"]#pp-schedule-fileInput {
   opacity: 1;
 }
 
+/* Full games table — allows horizontal scroll on narrow viewports */
+.pp-games-table-full {
+  min-width: 1100px;
+}
+
+#pp-card-content-schedule-game-list {
+  overflow-x: auto;
+}
+
+.pp-td-compact {
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+/* Deleted game rows */
+.pp-row-deleted td {
+  background-color: #fff5f5;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.pp-row-deleted .pp-tag {
+  text-decoration: none;
+  opacity: 0.5;
+}
+
+.pp-restore-game-button {
+  font-size: 1rem;
+}
+
+/* Overridden cell highlighting */
+.pp-cell-overridden {
+  background-color: #fffbeb;
+  position: relative;
+}
+
+.pp-revert-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.pp-revert-btn:hover {
+  background-color: #d97706;
+}
+
+.pp-tag-has-hidden-edits {
+  background-color: var(--pp-badge-orange-bg);
+  color: var(--pp-badge-orange-text);
+  font-size: 0.75rem;
+}
+
 .pp-dynamic-source-group-achaGameScheduleUrl,
 .pp-dynamic-source-group-usphlGameScheduleUrl,
 .pp-dynamic-source-group-csv,

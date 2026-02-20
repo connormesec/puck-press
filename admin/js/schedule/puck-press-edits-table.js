@@ -1,384 +1,520 @@
 (function ($) {
-	jQuery(document).ready(function ($) {
-		const dimEditListStyles = () => $('#pp-card-game-schedule-preview, #pp-card-schedule-game-list , #pp-card-game-schedule-edits, .pp-modal, .pp-card').css({
-			'opacity': '0.5',
-			'pointer-events': 'none'
-		});
-		const restoreEditListStyles = () => {
-			$('#pp-card-game-schedule-preview, #pp-card-schedule-game-list , #pp-card-game-schedule-edits, .pp-modal, .pp-card').css({
-				'opacity': '1',
-				'pointer-events': 'auto'
-			});
-		}
+  jQuery(document).ready(function ($) {
+    const dimEditListStyles = () =>
+      $(
+        "#pp-card-game-schedule-preview, #pp-card-schedule-game-list , #pp-card-game-schedule-edits, .pp-modal, .pp-card",
+      ).css({
+        opacity: "0.5",
+        "pointer-events": "none",
+      });
+    const restoreEditListStyles = () => {
+      $(
+        "#pp-card-game-schedule-preview, #pp-card-schedule-game-list , #pp-card-game-schedule-edits, .pp-modal, .pp-card",
+      ).css({
+        opacity: "1",
+        "pointer-events": "auto",
+      });
+    };
 
-		// Restore styles helper for use with refreshGamesTable callbacks
-		function afterRefresh() {
-			restoreEditListStyles();
-			countGameRows();
-		}
+    // Restore styles helper for use with refreshGamesTable callbacks
+    function afterRefresh() {
+      restoreEditListStyles();
+      countGameRows();
+      applyEditHighlights();
+    }
 
+    //############################################################//
+    //                                                            //
+    //               Edit Highlight Functionality                 //
+    //                                                            //
+    //############################################################//
 
-		//############################################################//
-		//                                                            //
-		//               Edit Game Modal functionality                //
-		//                                                            //
-		//############################################################//
+    /**
+     * Read data-overrides on each <tr> and add highlight + revert button
+     * to any <td data-field="..."> whose field name appears in the override list.
+     */
+    function applyEditHighlights() {
+      $("#pp-games-table tbody tr:not(.pp-row-deleted)").each(function () {
+        var $row = $(this);
+        var overrides = [];
+        try {
+          overrides = JSON.parse($row.attr("data-overrides") || "[]");
+        } catch (e) {
+          overrides = [];
+        }
 
-		const $editGameModal = $('#pp-edit-game-modal');
-		const $closeEditGameModalBtn = $('#pp-edit-game-modal-close');
-		const $cancelEditGameBtn = $('#pp-cancel-edit-game');
-		const $confirmBtn_editGameModal = $('#pp-confirm-edit-game');
-		const $editGameForm = $('#pp-edit-game-form');
-		let currentEditingGameId = null;
+        var modId = $row.attr("data-mod-id");
 
-		// Convert a formatted time string like "7:30 PM" to "HH:MM" for <input type="time">
-		function formatTimeForInput(timeStr) {
-			if (!timeStr) return '';
-			const m = String(timeStr).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-			if (!m) return '';
-			let h = parseInt(m[1], 10);
-			const min = m[2];
-			const period = (m[4] || '').toUpperCase();
-			if (period === 'PM' && h !== 12) h += 12;
-			if (period === 'AM' && h === 12) h = 0;
-			return String(h).padStart(2, '0') + ':' + min;
-		}
+        $row.find("td[data-field]").each(function () {
+          var $td = $(this);
+          var fields = $td.attr("data-field").split(" ");
+          var isOverridden = fields.some(function (f) {
+            return overrides.indexOf(f) !== -1;
+          });
 
-		// Map a formatted status string ("Final", "Final OT", etc.) to a select option value
-		function mapStatusToInput(status) {
-			if (status === null || status === undefined || status === '') return '';
-			var map = {
-				'Final':    'final',
-				'Final OT': 'final-ot',
-				'Final SO': 'final-so',
-			};
-			return map[String(status)] || '';
-		}
+          if (isOverridden) {
+            $td.addClass("pp-cell-overridden");
+            if (!$td.find(".pp-revert-btn").length) {
+              $td.append(
+                '<button class="pp-revert-btn" title="Revert to original" ' +
+                  'data-mod-id="' +
+                  modId +
+                  '" ' +
+                  'data-fields="' +
+                  fields.join(",") +
+                  '">&#x2715;</button>',
+              );
+            }
+          } else {
+            $td.removeClass("pp-cell-overridden");
+            $td.find(".pp-revert-btn").remove();
+          }
+        });
+      });
+    }
 
-		/**
-		 * Pre-fill all edit form fields from a pp_game_schedule_for_display row.
-		 * This is the current effective state of the game (raw + all edits applied).
-		 */
-		function prefillEditForm(game) {
-			if (!game) return;
+    // Apply on initial page load
+    applyEditHighlights();
 
-			// game_timestamp is a MySQL DATETIME string: "2024-01-15 19:30:00"
-			// Extract just the date part for the date input.
-			if (game.game_timestamp) {
-				var datePart = String(game.game_timestamp).split(' ')[0]; // "YYYY-MM-DD"
-				$('#pp-edit-game-date').val(datePart);
-			}
+    // Revert a single cell's field(s) back to raw value
+    $(document).on("click", ".pp-revert-btn", function (e) {
+      e.stopPropagation();
 
-			// game_time is stored as "7:30 PM" — convert to HH:MM for <input type="time">
-			$('#pp-edit-game-time').val(formatTimeForInput(game.game_time || ''));
+      var modId = $(this).data("mod-id");
+      var fields = String($(this).data("fields")).split(",");
 
-			// home_or_away: "home" / "away" — direct match with select options
-			$('#pp-edit-home-or-away').val(game.home_or_away || '');
+      dimEditListStyles();
 
-			// game_status: "Final" / "Final OT" / null — map to select option values
-			$('#pp-edit-game-status').val(mapStatusToInput(game.game_status));
+      $.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+          action: "pp_revert_game_field",
+          mod_id: modId,
+          fields: fields,
+        },
+        success: function (response) {
+          if (response.success) {
+            refreshGamesTable(afterRefresh, afterRefresh);
+          } else {
+            console.error("Revert failed:", response.data);
+            restoreEditListStyles();
+          }
+        },
+        error: function () {
+          alert("Error reverting field.");
+          restoreEditListStyles();
+        },
+      });
+    });
 
-			// Scores
-			var ts = game.target_score;
-			$('#pp-edit-target-score').val(ts !== null && ts !== undefined ? ts : '');
-			var os = game.opponent_score;
-			$('#pp-edit-opponent-score').val(os !== null && os !== undefined ? os : '');
+    //############################################################//
+    //                                                            //
+    //               Restore Deleted Game Button                  //
+    //                                                            //
+    //############################################################//
 
-			// Venue
-			$('#pp-edit-venue').val(game.venue || '');
+    $(document).on("click", ".pp-restore-game-button", function () {
+      var deleteModId = $(this).data("delete-mod-id");
 
-			// Promo fields
-			$('#pp-promo-header').val(game.promo_header || '');
-			$('#pp-promo-text').val(game.promo_text || '');
-			$('#pp-promo-img-url').val(game.promo_img_url || '');
-			$('#pp-promo-ticket-link').val(game.promo_ticket_link || '');
-		}
+      dimEditListStyles();
 
-		/**
-		 * Open the edit modal for a game and asynchronously pre-fill it with current values.
-		 * The modal is shown FIRST — nothing gates this operation.
-		 */
-		function openEditModalForGame(gameId) {
-			currentEditingGameId = gameId;
+      $.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+          action: "ajax_delete_game_edit",
+          id: deleteModId,
+        },
+        success: function (response) {
+          if (response.success) {
+            refreshGamesTable(afterRefresh, afterRefresh);
+          } else {
+            console.error("Error restoring game:", response.data);
+            restoreEditListStyles();
+          }
+        },
+        error: function () {
+          alert("There was an error restoring the game.");
+          restoreEditListStyles();
+        },
+      });
+    });
 
-			// Show the modal immediately — this must always run regardless of what follows.
-			$editGameModal.css('display', 'flex');
-			$('.pp-modal-subtitle').text('Loading...');
+    //############################################################//
+    //                                                            //
+    //               Edit Game Modal functionality                //
+    //                                                            //
+    //############################################################//
 
-			// Reset form after the modal is visible, with null safety.
-			if ($editGameForm.length) {
-				$editGameForm[0].reset();
-			}
+    const $editGameModal = $("#pp-edit-game-modal");
+    const $closeEditGameModalBtn = $("#pp-edit-game-modal-close");
+    const $cancelEditGameBtn = $("#pp-cancel-edit-game");
+    const $confirmBtn_editGameModal = $("#pp-confirm-edit-game");
+    const $editGameForm = $("#pp-edit-game-form");
+    let currentEditingGameId = null;
+    // Snapshot of values set by prefillEditForm; used to detect which fields actually changed.
+    let originalFormValues = null;
 
-			// Pre-fill asynchronously from the server's authoritative for_display row.
-			$.ajax({
-				url: ajaxurl,
-				method: 'POST',
-				data: {
-					action: 'pp_get_game_data',
-					game_id: gameId,
-				},
-				success: function (response) {
-					if (response.success && response.data && response.data.game) {
-						prefillEditForm(response.data.game);
-					}
-					$('.pp-modal-subtitle').text('Game: ' + gameId);
-				},
-				error: function () {
-					$('.pp-modal-subtitle').text('Game: ' + gameId);
-				}
-			});
-		}
+    // Convert a formatted time string like "7:30 PM" to "HH:MM" for <input type="time">
+    function formatTimeForDisplay(timeStr) {
+      if (!timeStr) return "";
+      var m = String(timeStr).match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return timeStr;
+      var h = parseInt(m[1], 10);
+      var min = m[2];
+      var period = h >= 12 ? "pm" : "am";
+      if (h === 0) h = 12;
+      else if (h > 12) h -= 12;
+      return h + ":" + min + " " + period;
+    }
 
-		// Open modal from the Games Table
-		$(document).on('click', '#pp-edit-game-button', function () {
-			openEditModalForGame($(this).data('game-id'));
-		});
+    function formatTimeForInput(timeStr) {
+      if (!timeStr) return "";
+      // Strip trailing timezone codes (e.g. "EST", "CT") that aren't AM/PM
+      var cleaned = String(timeStr)
+        .replace(/\s+(?!AM|PM)[A-Z]{2,4}$/i, "")
+        .trim();
+      const m = cleaned.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+      if (!m) return "";
+      let h = parseInt(m[1], 10);
+      const min = m[2];
+      const period = (m[4] || "").toUpperCase();
+      if (period === "PM" && h !== 12) h += 12;
+      if (period === "AM" && h === 12) h = 0;
+      return String(h).padStart(2, "0") + ":" + min;
+    }
 
-		// Open modal from the Edits Table
-		$(document).on('click', '#pp-edit-edit-button', function () {
-			openEditModalForGame($(this).data('game-id'));
-		});
+    // Map a status string from DB (stored uppercase: 'FINAL', 'FINAL OT', 'FINAL SO') to a select option value
+    function mapStatusToInput(status) {
+      if (!status) return "";
+      var lower = String(status).toLowerCase().trim().replace(/\s+/g, "-");
+      var valid = ["final", "final-ot", "final-so"];
+      return valid.indexOf(lower) !== -1 ? lower : "";
+    }
 
-		// Close modal
-		function closeEditGameModal() {
-			$editGameModal.css('display', 'none');
-			if ($editGameForm.length) {
-				$editGameForm[0].reset();
-			}
-		}
+    /**
+     * Pre-fill all edit form fields from a pp_game_schedule_for_display row.
+     * This is the current effective state of the game (raw + all edits applied).
+     */
+    function prefillEditForm(game) {
+      if (!game) return;
 
-		$closeEditGameModalBtn.on('click', closeEditGameModal);
-		$cancelEditGameBtn.on('click', closeEditGameModal);
+      // game_timestamp is a MySQL DATETIME string: "2024-01-15 19:30:00"
+      // Extract just the date part for the date input.
+      var datePart = "";
+      if (game.game_timestamp) {
+        datePart = String(game.game_timestamp).split(" ")[0]; // "YYYY-MM-DD"
+        $("#pp-edit-game-date").val(datePart);
+      }
 
-		$editGameModal.on('click', function (e) {
-			if (e.target === this) {
-				closeEditGameModal();
-			}
-		});
+      // game_time is stored as "7:30 PM" — convert to HH:MM for <input type="time">
+      var timeVal = formatTimeForInput(game.game_time || "");
+      $("#pp-edit-game-time").val(timeVal);
 
-		// Form submission
-		$confirmBtn_editGameModal.on('click', function () {
-			if ($editGameForm.length && !$editGameForm[0].checkValidity()) {
-				$editGameForm[0].reportValidity();
-				return;
-			}
+      // home_or_away: "home" / "away" — direct match with select options
+      var homeOrAwayVal = game.home_or_away || "";
+      $("#pp-edit-home-or-away").val(homeOrAwayVal);
 
-			dimEditListStyles();
+      // game_status: "Final" / "Final OT" / null — map to select option values
+      var statusVal = mapStatusToInput(game.game_status);
+      $("#pp-edit-game-status").val(statusVal);
 
-			// Collect only non-empty fields so we don't overwrite values with blanks
-			var fields = { external_id: currentEditingGameId };
+      // Scores
+      var ts = game.target_score;
+      var targetScoreVal = ts !== null && ts !== undefined ? String(ts) : "";
+      $("#pp-edit-target-score").val(targetScoreVal);
+      var os = game.opponent_score;
+      var opponentScoreVal = os !== null && os !== undefined ? String(os) : "";
+      $("#pp-edit-opponent-score").val(opponentScoreVal);
 
-			var gameDate = $('#pp-edit-game-date').val();
-			if (gameDate) fields.game_date = gameDate;
+      // Venue
+      var venueVal = game.venue || "";
+      $("#pp-edit-venue").val(venueVal);
 
-			var gameTime = $('#pp-edit-game-time').val();
-			if (gameTime) fields.game_time = gameTime;
+      // Promo fields
+      var promoHeaderVal = game.promo_header || "";
+      var promoTextVal = game.promo_text || "";
+      var promoImgUrlVal = game.promo_img_url || "";
+      var promoTicketLinkVal = game.promo_ticket_link || "";
+      $("#pp-promo-header").val(promoHeaderVal);
+      $("#pp-promo-text").val(promoTextVal);
+      $("#pp-promo-img-url").val(promoImgUrlVal);
+      $("#pp-promo-ticket-link").val(promoTicketLinkVal);
 
-			var homeOrAway = $('#pp-edit-home-or-away').val();
-			if (homeOrAway) fields.home_or_away = homeOrAway;
+      // Snapshot so the submit handler can detect which fields actually changed.
+      originalFormValues = {
+        game_date: datePart,
+        game_time: timeVal,
+        home_or_away: homeOrAwayVal,
+        game_status: statusVal,
+        target_score: targetScoreVal,
+        opponent_score: opponentScoreVal,
+        venue: venueVal,
+        promo_header: promoHeaderVal,
+        promo_text: promoTextVal,
+        promo_img_url: promoImgUrlVal,
+        promo_ticket_link: promoTicketLinkVal,
+      };
+    }
 
-			var gameStatus = $('#pp-edit-game-status').val();
-			if (gameStatus) fields.game_status = gameStatus;
+    /**
+     * Open the edit modal for a game and asynchronously pre-fill it with current values.
+     * The modal is shown FIRST — nothing gates this operation.
+     */
+    function openEditModalForGame(gameId) {
+      currentEditingGameId = gameId;
 
-			var targetScore = $('#pp-edit-target-score').val();
-			if (targetScore !== '') fields.target_score = targetScore;
+      // Show the modal immediately — this must always run regardless of what follows.
+      $editGameModal.css("display", "flex");
+      $(".pp-modal-subtitle").text("Loading...");
 
-			var opponentScore = $('#pp-edit-opponent-score').val();
-			if (opponentScore !== '') fields.opponent_score = opponentScore;
+      // Reset form after the modal is visible, with null safety.
+      if ($editGameForm.length) {
+        $editGameForm[0].reset();
+      }
 
-			var venue = $('#pp-edit-venue').val();
-			if (venue) fields.venue = venue;
+      // Pre-fill asynchronously from the server's authoritative for_display row.
+      $.ajax({
+        url: ajaxurl,
+        method: "POST",
+        data: {
+          action: "pp_get_game_data",
+          game_id: gameId,
+        },
+        success: function (response) {
+          if (response.success && response.data && response.data.game) {
+            prefillEditForm(response.data.game);
+          }
+          $(".pp-modal-subtitle").text("Game: " + gameId);
+        },
+        error: function () {
+          $(".pp-modal-subtitle").text("Game: " + gameId);
+        },
+      });
+    }
 
-			var promoHeader = $('#pp-promo-header').val();
-			if (promoHeader) fields.promo_header = promoHeader;
+    // Open modal from the Games Table
+    $(document).on("click", "#pp-edit-game-button", function () {
+      openEditModalForGame($(this).data("game-id"));
+    });
 
-			var promoText = $('#pp-promo-text').val();
-			if (promoText) fields.promo_text = promoText;
+    // Close modal
+    function closeEditGameModal() {
+      $editGameModal.css("display", "none");
+      if ($editGameForm.length) {
+        $editGameForm[0].reset();
+      }
+    }
 
-			var promoImgUrl = $('#pp-promo-img-url').val();
-			if (promoImgUrl) fields.promo_img_url = promoImgUrl;
+    $closeEditGameModalBtn.on("click", closeEditGameModal);
+    $cancelEditGameBtn.on("click", closeEditGameModal);
 
-			var promoTicketLink = $('#pp-promo-ticket-link').val();
-			if (promoTicketLink) fields.promo_ticket_link = promoTicketLink;
+    $editGameModal.on("click", function (e) {
+      if (e.target === this) {
+        closeEditGameModal();
+      }
+    });
 
-			var edit_data = {
-				edit_action: 'update',
-				fields: fields,
-			};
+    // Form submission
+    $confirmBtn_editGameModal.on("click", function () {
+      if ($editGameForm.length && !$editGameForm[0].checkValidity()) {
+        $editGameForm[0].reportValidity();
+        return;
+      }
 
-			var formData = new FormData();
-			formData.append('action', 'pp_update_game_promos');
-			formData.append('edit_data', JSON.stringify(edit_data));
+      dimEditListStyles();
 
-			closeEditGameModal();
+      // Only include fields that differ from the pre-filled originals.
+      // Pre-filled-but-unchanged values must not be stored as overrides —
+      // that's what caused untouched cells to get highlighted.
+      var orig = originalFormValues || {};
+      var fields = { external_id: currentEditingGameId };
 
-			$.ajax({
-				url: ajaxurl,
-				method: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				success: function (response) {
-					if (response.success) {
-						$.ajax({
-							url: ajaxurl,
-							method: 'POST',
-							data: { action: 'ajax_refresh_edits_table_card' },
-							success: function (response) {
-								if (response.success) {
-									$('#pp-schedule-edits-table').html(response.data);
-									refreshGamesTable(afterRefresh, afterRefresh);
-								} else {
-									console.error(response.data ? response.data.message : 'Unknown error');
-									restoreEditListStyles();
-								}
-							},
-							error: function (err) {
-								console.error('AJAX error:', err);
-								restoreEditListStyles();
-							}
-						});
-					} else {
-						console.error('Error:', response);
-						alert('Failed to save edit.');
-						restoreEditListStyles();
-					}
-				},
-				error: function (err) {
-					console.error('Error:', err);
-					alert('Failed to save edit.');
-					restoreEditListStyles();
-				}
-			});
-		});
+      var gameDate = $("#pp-edit-game-date").val();
+      if (gameDate && gameDate !== (orig.game_date || ""))
+        fields.game_date = gameDate;
 
+      var gameTime = $("#pp-edit-game-time").val();
+      if (gameTime && gameTime !== (orig.game_time || ""))
+        fields.game_time = formatTimeForDisplay(gameTime);
 
-		//############################################################//
-		//                                                            //
-		//               Delete Game Button Functionality             //
-		//                                                            //
-		//############################################################//
+      var homeOrAway = $("#pp-edit-home-or-away").val();
+      if (homeOrAway && homeOrAway !== (orig.home_or_away || ""))
+        fields.home_or_away = homeOrAway;
 
-		$(document).on('click', '#pp-delete-game-button', function () {
-			dimEditListStyles();
+      var gameStatus = $("#pp-edit-game-status").val();
+      if (gameStatus && gameStatus !== (orig.game_status || ""))
+        fields.game_status = gameStatus;
 
-			var $row = $(this).closest('tr');
-			var gameId = $(this).data('game-id');
-			var sourceType = $row.data('source-type');
+      var targetScore = $("#pp-edit-target-score").val();
+      if (targetScore !== "" && targetScore !== (orig.target_score || ""))
+        fields.target_score = targetScore;
 
-			if (sourceType === 'manual') {
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'pp_delete_manual_game',
-						game_id: gameId,
-					},
-					success: function (response) {
-						if (response.success) {
-							$('#pp-games-table').replaceWith(response.data.games_table_html);
-							$('#pp-schedule-edits-table').replaceWith(response.data.edits_table_html);
-							refreshGamesTable(afterRefresh, afterRefresh);
-						} else {
-							console.error('Error deleting manual game:', response.data);
-							alert('There was an error deleting the game.');
-							restoreEditListStyles();
-						}
-					},
-					error: function () {
-						alert('There was an error with the AJAX request to delete the game.');
-						restoreEditListStyles();
-					}
-				});
-			} else {
-				var edit_data = {
-					edit_action: 'delete',
-					fields: { external_id: gameId }
-				};
-				var formData = new FormData();
-				formData.append('action', 'pp_update_game_promos');
-				formData.append('edit_data', JSON.stringify(edit_data));
+      var opponentScore = $("#pp-edit-opponent-score").val();
+      if (opponentScore !== "" && opponentScore !== (orig.opponent_score || ""))
+        fields.opponent_score = opponentScore;
 
-				$.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: formData,
-					processData: false,
-					contentType: false,
-					success: function (response) {
-						if (response.success) {
-							$.ajax({
-								url: ajaxurl,
-								method: 'POST',
-								data: { action: 'ajax_refresh_edits_table_card' },
-								success: function (response) {
-									if (response.success) {
-										$('#pp-schedule-edits-table').html(response.data);
-										refreshGamesTable(afterRefresh, afterRefresh);
-									} else {
-										console.error(response.data ? response.data.message : 'Unknown error');
-										restoreEditListStyles();
-									}
-								},
-								error: function (err) {
-									console.error('AJAX error:', err);
-									restoreEditListStyles();
-								}
-							});
-						} else {
-							console.error('Error deleting edit:', response.data);
-							alert('There was an error deleting the edit.');
-							restoreEditListStyles();
-						}
-					},
-					error: function () {
-						alert('There was an error with the AJAX request to delete the edit.');
-						restoreEditListStyles();
-					}
-				});
-			}
-		});
+      var venue = $("#pp-edit-venue").val();
+      if (venue && venue !== (orig.venue || "")) fields.venue = venue;
 
+      var promoHeader = $("#pp-promo-header").val();
+      if (promoHeader && promoHeader !== (orig.promo_header || ""))
+        fields.promo_header = promoHeader;
 
-		//############################################################//
-		//                                                            //
-		//               Delete Edit From Table Button                //
-		//                                                            //
-		//############################################################//
+      var promoText = $("#pp-promo-text").val();
+      if (promoText && promoText !== (orig.promo_text || ""))
+        fields.promo_text = promoText;
 
-		$(document).on('click', '#pp-delete-edit-button', function () {
-			var confirmed = confirm('Are you sure you want to delete this item?');
-			if (!confirmed) return;
+      var promoImgUrl = $("#pp-promo-img-url").val();
+      if (promoImgUrl && promoImgUrl !== (orig.promo_img_url || ""))
+        fields.promo_img_url = promoImgUrl;
 
-			dimEditListStyles();
+      var promoTicketLink = $("#pp-promo-ticket-link").val();
+      if (promoTicketLink && promoTicketLink !== (orig.promo_ticket_link || ""))
+        fields.promo_ticket_link = promoTicketLink;
 
-			var id = $(this).data('edit-id');
-			var $nearestRow = $(this).closest('tr');
+      var edit_data = {
+        edit_action: "update",
+        fields: fields,
+      };
 
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'ajax_delete_game_edit',
-					id: id,
-				},
-				success: function (response) {
-					if (response.success) {
-						$nearestRow.remove();
-						refreshGamesTable(afterRefresh, afterRefresh);
-					} else {
-						console.error('Error deleting edit:', response.data);
-						alert('There was an error deleting the edit.');
-						restoreEditListStyles();
-					}
-				},
-				error: function () {
-					alert('There was an error with the AJAX request to delete the edit.');
-					restoreEditListStyles();
-				}
-			});
-		});
-	});
+      var formData = new FormData();
+      formData.append("action", "pp_update_game_promos");
+      formData.append("edit_data", JSON.stringify(edit_data));
 
+      closeEditGameModal();
+
+      $.ajax({
+        url: ajaxurl,
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          if (response.success) {
+            refreshGamesTable(afterRefresh, afterRefresh);
+          } else {
+            console.error("Error:", response);
+            alert("Failed to save edit.");
+            restoreEditListStyles();
+          }
+        },
+        error: function (err) {
+          console.error("Error:", err);
+          alert("Failed to save edit.");
+          restoreEditListStyles();
+        },
+      });
+    });
+
+    //############################################################//
+    //                                                            //
+    //               Reset All Edits Button                      //
+    //                                                            //
+    //############################################################//
+
+    $("#pp-reset-all-edits").on("click", function () {
+      if (
+        !confirm(
+          "Reset all edits? This will remove every override, deletion, and manual game. This cannot be undone.",
+        )
+      ) {
+        return;
+      }
+
+      dimEditListStyles();
+
+      $.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: { action: "pp_reset_all_game_edits" },
+        success: function (response) {
+          if (response.success) {
+            refreshGamesTable(afterRefresh, afterRefresh);
+          } else {
+            console.error("Error resetting edits:", response.data);
+            alert("There was an error resetting edits.");
+            restoreEditListStyles();
+          }
+        },
+        error: function () {
+          alert("Error resetting edits.");
+          restoreEditListStyles();
+        },
+      });
+    });
+
+    //############################################################//
+    //                                                            //
+    //               Delete Game Button Functionality             //
+    //                                                            //
+    //############################################################//
+
+    $(document).on("click", "#pp-delete-game-button", function () {
+      dimEditListStyles();
+
+      var $row = $(this).closest("tr");
+      var gameId = $(this).data("game-id");
+      var sourceType = $row.data("source-type");
+
+      if (sourceType === "manual") {
+        $.ajax({
+          url: ajaxurl,
+          type: "POST",
+          data: {
+            action: "pp_delete_manual_game",
+            game_id: gameId,
+          },
+          success: function (response) {
+            if (response.success) {
+              $("#pp-games-table").replaceWith(response.data.games_table_html);
+              refreshGamesTable(afterRefresh, afterRefresh);
+            } else {
+              console.error("Error deleting manual game:", response.data);
+              alert("There was an error deleting the game.");
+              restoreEditListStyles();
+            }
+          },
+          error: function () {
+            alert(
+              "There was an error with the AJAX request to delete the game.",
+            );
+            restoreEditListStyles();
+          },
+        });
+      } else {
+        var edit_data = {
+          edit_action: "delete",
+          fields: { external_id: gameId },
+        };
+        var formData = new FormData();
+        formData.append("action", "pp_update_game_promos");
+        formData.append("edit_data", JSON.stringify(edit_data));
+
+        $.ajax({
+          url: ajaxurl,
+          type: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function (response) {
+            if (response.success) {
+              refreshGamesTable(afterRefresh, afterRefresh);
+            } else {
+              console.error("Error deleting edit:", response.data);
+              alert("There was an error deleting the edit.");
+              restoreEditListStyles();
+            }
+          },
+          error: function () {
+            alert(
+              "There was an error with the AJAX request to delete the edit.",
+            );
+            restoreEditListStyles();
+          },
+        });
+      }
+    });
+  });
 })(jQuery);

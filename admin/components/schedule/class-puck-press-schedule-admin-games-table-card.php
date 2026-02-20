@@ -13,57 +13,157 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
 
     public function render_game_schedule_admin_preview()
     {
-        $table_name = 'pp_game_schedule_for_display';
-        $schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils;
-        $games = $schedule_db_utils->get_all_table_data($table_name, 'ARRAY_A');
-        if ($games == null) {
+        global $wpdb;
+        $display_table = $wpdb->prefix . 'pp_game_schedule_for_display';
+        $mods_table    = $wpdb->prefix . 'pp_game_schedule_mods';
+        $raw_table     = $wpdb->prefix . 'pp_game_schedule_raw';
+
+        // Active games: from for_display, LEFT JOIN update mods for override highlighting
+        $active_games = $wpdb->get_results(
+            "SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
+             FROM $display_table f
+             LEFT JOIN $mods_table m ON f.game_id = m.external_id AND m.edit_action = 'update'",
+            ARRAY_A
+        ) ?: [];
+
+        // Deleted sourced games: in raw but have a delete mod (not in for_display)
+        $deleted_games = $wpdb->get_results(
+            "SELECT r.*, dm.id AS delete_mod_id
+             FROM $raw_table r
+             INNER JOIN $mods_table dm ON r.game_id = dm.external_id AND dm.edit_action = 'delete'",
+            ARRAY_A
+        ) ?: [];
+
+        foreach ($active_games as &$g) {
+            $g['row_status']    = 'active';
+            $g['delete_mod_id'] = null;
+        }
+        unset($g);
+
+        foreach ($deleted_games as &$g) {
+            $g['row_status']    = 'deleted';
+            $g['mod_id']        = null;
+            $g['override_data'] = null;
+        }
+        unset($g);
+
+        $games = array_merge($active_games, $deleted_games);
+
+        usort($games, function ($a, $b) {
+            return strcmp($a['game_timestamp'] ?? '', $b['game_timestamp'] ?? '');
+        });
+
+        if (empty($games)) {
             return '<table class="pp-table" id="pp-games-table"><caption>' . esc_html__('No games scheduled yet.', 'puck-press') . '</caption></table>';
         }
 
+        $skip_keys     = ['external_id', 'game_timestamp', 'game_date_day'];
+        $hidden_fields = ['promo_header', 'promo_text', 'promo_img_url', 'promo_ticket_link'];
+
         ob_start();
     ?>
-        <table class="pp-table" id="pp-games-table">
+        <table class="pp-table pp-games-table-full" id="pp-games-table">
             <thead class="pp-thead">
                 <tr>
-                    <th class="pp-th"><?php esc_html_e('Date', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('ID', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Date', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Time', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Target Team', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Score', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Opponent', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Score', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Location', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Status', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('H/A', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Source', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($games as $game) :
-                    $is_manual = strpos($game['game_id'], 'manual_') === 0;
-                    $source_type = $is_manual ? 'manual' : 'sourced';
+                    $is_deleted   = $game['row_status'] === 'deleted';
+                    $is_manual    = strpos($game['game_id'], 'manual_') === 0;
+                    $source_type  = $is_manual ? 'manual' : 'sourced';
                     $source_tag_class = $is_manual ? 'pp-tag-manual' : 'pp-tag-regular-season';
+
+                    $override_keys = [];
+                    if (!$is_deleted && !empty($game['override_data'])) {
+                        $decoded = json_decode($game['override_data'], true);
+                        if (is_array($decoded)) {
+                            $override_keys = array_values(array_diff(array_keys($decoded), $skip_keys));
+                        }
+                    }
+                    $mod_id = $game['mod_id'] ?? '';
+                    $has_hidden_overrides = !$is_deleted && !empty(array_intersect($override_keys, $hidden_fields));
                 ?>
-                    <tr data-id="<?php echo esc_attr($game['game_id']) ?>" data-source-type="<?php echo esc_attr($source_type); ?>">
-                        <td class="pp-td"><?php echo esc_html(date('M d', strtotime($game['game_timestamp']))); ?></td>
-                        <td class="pp-td"><?php echo esc_html(ucfirst($game['game_id'])); ?></td>
-                        <td class="pp-td"><?php echo esc_html($game['opponent_team_name']); ?></td>
-                        <td class="pp-td"><?php echo esc_html($game['venue']); ?></td>
-                        <td class="pp-td">
+                    <?php if ($is_deleted) : ?>
+                    <tr class="pp-row-deleted"
+                        data-id="<?php echo esc_attr($game['game_id']); ?>"
+                        data-source-type="sourced"
+                        data-overrides="[]">
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['game_id']); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html(date('M d, Y', strtotime($game['game_timestamp']))); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['game_time'] ?? ''); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['target_team_name'] ?? ''); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo $game['target_score'] !== null ? esc_html($game['target_score']) : '—'; ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['opponent_team_name'] ?? ''); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo $game['opponent_score'] !== null ? esc_html($game['opponent_score']) : '—'; ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['venue'] ?? ''); ?></td>
+                        <td class="pp-td pp-td-compact">
+                            <?php if (!empty($game['game_status'])) : ?>
+                                <span class="pp-tag pp-tag-<?php echo sanitize_html_class(strtolower($game['game_status'])); ?>">
+                                    <?php echo esc_html(ucfirst((string) $game['game_status'])); ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html(ucfirst($game['home_or_away'] ?? '')); ?></td>
+                        <td class="pp-td pp-td-compact">
+                            <span class="pp-tag <?php echo esc_attr($source_tag_class); ?>">
+                                <?php echo esc_html($game['source'] ?? 'No Source'); ?>
+                            </span>
+                        </td>
+                        <td class="pp-td pp-td-compact">
+                            <button class="pp-button-icon pp-restore-game-button" title="<?php esc_attr_e('Restore game', 'puck-press'); ?>" data-delete-mod-id="<?php echo esc_attr($game['delete_mod_id']); ?>">↩</button>
+                        </td>
+                    </tr>
+                    <?php else : ?>
+                    <tr
+                        data-id="<?php echo esc_attr($game['game_id']); ?>"
+                        data-source-type="<?php echo esc_attr($source_type); ?>"
+                        data-mod-id="<?php echo esc_attr($mod_id); ?>"
+                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>">
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['game_id']); ?></td>
+                        <td class="pp-td pp-td-compact" data-field="game_date"><?php echo esc_html(date('M d, Y', strtotime($game['game_timestamp']))); ?></td>
+                        <td class="pp-td pp-td-compact" data-field="game_time"><?php echo esc_html($game['game_time'] ?? ''); ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['target_team_name']); ?></td>
+                        <td class="pp-td pp-td-compact" data-field="target_score"><?php echo $game['target_score'] !== null ? esc_html($game['target_score']) : '—'; ?></td>
+                        <td class="pp-td pp-td-compact"><?php echo esc_html($game['opponent_team_name']); ?></td>
+                        <td class="pp-td pp-td-compact" data-field="opponent_score"><?php echo $game['opponent_score'] !== null ? esc_html($game['opponent_score']) : '—'; ?></td>
+                        <td class="pp-td pp-td-compact" data-field="venue"><?php echo esc_html($game['venue']); ?></td>
+                        <td class="pp-td pp-td-compact" data-field="game_status">
                             <?php if (!is_null($game['game_status'])) : ?>
                                 <span class="pp-tag pp-tag-<?php echo sanitize_html_class(strtolower($game['game_status'])); ?>">
                                     <?php echo esc_html(ucfirst((string) ($game['game_status'] ?? ''))); ?>
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <td class="pp-td">
+                        <td class="pp-td pp-td-compact" data-field="home_or_away"><?php echo esc_html(ucfirst($game['home_or_away'] ?? '')); ?></td>
+                        <td class="pp-td pp-td-compact">
                             <span class="pp-tag <?php echo esc_attr($source_tag_class); ?>">
                                 <?php echo esc_html(isset($game['source']) ? $game['source'] : 'No Source'); ?>
                             </span>
+                            <?php if ($has_hidden_overrides) : ?>
+                                <span class="pp-tag pp-tag-has-hidden-edits" title="<?php esc_attr_e('Has additional edits (promo content)', 'puck-press'); ?>">+edits</span>
+                            <?php endif; ?>
                         </td>
-                        <td class="pp-td">
+                        <td class="pp-td pp-td-compact">
                             <div class="pp-flex-small-gap">
                                 <button class="pp-button-icon" id="pp-edit-game-button" data-game-id="<?php echo esc_attr($game['game_id']); ?>">✏️</button>
                                 <button class="pp-button-icon" id="pp-delete-game-button" data-game-id="<?php echo esc_attr($game['game_id']); ?>">🗑️</button>
                             </div>
                         </td>
                     </tr>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -177,14 +277,10 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
         $games_table_html = $games_table_card->render_game_schedule_admin_preview();
 
-        $edits_card = new Puck_Press_Schedule_Admin_Edits_Table_Card();
-        $edits_table_html = $edits_card->render_edits_table();
-
         wp_send_json_success([
             'message'          => 'Manual game added.',
             'game_id'          => $game_data['game_id'],
             'games_table_html' => $games_table_html,
-            'edits_table_html' => $edits_table_html,
         ]);
         wp_die();
     }
@@ -226,13 +322,9 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
         $games_table_html = $games_table_card->render_game_schedule_admin_preview();
 
-        $edits_card = new Puck_Press_Schedule_Admin_Edits_Table_Card();
-        $edits_table_html = $edits_card->render_edits_table();
-
         wp_send_json_success([
             'message'          => 'Manual game deleted.',
             'games_table_html' => $games_table_html,
-            'edits_table_html' => $edits_table_html,
         ]);
         wp_die();
     }

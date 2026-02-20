@@ -109,6 +109,8 @@ class Puck_Press_Schedule_Admin_Display
                                 <div class="pp-dropdown-item">Reset Game Data</div>
                                 <div class="pp-dropdown-item">Reset Data Sources</div>
                                 <div class="pp-dropdown-item danger">Reset Everything</div>
+                                <div class="pp-dropdown-header">Edits</div>
+                                <div class="pp-dropdown-item danger" id="pp-reset-all-edits">Reset All Edits</div>
                             </div>
                         </div>
                     </div>
@@ -121,8 +123,6 @@ class Puck_Press_Schedule_Admin_Display
                 <?php echo $this->game_template_preview->render() ?>
 
                 <?php echo $this->pp_sched_admin->render(); ?>
-
-                <?php echo $this->pp_sched_edits->render() ?>
 
                 <?php echo $this->game_slider_preview->render() ?>
 

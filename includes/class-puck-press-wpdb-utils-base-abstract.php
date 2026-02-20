@@ -124,6 +124,15 @@ abstract class Puck_Press_Wpdb_Utils_Base
 
         $format = $this->get_wpdb_format_from_schema($this->table_schemas[$table_name], array_keys($filtered_data));
 
+        // For null values, switch %d/%f → %s so wpdb writes SQL NULL instead of
+        // coercing via intval/floatval (which would turn null into 0).
+        $data_values = array_values($filtered_data);
+        foreach ($format as $i => $fmt) {
+            if ($fmt !== '%s' && $data_values[$i] === null) {
+                $format[$i] = '%s';
+            }
+        }
+
         $result = $wpdb->replace($full_table, $filtered_data, $format);
 
         if ($result === false) {

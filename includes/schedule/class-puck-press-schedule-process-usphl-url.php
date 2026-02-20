@@ -181,6 +181,15 @@ class Puck_Press_Schedule_Process_Usphl_Url
         // team's local timezone so game_timestamp reflects the local game time.
         $game_timestamp = $this->format_gmt_to_timezone( $game['gmt_time'], $game['timezn'] );
 
+        // result_string is the USPHL result (e.g. "W 4-2", "L 1-3", or "" for upcoming).
+        $game_status = $game['result_string'] ?: null;
+
+        // Null-guard: upcoming games have no result_string. If status is null and the
+        // score is 0, treat it as null (no score recorded yet). A real 0–0 final
+        // always has a non-null game_status, so this is safe.
+        $target_score   = ( ! empty( $game_status ) || $target_score   != 0 ) ? $target_score   : null;
+        $opponent_score = ( ! empty( $game_status ) || $opponent_score != 0 ) ? $opponent_score : null;
+
         return [
             'game_id'                => $game['game_id'],
             'target_team_id'         => $target_team_id,
@@ -193,8 +202,7 @@ class Puck_Press_Schedule_Process_Usphl_Url
             'opponent_team_logo'     => $opponent_logo,
             'target_score'           => $target_score,
             'opponent_score'         => $opponent_score,
-            // result_string is the USPHL result (e.g. "W 4-2", "L 1-3", or "" for upcoming).
-            'game_status'            => $game['result_string'] ?: null,
+            'game_status'            => $game_status,
             // 'date' is ISO (e.g. "2025-09-13"), 'time' is local (e.g. "19:30:00").
             'game_date_day'          => date( 'D, M j', strtotime( $game['date'] ) ),
             'game_time'              => date( 'g:ia', strtotime( $game['time'] ) ),

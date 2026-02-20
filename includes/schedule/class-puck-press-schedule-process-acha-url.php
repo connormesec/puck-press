@@ -219,6 +219,12 @@ class Puck_Press_Schedule_Process_Acha_Url
         // string ("Final", "Final OT"). parse_game_status_and_time splits these apart.
         $parsed = $this->parse_game_status_and_time( $row['game_status'] );
 
+        // Null-guard: upcoming games have no game_status. If status is null and the
+        // score is 0, treat it as null (no score recorded yet). A real 0–0 final
+        // always has a non-null game_status, so this is safe.
+        $target_score   = ( ! empty( $parsed['game_status'] ) || $target_score   != 0 ) ? $target_score   : null;
+        $opponent_score = ( ! empty( $parsed['game_status'] ) || $opponent_score != 0 ) ? $opponent_score : null;
+
         // date_with_day is a partial string like "Fri, Sep 13" — no year included.
         // We infer the year from the season string (e.g. "2024-2025") and which half
         // of the season the month falls in.

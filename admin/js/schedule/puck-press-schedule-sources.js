@@ -10,10 +10,11 @@
 				'pointer-events': 'auto' // re-enables interaction
 			});
 		}
-		const countGameRows = () => {
+		window.countGameRows = () => {
 			const rowCount = $('#pp-games-table tbody tr').length;
 			$('#pp-card-subtitle-schedule-game-list').text(`${rowCount} games scheduled`);
 		}
+		const countGameRows = window.countGameRows;
 
 		countGameRows();
 		//############################################################//

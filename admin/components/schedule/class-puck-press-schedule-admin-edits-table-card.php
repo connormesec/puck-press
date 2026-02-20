@@ -166,8 +166,6 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
             }
         }
 
-        $edit_data_json = wp_json_encode($parsed_data['fields']);
-
         $existing_row_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM $table WHERE external_id = %s AND edit_action = %s LIMIT 1",
             $external_id, $edit_action
@@ -176,6 +174,16 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
         $current_time = current_time('mysql');
 
         if ($existing_row_id) {
+            // Merge incoming fields into the existing edit_data so that prior
+            // intentional overrides on this game are preserved across multiple edits.
+            $existing_json   = $wpdb->get_var($wpdb->prepare(
+                "SELECT edit_data FROM $table WHERE id = %d",
+                $existing_row_id
+            ));
+            $existing_fields = json_decode($existing_json, true) ?: [];
+            $merged_fields   = array_merge($existing_fields, $parsed_data['fields']);
+            $edit_data_json  = wp_json_encode($merged_fields);
+
             $result = $wpdb->update(
                 $table,
                 [
@@ -194,6 +202,7 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                 wp_send_json_error(['message' => 'Update failed']);
             }
         } else {
+            $edit_data_json = wp_json_encode($parsed_data['fields']);
             $result = $wpdb->insert(
                 $table,
                 [
@@ -242,6 +251,92 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
             wp_send_json_error(['message' => 'Delete failed or record not found']);
         }
 
+        wp_die();
+    }
+
+    function ajax_revert_game_field_callback() {
+        global $wpdb;
+
+        $table  = $wpdb->prefix . 'pp_game_schedule_mods';
+        $mod_id = intval($_POST['mod_id'] ?? 0);
+        $fields = isset($_POST['fields']) ? (array) $_POST['fields'] : [];
+
+        if ($mod_id <= 0 || empty($fields)) {
+            wp_send_json_error(['message' => 'Missing mod_id or fields']);
+            wp_die();
+        }
+
+        $fields = array_map('sanitize_key', $fields);
+
+        // When reverting date or time, also drop the server-computed companions
+        if (in_array('game_date', $fields, true) || in_array('game_time', $fields, true)) {
+            $fields = array_unique(array_merge($fields, ['game_date', 'game_time', 'game_timestamp', 'game_date_day']));
+        }
+
+        $mod = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id = %d LIMIT 1",
+            $mod_id
+        ), ARRAY_A);
+
+        if (!$mod) {
+            wp_send_json_error(['message' => 'Mod record not found']);
+            wp_die();
+        }
+
+        $edit_data = json_decode($mod['edit_data'], true) ?: [];
+
+        foreach ($fields as $field) {
+            unset($edit_data[$field]);
+        }
+
+        // Check if any meaningful (non-internal) fields remain
+        $internal = ['external_id', 'game_timestamp', 'game_date_day'];
+        $remaining = array_diff_key($edit_data, array_flip($internal));
+
+        if (empty($remaining)) {
+            $wpdb->delete($table, ['id' => $mod_id], ['%d']);
+        } else {
+            $wpdb->update(
+                $table,
+                ['edit_data' => wp_json_encode($edit_data), 'updated_at' => current_time('mysql')],
+                ['id' => $mod_id]
+            );
+        }
+
+        wp_send_json_success(['message' => 'Field reverted']);
+        wp_die();
+    }
+
+    function ajax_reset_all_edits_callback() {
+        global $wpdb;
+
+        $table_mods = $wpdb->prefix . 'pp_game_schedule_mods';
+        $wpdb->query( "TRUNCATE TABLE $table_mods" );
+
+        // Rebuild for_display from existing raw data — no external API calls needed.
+        $utils = new Puck_Press_Schedule_Wpdb_Utils();
+        $utils->reset_table( 'pp_game_schedule_for_display' );
+        $importer = new Puck_Press_Schedule_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+
+        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
+        $games_table_html = $games_table_card->render_game_schedule_admin_preview();
+
+        $preview_card = Puck_Press_Schedule_Admin_Preview_Card::create_and_init();
+        $preview_html = $preview_card->get_all_templates_html();
+
+        $slider_card = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init();
+        $slider_html = $slider_card->get_all_templates_html();
+
+        $edits_table_html = $this->render_edits_table();
+
+        wp_send_json_success( [
+            'message'                       => 'All edits reset.',
+            'refreshed_game_table_ui'       => $games_table_html,
+            'refreshed_game_preview_html'   => $preview_html,
+            'refreshed_slider_preview_html' => $slider_html,
+            'refreshed_edits_table_html'    => $edits_table_html,
+        ] );
         wp_die();
     }
 
