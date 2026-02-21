@@ -113,11 +113,49 @@
 
         // ── Font fields ──────────────────────────────────────────────────────
 
+        const GOOGLE_FONTS = [
+            'Anton',
+            'Barlow',
+            'Barlow Condensed',
+            'Bebas Neue',
+            'Exo 2',
+            'Fjalla One',
+            'Inter',
+            'Lato',
+            'Merriweather',
+            'Montserrat',
+            'Nunito',
+            'Open Sans',
+            'Oswald',
+            'Playfair Display',
+            'Poppins',
+            'PT Sans',
+            'Raleway',
+            'Roboto',
+            'Roboto Condensed',
+            'Russo One',
+            'Source Sans 3',
+            'Teko',
+            'Ubuntu',
+        ];
+
+        function loadGoogleFont(fontName) {
+            const id = 'pp-admin-gf-' + fontName.replace(/\s+/g, '-').toLowerCase();
+            if (document.getElementById(id)) return;
+            const link = document.createElement('link');
+            link.id  = id;
+            link.rel = 'stylesheet';
+            link.href = 'https://fonts.googleapis.com/css2?family='
+                + encodeURIComponent(fontName)
+                + ':wght@400;600;700;800&display=swap';
+            document.head.appendChild(link);
+        }
+
         function getFontSettings() {
             const settings = {};
             $('#pp-roster-dynamic-font-fields .pp-font-form-group').each(function () {
                 const fontKey = $(this).data('font-key');
-                const value   = $(this).find('.pp-font-value').val().trim();
+                const value   = ($(this).find('.pp-font-value').val() || '').trim();
                 settings[fontKey] = value;
             });
             return settings;
@@ -130,33 +168,58 @@
         function generateFontFields(templateKey) {
             const fonts  = (ppRosterTemplates.fontSettings && ppRosterTemplates.fontSettings[templateKey]) || {};
             const labels = (ppRosterTemplates.fontLabels   && ppRosterTemplates.fontLabels[templateKey])   || {};
-            const $container = $('#pp-roster-dynamic-font-fields').empty();
+            const $container = $('#pp-roster-dynamic-font-fields');
+
+            // Destroy any existing Select2 instances before clearing
+            $container.find('select.pp-font-value').each(function () {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2('destroy');
+                }
+            });
+            $container.empty();
 
             Object.entries(fonts).forEach(([fontKey, fontValue]) => {
                 const fontLabel = labels[fontKey]
                     || fontKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+                let options = '<option value="">— Theme Default —</option>';
+                GOOGLE_FONTS.forEach(font => {
+                    const sel = font === fontValue ? ' selected' : '';
+                    options += `<option value="${font}"${sel}>${font}</option>`;
+                });
+
                 const field = `
                     <div class="pp-font-form-group" data-font-key="${fontKey}">
                         <label class="pp-form-label">${fontLabel}</label>
                         <div class="pp-font-input-group">
-                            <input type="text"
-                                   class="pp-font-value"
-                                   id="pp-${templateKey}-${fontKey}-font-input"
-                                   value="${fontValue}"
-                                   placeholder="e.g. Roboto, Open Sans (leave blank for theme font)">
+                            <select class="pp-font-value"
+                                    id="pp-${templateKey}-${fontKey}-font-select">
+                                ${options}
+                            </select>
                         </div>
                     </div>
                 `;
                 $container.append(field);
-            });
 
-            // Live preview: update CSS var as the user types
-            $container.find('.pp-font-value').off('input').on('input', function () {
-                const fontKey   = $(this).closest('.pp-font-form-group').data('font-key');
-                const fontName  = $(this).val().trim();
-                const cssValue  = fontFamilyCss(fontName);
-                document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
-                document.documentElement.style.setProperty('--pp-pd-font-family', cssValue);
+                const $select = $(`#pp-${templateKey}-${fontKey}-font-select`);
+
+                $select.select2({
+                    dropdownParent: $paletteModal,
+                    width: '100%',
+                });
+
+                // Pre-load font in admin so preview renders immediately on modal open
+                if (fontValue) loadGoogleFont(fontValue);
+
+                // Live preview via Select2's own event — avoids stripping Select2's
+                // internal native change handler which drives its display update.
+                $select.on('select2:select', function () {
+                    const fontName = ($(this).val() || '').trim();
+                    const cssValue = fontFamilyCss(fontName);
+                    document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
+                    document.documentElement.style.setProperty('--pp-pd-font-family', cssValue);
+                    if (fontName) loadGoogleFont(fontName);
+                });
             });
         }
 

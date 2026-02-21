@@ -302,7 +302,7 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-roster-sources', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-edits', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-edits.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-add-player', plugin_dir_url(__FILE__) . 'js/roster/puck-press-add-player.js', array('jquery', 'puck-press-roster-edits'), $this->version, false);
-				wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
 				break;
 			case 'game-summary':
