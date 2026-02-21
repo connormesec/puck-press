@@ -1,354 +1,343 @@
 (function ($) {
-	let currentPlayerData = {
-		name: null,
-		number: null,
-		pos: null,
-		ht: null,
-		wt: null,
-		shoots: null,
-		hometown: null,
-		headshot_link: null,
-		last_team: null,
-		year: null,
-		major: null
-	}
 
-	jQuery(document).ready(function ($) {
-		const dimEditListStyles = () => {
-			const $el = $('#pp-card-roster-preview, #pp-card-raw-roster-table , #pp-card-roster-edits-table, .pp-modal');
-			$el.css({
-				'opacity': '0.5',
-				'pointer-events': 'none'
-			});
-		};
-		const restoreEditListStyles = () => {
-			$('#pp-card-roster-preview, #pp-card-raw-roster-table , #pp-card-roster-edits-table, .pp-modal').css({
-				'opacity': '1',
-				'pointer-events': 'auto' // re-enables interaction
-			});
-		}
+    var currentEditingPlayerId = null;
+    var originalPlayerValues   = {};
 
+    // Exposed globally so puck-press-add-player.js and puck-press-admin-shared.js can call it
+    window.applyEditHighlights = function () {
+        $('#pp-roster-edits-table tbody tr:not(.pp-row-deleted)').each(function () {
+            var $row      = $(this);
+            var overrides = [];
+            try { overrides = JSON.parse($row.attr('data-overrides') || '[]'); } catch (e) {}
+            var modId = $row.attr('data-mod-id');
 
-		//############################################################//
-		//                                                            //
-		//               Edit Player Modal functionality              //
-		//                                                            //
-		//############################################################//
+            $row.find('td[data-field]').each(function () {
+                var $td    = $(this);
+                var field  = $td.attr('data-field');
+                if (overrides.indexOf(field) !== -1) {
+                    $td.addClass('pp-cell-overridden');
+                    if (!$td.find('.pp-revert-btn').length) {
+                        $td.append(
+                            '<button class="pp-revert-btn" title="Revert to original" ' +
+                            'data-mod-id="' + modId + '" data-fields="' + field + '">&#x2715;</button>'
+                        );
+                    }
+                } else {
+                    $td.removeClass('pp-cell-overridden');
+                    $td.find('.pp-revert-btn').remove();
+                }
+            });
+        });
+    };
 
-		const $editPlayerModal = $('#pp-edit-player-modal');
-		const $closeEditPlayerModalBtn = $('#pp-edit-player-modal-close');
-		const $cancelEditPlayerBtn = $('#pp-cancel-edit-player');
-		const $confirmBtn_editPlayerModal = $('#pp-confirm-edit-player');
-		const $editPlayerForm = $('#pp-edit-player-form');
-		let currentEditingPlayerId = null;
+    jQuery(document).ready(function ($) {
 
+        //============================================================//
+        //   Dim / restore helpers                                     //
+        //============================================================//
+        var dimEditListStyles = function () {
+            $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
+                'opacity': '0.5',
+                'pointer-events': 'none'
+            });
+        };
+        var restoreEditListStyles = function () {
+            $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
+                'opacity': '1',
+                'pointer-events': 'auto'
+            });
+        };
 
-		// Open modal
-		$(document).on('click', '#pp-edit-player-button', function () {
-			const playerId = $(this).data('player-id');
-			currentEditingPlayerId = playerId;
-			const $button = $(this);
-			populateEditPlayerModal($button); //set the current player data
-			console.log('Edit player button clicked for player id:', currentEditingPlayerId);
-			$editPlayerModal.css('display', 'flex');
-		});
+        var afterRefresh = function () {
+            restoreEditListStyles();
+            applyEditHighlights();
+        };
 
-		// Close modal function
-		function closeEditPlayerModal() {
-			$editPlayerModal.css('display', 'none');
-			$editPlayerForm[0].reset();
-		}
+        //============================================================//
+        //   Apply highlights on page load                            //
+        //============================================================//
+        applyEditHighlights();
 
-		$closeEditPlayerModalBtn.on('click', closeEditPlayerModal);
-		$cancelEditPlayerBtn.on('click', closeEditPlayerModal);
+        //============================================================//
+        //   Edit Player Modal                                         //
+        //============================================================//
+        var $editPlayerModal = $('#pp-edit-player-modal');
+        var $editPlayerForm  = $('#pp-edit-player-form');
 
-		// Close modal when clicking outside
-		enableClickOutsideToClose($editPlayerModal, closeEditPlayerModal);
+        function closeEditPlayerModal() {
+            $editPlayerModal.css('display', 'none');
+            if ($editPlayerForm.length) { $editPlayerForm[0].reset(); }
+        }
 
-		// Form submission
-		$confirmBtn_editPlayerModal.on('click', function () {
-			// Check form validity
-			if (!$editPlayerForm[0].checkValidity()) {
-				$editPlayerForm[0].reportValidity();
-				return;
-			}
+        $('#pp-edit-player-modal-close').on('click', closeEditPlayerModal);
+        $('#pp-cancel-edit-player').on('click', closeEditPlayerModal);
+        enableClickOutsideToClose($editPlayerModal, closeEditPlayerModal);
 
-			dimEditListStyles();
+        function openEditModalForPlayer(playerId) {
+            currentEditingPlayerId = playerId;
+            originalPlayerValues   = {};
+            if ($editPlayerForm.length) { $editPlayerForm[0].reset(); }
+            $editPlayerModal.css('display', 'flex');
 
-			const newValues = {
-				name: $('#pp-edit-player-name').val(),
-				number: $('#pp-edit-player-number').val(),
-				pos: $('#pp-edit-player-position').val(),
-				ht: $('#pp-edit-player-height').val(),
-				wt: $('#pp-edit-player-weight').val(),
-				shoots: $('#pp-edit-player-shoots').val(),
-				hometown: $('#pp-edit-player-hometown').val(),
-				last_team: $('#pp-edit-player-last-team').val(),
-				year: $('#pp-edit-player-year').val(),
-				major: $('#pp-edit-player-major').val(),
-				headshot_link: $('#pp-edit-player-headshot-url').val(),
-			};
+            $.ajax({
+                url: ajaxurl,
+                method: 'POST',
+                data: { action: 'pp_get_player_data', player_id: playerId },
+                success: function (response) {
+                    if (response.success && response.data && response.data.player) {
+                        prefillEditPlayerForm(response.data.player);
+                    }
+                }
+            });
+        }
 
-			// Compare and only keep changed fields
-			const changedFields = {};
-			Object.keys(newValues).forEach(key => {
-				if (newValues[key] !== currentPlayerData[key]) {
-					changedFields[key] = newValues[key];
-				}
-			});
+        function prefillEditPlayerForm(player) {
+            if (!player) return;
 
-			// If nothing changed, skip submission
-			if (Object.keys(changedFields).length === 0) {
-				alert('No changes detected.');
-				restoreEditListStyles();
-				return;
-			}
+            var posMap    = { 'F': 'forward', 'D': 'defense', 'G': 'goalie' };
+            var shootsMap = { 'R': 'right', 'L': 'left' };
+            var yearMap   = {
+                'FR': 'freshman', 'FRESHMAN': 'freshman',
+                'SO': 'sophomore', 'SOPHOMORE': 'sophomore',
+                'JR': 'junior', 'JUNIOR': 'junior',
+                'SR': 'senior', 'SENIOR': 'senior',
+                'GR': 'graduate', 'GRADUATE': 'graduate'
+            };
 
-			const edit_data = {
-				edit_action: 'update',
-				fields: {
-					...changedFields,
-					external_id: currentEditingPlayerId
-				}
-			};
+            var nameVal      = player.name || '';
+            var numberVal    = player.number || '';
+            var posRaw       = (player.pos || '').toUpperCase();
+            var posVal       = posMap[posRaw] || posRaw.toLowerCase();
+            var htVal        = player.ht || '';
+            var wtVal        = player.wt || '';
+            var shootsRaw    = (player.shoots || '').toUpperCase();
+            var shootsVal    = shootsMap[shootsRaw] || shootsRaw.toLowerCase();
+            var hometownVal  = player.hometown || '';
+            var lastTeamVal  = player.last_team || '';
+            var yearRaw      = (player.year_in_school || '').toUpperCase();
+            var yearVal      = yearMap[yearRaw] || yearRaw.toLowerCase() || '';
+            var majorVal     = player.major || '';
+            var headshotVal  = player.headshot_link || '';
 
-			console.log('Edit data:', edit_data);
+            $('#pp-edit-player-name').val(nameVal);
+            $('#pp-edit-player-number').val(numberVal);
+            $('#pp-edit-player-position').val(posVal);
+            $('#pp-edit-player-height').val(htVal);
+            $('#pp-edit-player-weight').val(wtVal);
+            $('#pp-edit-player-shoots').val(shootsVal);
+            $('#pp-edit-player-hometown').val(hometownVal);
+            $('#pp-edit-player-last-team').val(lastTeamVal);
+            $('#pp-edit-player-year').val(yearVal);
+            $('#pp-edit-player-major').val(majorVal);
+            $('#pp-edit-player-headshot-url').val(headshotVal);
 
-			const formData = new FormData();
-			formData.append('action', 'pp_update_player_edits');
-			formData.append('edit_data', JSON.stringify(edit_data));
+            originalPlayerValues = {
+                name: nameVal, number: numberVal, pos: posVal, ht: htVal,
+                wt: wtVal, shoots: shootsVal, hometown: hometownVal,
+                last_team: lastTeamVal, year_in_school: yearVal,
+                major: majorVal, headshot_link: headshotVal
+            };
+        }
 
-			$.ajax({
-				url: ajaxurl,
-				method: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				success: function (response) {
-					console.log(response)
-					if (response.success) {
-						console.log('Success:', response);
-						// Optionally refresh the games table or perform other actions
-						closeEditPlayerModal()
-						$.ajax({
-							url: ajaxurl,
-							method: 'POST',
-							data: {
-								action: 'ajax_refresh_roster_edits_table_card'
-							},
-							success: function (response) {
-								if (response.success) {
-									$('#pp-edits-table').html(response.data); // Replace with updated HTML
-									refreshGamesTable().then(() => {
-										restoreEditListStyles();
-									});
-								} else {
-									console.error(response.data?.message || 'Unknown error');;
-								}
-							},
-							error: function (err) {
-								console.error('AJAX error:', err);
-								restoreEditListStyles();
-							}
-						});
-					} else {
-						console.error('Error:', response);
-						alert('Failed to add edit.');
-					}
-				},
-				error: function (err) {
-					console.error('Error:', err);
-					alert('Failed to add edit.');
-				}
-			});
+        // Open edit modal on edit button click
+        $(document).on('click', '.pp-edit-player-btn', function () {
+            var playerId = $(this).data('player-id');
+            openEditModalForPlayer(playerId);
+        });
 
-			closeEditPlayerModal();
+        // Edit modal form submission
+        $('#pp-confirm-edit-player').on('click', function () {
+            if ($editPlayerForm.length && !$editPlayerForm[0].checkValidity()) {
+                $editPlayerForm[0].reportValidity();
+                return;
+            }
 
-		});
+            var newValues = {
+                name:           $('#pp-edit-player-name').val(),
+                number:         $('#pp-edit-player-number').val(),
+                pos:            $('#pp-edit-player-position').val(),
+                ht:             $('#pp-edit-player-height').val(),
+                wt:             $('#pp-edit-player-weight').val(),
+                shoots:         $('#pp-edit-player-shoots').val(),
+                hometown:       $('#pp-edit-player-hometown').val(),
+                last_team:      $('#pp-edit-player-last-team').val(),
+                year_in_school: $('#pp-edit-player-year').val(),
+                major:          $('#pp-edit-player-major').val(),
+                headshot_link:  $('#pp-edit-player-headshot-url').val()
+            };
 
-		//############################################################//
-		//                                                            //
-		//               Delete Player Button Funcitonality		      //
-		//                                                            //
-		//############################################################//
+            var changedFields = {};
+            Object.keys(newValues).forEach(function (key) {
+                if (newValues[key] !== (originalPlayerValues[key] || '')) {
+                    changedFields[key] = newValues[key];
+                }
+            });
 
-		$(document).on('click', '#pp-delete-player-button', function () {
-			dimEditListStyles();
+            if (Object.keys(changedFields).length === 0) {
+                alert('No changes detected.');
+                return;
+            }
 
-			const playerId = $(this).data('player-id');
+            var editData = {
+                edit_action: 'update',
+                fields: Object.assign({ external_id: currentEditingPlayerId }, changedFields)
+            };
 
-			const edit_data = {
-				edit_action: 'delete',
-				fields: {
-					external_id: playerId,
-				}
-			}
-			const formData = new FormData();
-			formData.append('action', 'pp_update_player_edits');
-			formData.append('edit_data', JSON.stringify(edit_data));
+            dimEditListStyles();
+            closeEditPlayerModal();
 
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				success: function (response) {
-					if (response.success) {
-						console.log('Player deleted successfully.');
-						refreshGamesTable().then(() => {
-							restoreEditListStyles();
-						});
-					} else {
-						console.error('Error deleting edit:', response.data);
-						alert('There was an error deleting the edit.');
-					}
-				},
-				error: function () {
-					alert('There was an error with the AJAX request to delete the edit.');
-				}
-			});
+            var formData = new FormData();
+            formData.append('action', 'pp_update_player_edits');
+            formData.append('edit_data', JSON.stringify(editData));
 
-		});
+            $.ajax({
+                url: ajaxurl, method: 'POST', data: formData,
+                processData: false, contentType: false,
+                success: function (response) {
+                    if (response.success && response.data && response.data.roster_table_html) {
+                        $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                        afterRefresh();
+                    } else {
+                        restoreEditListStyles();
+                        if (!response.success) {
+                            alert('Failed to save edit: ' + (response.data && response.data.message || 'Unknown error'));
+                        }
+                    }
+                },
+                error: function () {
+                    restoreEditListStyles();
+                    alert('Error saving edit.');
+                }
+            });
+        });
 
+        //============================================================//
+        //   Revert field button                                       //
+        //============================================================//
+        $(document).on('click', '.pp-revert-btn', function (e) {
+            e.stopPropagation();
+            var modId  = $(this).data('mod-id');
+            var fields = String($(this).data('fields')).split(',');
+            dimEditListStyles();
 
-		//############################################################//
-		//                                                            //
-		//               Delete Edit From Edit Table Button           //
-		//                                                            //
-		//############################################################//
+            $.ajax({
+                url: ajaxurl, type: 'POST',
+                data: { action: 'pp_revert_player_field', mod_id: modId, fields: fields },
+                success: function (response) {
+                    if (response.success && response.data && response.data.roster_table_html) {
+                        $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                        afterRefresh();
+                    } else {
+                        restoreEditListStyles();
+                    }
+                },
+                error: function () { restoreEditListStyles(); }
+            });
+        });
 
-		$(document).on('click', '#pp-delete-edit-button', function () {
-			const confirmed = confirm('Are you sure you want to delete this item?');
-			if (!confirmed) return;
+        //============================================================//
+        //   Restore deleted player button                             //
+        //============================================================//
+        $(document).on('click', '.pp-restore-player-btn', function () {
+            var deleteModId = $(this).data('delete-mod-id');
+            dimEditListStyles();
 
-			const id = $(this).data('edit-id');
-			const $nearestRow = $(this).closest('tr');
+            $.ajax({
+                url: ajaxurl, type: 'POST',
+                data: { action: 'ajax_delete_player_edit', id: deleteModId },
+                success: function (response) {
+                    if (response.success) {
+                        if (response.data && response.data.roster_table_html) {
+                            $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                            afterRefresh();
+                        } else {
+                            refreshGamesTable(afterRefresh, restoreEditListStyles);
+                        }
+                    } else {
+                        restoreEditListStyles();
+                        alert('Failed to restore player.');
+                    }
+                },
+                error: function () { restoreEditListStyles(); }
+            });
+        });
 
-			dimEditListStyles();
+        //============================================================//
+        //   Delete player button                                      //
+        //============================================================//
+        $(document).on('click', '.pp-delete-player-btn', function () {
+            var playerId   = $(this).data('player-id');
+            var sourceType = $(this).data('source-type');
 
-			$.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'ajax_delete_player_edit', // The action hook
-					id: id, // The ID of the edit to delete
-				},
-				success: function (response) {
-					if (response.success) {
-						// Remove the row from the HTML table
-						$nearestRow.remove();
-						refreshGamesTable(
-							function (refreshResponse) {
-								if (refreshResponse.success) {
-									restoreEditListStyles();
-									console.log('All sources refreshed successfully.');
-								} else {
-									alert('Failed to refresh all sources.');
-								}
-							},
-							function () {
-								alert('An error occurred while refreshing all sources.');
-							}).then(() => {
-								restoreEditListStyles();
-							});
-						console.log('Edit deleted successfully.');
-					} else {
-						console.error('Error deleting edit:', response.data);
-						alert('There was an error deleting the edit.');
-					}
-				},
-				error: function () {
-					alert('There was an error with the AJAX request to delete the edit.');
-				}
-			});
-		});
-	});
+            if (!confirm('Are you sure you want to delete this player?')) return;
 
-	//############################################################//
-	//                                                            //
-	//           PrePopulate the modal with values		          //
-	//                                                            //
-	//############################################################//
-	function populateEditPlayerModal($button) {
-		const $row = $button.closest('tr');
-		const tds = $row.find('td');
+            dimEditListStyles();
 
-		currentPlayerData.name = $(tds[3]).text().trim();
-		$('#pp-edit-player-name').val(currentPlayerData.name);
-		currentPlayerData.number = $(tds[2]).text().trim();
-		$('#pp-edit-player-number').val(currentPlayerData.number);
+            if (sourceType === 'manual') {
+                // Delete the insert mod row entirely
+                $.ajax({
+                    url: ajaxurl, type: 'POST',
+                    data: { action: 'pp_delete_manual_player', player_id: playerId },
+                    success: function (response) {
+                        if (response.success && response.data && response.data.roster_table_html) {
+                            $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                            afterRefresh();
+                        } else {
+                            restoreEditListStyles();
+                            alert('Failed to delete player.');
+                        }
+                    },
+                    error: function () { restoreEditListStyles(); }
+                });
+            } else {
+                // Sourced player — add a delete mod
+                var editData = {
+                    edit_action: 'delete',
+                    fields: { external_id: playerId }
+                };
+                var formData = new FormData();
+                formData.append('action', 'pp_update_player_edits');
+                formData.append('edit_data', JSON.stringify(editData));
 
-		// Normalize position abbreviations (F, D, G) to full values if needed
-		const posMap = { 'F': 'forward', 'D': 'defense', 'G': 'goalie' };
-		const rawPos = $(tds[4]).text().trim().toUpperCase();
-		currentPlayerData.pos = posMap[rawPos] || rawPos.toLowerCase();
-		$('#pp-edit-player-position').val(currentPlayerData.pos);
+                $.ajax({
+                    url: ajaxurl, method: 'POST', data: formData,
+                    processData: false, contentType: false,
+                    success: function (response) {
+                        if (response.success && response.data && response.data.roster_table_html) {
+                            $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                            afterRefresh();
+                        } else {
+                            restoreEditListStyles();
+                        }
+                    },
+                    error: function () { restoreEditListStyles(); }
+                });
+            }
+        });
 
-		currentPlayerData.ht = $(tds[5]).text().trim();
-		$('#pp-edit-player-height').val(currentPlayerData.ht);
-		currentPlayerData.wt = $(tds[6]).text().trim();
-		$('#pp-edit-player-weight').val(currentPlayerData.wt);
+        //============================================================//
+        //   Helper: click-outside-to-close                           //
+        //============================================================//
+        function enableClickOutsideToClose($modal, closeCallback) {
+            var mouseDownOutside = false;
 
-		// Normalize shoots (R/L)
-		const shootsMap = { 'R': 'right', 'L': 'left' };
-		const rawShoots = $(tds[7]).text().trim().toUpperCase();
-		currentPlayerData.shoots = shootsMap[rawShoots] || rawShoots.toLowerCase();
-		$('#pp-edit-player-shoots').val(currentPlayerData.shoots);
+            function onMouseDown(e) {
+                mouseDownOutside = (e.target === $modal[0]);
+            }
+            function onMouseUp(e) {
+                if (e.target === $modal[0] && mouseDownOutside) {
+                    closeCallback();
+                }
+            }
 
-		currentPlayerData.hometown = $(tds[8]).text().trim();
-		$('#pp-edit-player-hometown').val(currentPlayerData.hometown);
-		currentPlayerData.headshot_link = $(tds[9]).text().trim();
-		$('#pp-edit-player-headshot-url').val(currentPlayerData.headshot_link);
-		currentPlayerData.last_team = $(tds[10]).text().trim();
-		$('#pp-edit-player-last-team').val(currentPlayerData.last_team);
+            $modal.on('mousedown.modalClose', onMouseDown);
+            $modal.on('mouseup.modalClose', onMouseUp);
 
-		// Normalize year if possible
-		const yearMap = {
-			'FR': 'freshman', 'FRESHMAN': 'freshman',
-			'SO': 'sophomore', 'SOPHOMORE': 'sophomore',
-			'JR': 'junior', 'JUNIOR': 'junior',
-			'SR': 'senior', 'SENIOR': 'senior',
-			'GR': 'graduate', 'GRADUATE': 'graduate'
-		};
-		const rawYear = $(tds[11]).text().trim().toUpperCase();
-		currentPlayerData.year = yearMap[rawYear] || null;
-		$('#pp-edit-player-year').val(currentPlayerData.year);
+            return function () {
+                $modal.off('mousedown.modalClose', onMouseDown);
+                $modal.off('mouseup.modalClose', onMouseUp);
+            };
+        }
+    });
 
-		currentPlayerData.major = $(tds[12]).text().trim();
-		$('#pp-edit-player-major').val(currentPlayerData.major);
-	}
-
-	//############################################################//
-	//                                                            //
-	//               Helper Functions				              //
-	//                                                            //
-	//############################################################//
-	function enableClickOutsideToClose($modal, closeCallback) {
-		let mouseDownOutside = false;
-
-		function onMouseDown(e) {
-			if (e.target === $modal[0]) {
-				mouseDownOutside = true;
-			} else {
-				mouseDownOutside = false;
-			}
-		}
-
-		function onMouseUp(e) {
-			if (e.target === $modal[0] && mouseDownOutside) {
-				closeCallback();
-			}
-		}
-
-		$modal.on('mousedown.modalClose', onMouseDown);
-		$modal.on('mouseup.modalClose', onMouseUp);
-
-		// Optional: return a cleanup function
-		return function disableClickOutsideToClose() {
-			$modal.off('mousedown.modalClose', onMouseDown);
-			$modal.off('mouseup.modalClose', onMouseUp);
-		};
-	}
 })(jQuery);
-

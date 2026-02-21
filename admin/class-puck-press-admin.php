@@ -137,23 +137,24 @@ class Puck_Press_Admin
 		$utils = new Puck_Press_Roster_Wpdb_Utils;
 		$utils->reset_table('pp_roster_raw');
 		$utils->reset_table('pp_roster_for_display');
+		$utils->reset_table('pp_roster_stats');
 
 		$importer = new Puck_Press_Roster_Source_Importer();
 		$raw_table_results = $importer->populate_raw_roster_table_from_sources();
 		$display_roster_table_results = $importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
-		$refresh_roster_table_ui = new Puck_Press_Raw_Roster_Table_Card;
-		$refreshed_roster_table_ui = $refresh_roster_table_ui->render_roster_admin_preview();
-
 		$refresh_roster_preview = Puck_Press_Roster_Admin_Preview_Card::create_and_init();
 		$refresh_roster_preview_html = $refresh_roster_preview->get_all_templates_html();
+
+		$refresh_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card();
+		$refreshed_edits_table_html = $refresh_edits_table->render_edits_table();
 
 		$response_data = array(
 			'raw_roster_table_results'     => $raw_table_results,
 			'display_roster_table_results' => $display_roster_table_results,
-			'refreshed_roster_table_ui'    => $refreshed_roster_table_ui,
 			'refreshed_roster_preview_html' => $refresh_roster_preview_html,
+			'refreshed_edits_table_html'   => $refreshed_edits_table_html,
 		);
 
 		// "No active sources" is a valid state. Send success so the JS updates
@@ -291,6 +292,7 @@ class Puck_Press_Admin
 			case 'roster':
 				wp_enqueue_script('puck-press-roster-sources', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-edits', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-edits.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-add-player', plugin_dir_url(__FILE__) . 'js/roster/puck-press-add-player.js', array('jquery', 'puck-press-roster-edits'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
 				break;
@@ -394,6 +396,10 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_update_player_edits', [$roster_edits_card, 'ajax_save_player_edit_callback']);
 		add_action('wp_ajax_ajax_delete_player_edit', [$roster_edits_card, 'ajax_delete_player_edit_callback']);
 		add_action('wp_ajax_ajax_refresh_roster_edits_table_card', [$roster_edits_card, 'ajax_refresh_roster_edits_table_card_callback']);
+		add_action('wp_ajax_pp_get_player_data',      [$roster_edits_card, 'ajax_get_player_data_callback']);
+		add_action('wp_ajax_pp_revert_player_field',  [$roster_edits_card, 'ajax_revert_player_field_callback']);
+		add_action('wp_ajax_pp_add_manual_player',    [$roster_edits_card, 'ajax_add_manual_player_callback']);
+		add_action('wp_ajax_pp_delete_manual_player', [$roster_edits_card, 'ajax_delete_manual_player_callback']);
 
 		$game_summary_post_display = new Puck_Press_Admin_Game_Summary_Post_Display();
 		add_action('wp_ajax_pp_test_openai_api', [$game_summary_post_display, 'ajax_test_openai']);

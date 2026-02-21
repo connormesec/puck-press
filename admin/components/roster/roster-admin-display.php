@@ -19,9 +19,9 @@ if (!defined('ABSPATH')) {
 class Puck_Press_Roster_Admin_Display
 {
     private $roster_data_sources;
-    private $roster_raw_table;
     private $roster_edits_table;
     private $roster_preview_card;
+    private $roster_stats_card;
     private $last_run;
 
     public function __construct()
@@ -31,12 +31,7 @@ class Puck_Press_Roster_Admin_Display
             'subtitle' => 'Manage external data sources for the roster',
             'id' => 'data-sources-table'
         ]);
-        $this->roster_raw_table = new Puck_Press_Raw_Roster_Table_Card([
-            'title' => 'Raw Roster',
-            'subtitle' => 'Manage your roster',
-            'id' => 'raw-roster-table'
-        ]);
-        $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
+$this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
             'title' => 'Roster Edits',
             'subtitle' => 'Manage your roster edits',
             'id' => 'roster-edits-table'
@@ -47,6 +42,11 @@ class Puck_Press_Roster_Admin_Display
             'id' => 'roster-preview'
         ]);
         $this->roster_preview_card->init();
+        $this->roster_stats_card = new Puck_Press_Roster_Admin_Stats_Table_Card([
+            'title' => 'Player Stats',
+            'subtitle' => 'Stats imported from the configured stats URL',
+            'id' => 'roster-stats-table'
+        ]);
         $this->last_run = get_option('puck_press_cron_last_run', 'Never');
     }
 
@@ -111,11 +111,11 @@ class Puck_Press_Roster_Admin_Display
 
                 <?php echo $this->roster_data_sources->render() ?>
 
-                <?php echo $this->roster_raw_table->render() ?>
-
-                <?php echo $this->roster_edits_table->render() ?>
+<?php echo $this->roster_edits_table->render() ?>
 
                 <?php echo $this->roster_preview_card->render() ?>
+
+                <?php echo $this->roster_stats_card->render() ?>
 
             </main>
             <?php
@@ -123,6 +123,7 @@ class Puck_Press_Roster_Admin_Display
             $source_modal = new Puck_Press_Roster_Add_Source_Modal('pp-add-source-modal');
             echo $source_modal->render();
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-edit-player-modal.php';
+            include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-add-player-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-color-palette-modal.php';
             ?>
 

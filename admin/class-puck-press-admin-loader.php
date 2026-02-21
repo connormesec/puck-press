@@ -33,6 +33,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-source-importer.php';
 		
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-source-importer.php';
@@ -56,9 +57,9 @@ class Puck_Press_Admin_Loader {
 
 		// Roster Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-data-sources-card.php';
-		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-raw-roster-table-card.php';
-		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
+require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-preview-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-stats-table-card.php';
 
 		// Game Summary Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/game-summary-post/game-summary-display-post.php';

@@ -18,6 +18,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         $this->roster_db_utils->maybe_create_or_update_table($this->table_name);
         $this->roster_db_utils->maybe_create_or_update_table('pp_roster_for_display');
         $this->roster_db_utils->maybe_create_or_update_table('pp_roster_raw');
+        $this->roster_db_utils->maybe_create_or_update_table('pp_roster_stats');
     }
 
     public function render_content()
@@ -202,11 +203,12 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         $type   = sanitize_text_field($post['type'] ?? '');
         $active = isset($post['active']) ? intval($post['active']) : 0;
 
-        $url = $csv_content = $other_data = null;
+        $url = $csv_content = $other_data = $stats_url = null;
 
         switch ($type) {
             case 'achaRosterUrl':
-                $url = esc_url_raw($post['url'] ?? '');
+                $url       = esc_url_raw($post['url'] ?? '');
+                $stats_url = !empty($post['stats_url']) ? esc_url_raw($post['stats_url']) : null;
                 break;
 
             case 'usphlRosterUrl':
@@ -236,17 +238,6 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
                 $url = sanitize_file_name($files['csv']['name']);
                 break;
 
-            case 'customPlayer':
-                $json = wp_unslash($post['other_data'] ?? '');
-                $decoded = json_decode($json, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return new WP_Error('json_error', 'Invalid JSON provided');
-                }
-
-                $other_data = wp_json_encode($decoded);
-                break;
-
             default:
                 return new WP_Error('invalid_type', 'Invalid type or file upload error');
         }
@@ -255,6 +246,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
             'name' => $name,
             'type' => $type,
             'source_url_or_path' => $url,
+            'stats_url' => $stats_url,
             'csv_data' => $csv_content,
             'other_data' => $other_data,
             'status' => $active ? 'active' : 'inactive',

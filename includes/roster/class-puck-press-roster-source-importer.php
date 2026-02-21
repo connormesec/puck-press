@@ -35,6 +35,7 @@ class Puck_Press_Roster_Source_Importer
     {
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-wpdb-utils.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-url.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-stats.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-csv-data.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-usphl-url.php';
     }
@@ -70,6 +71,22 @@ class Puck_Press_Roster_Source_Importer
                     $this->results['success_count']++;
                     $this->results['messages'][] = "Imported source: {$source->name}";
                     $this->results['messages'][] = $inserted;
+
+                    // Import stats if a stats URL is configured
+                    if ( ! empty( $source->stats_url ) ) {
+                        $acha_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->stats_url );
+                        if ( is_array( $acha_stats->raw_stats_data ) && ! isset( $acha_stats->raw_stats_data['error'] ) ) {
+                            foreach ( $acha_stats->raw_stats_data as &$stat_row ) {
+                                $stat_row['source'] = $source->name;
+                            }
+                            unset( $stat_row );
+                            $stats_inserted = $this->roster_db_utils->insert_stats_rows( $acha_stats->raw_stats_data );
+                            $this->results['messages'][] = "Imported stats for source: {$source->name}";
+                            $this->results['messages'][] = $stats_inserted;
+                        } else {
+                            $this->results['messages'][] = "Stats import skipped for source: {$source->name} — " . ( $acha_stats->raw_stats_data['error'] ?? 'unknown error' );
+                        }
+                    }
                 } elseif ($source->type === 'usphlRosterUrl') {
                     $raw_usphl_data = new Puck_Press_Roster_Process_Usphl_Url($source->source_url_or_path);
                     //append source name to each row
@@ -82,32 +99,6 @@ class Puck_Press_Roster_Source_Importer
                     $this->results['success_count']++;
                     $this->results['messages'][] = "Imported source: {$source->name}";
                     $this->results['messages'][] = $inserted;
-                } elseif ($source->type === 'customPlayer') {
-                    $other_data = json_decode($source->other_data, true);
-
-                    $playerArr = [
-                        [
-                            'source' => $source->name,
-                            'player_id' => "custom_player_{$other_data['name']}",
-                            'name' => $other_data['name'],
-                            'headshot_link' => $other_data['headshot_link'],
-                            'number' => $other_data['number'],
-                            'pos' => $other_data['pos'],
-                            'ht' => $other_data['ht'],
-                            'wt' => $other_data['wt'],
-                            'shoots' => $other_data['shoots'],
-                            'hometown' => $other_data['hometown'],
-                            'last_team' => $other_data['last_team'],
-                            'year_in_school' => $other_data['year'],
-                            'major' => $other_data['major']
-                        ]
-                    ];
-                    $inserted = $this->roster_db_utils->insert_multiple_roster_rows($playerArr);
-                    $this->results['success_count']++;
-                    $this->results['messages'][] = "Imported source: {$source->name}";
-                    $this->results['messages'][] = $inserted;
-                    $this->results['messages'][] = $other_data;
-                    $this->results['messages'][] = $playerArr;
                 } elseif ($source->type === 'csv') {
                     $csv_data = $source->csv_data ?? null;
                     $process_csv = new Puck_Press_Roster_Process_Csv_Data($csv_data, $source->name);
@@ -143,6 +134,9 @@ class Puck_Press_Roster_Source_Importer
         $table_a = 'pp_roster_raw';
         $table_b = 'pp_roster_mods'; // Edits
         $table_c = 'pp_roster_for_display'; // Result
+
+        // Clear display table for a clean rebuild
+        $this->roster_db_utils->truncate_table($table_c);
 
         // Fetch all base data
         $originals = $this->roster_db_utils->get_all_table_data($table_a, 'ARRAY_A') ?? [];
@@ -186,6 +180,18 @@ class Puck_Press_Roster_Source_Importer
 
             // Insert or update into table_c
             $this->roster_db_utils->insert_or_replace_row($table_c, $row);
+        }
+
+        // Handle manual (insert) players — they don't exist in raw data
+        foreach ($edits as $edit) {
+            if (strtolower($edit['edit_action'] ?? '') === 'insert') {
+                $edit_data = json_decode($edit['edit_data'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($edit_data)) {
+                    $edit_data['source'] = $edit_data['source'] ?? 'Manual';
+                    $this->roster_db_utils->insert_or_replace_row($table_c, $edit_data);
+                    $results[] = "Inserted manual player: " . ($edit_data['player_id'] ?? 'unknown');
+                }
+            }
         }
 
         return $results;

@@ -16,14 +16,17 @@ function refreshGamesTable(successCallback, errorCallback) {
                 if (response.success) {
                     // Replace the table with the refreshed game table from the response
                     console.log(response.data);
-                    (jQuery)('#pp-roster-table').html(response.data.refreshed_roster_table_ui);
                     (jQuery)('#pp-roster-preview').html(response.data.refreshed_roster_preview_html);
+                    if (response.data.refreshed_edits_table_html) {
+                        (jQuery)('#pp-roster-edits-table').replaceWith(response.data.refreshed_edits_table_html);
+                        if (typeof applyEditHighlights === 'function') {
+                            applyEditHighlights();
+                        }
+                    }
                     for (let key in ppRosterTemplates.rosterTemplates) {
                         (jQuery)(`.${key}_container`).hide();
                     }
                     (jQuery)(`.${ppRosterTemplates.selected_template}_container`).show();
-
-
 
                     console.log('Roster table refreshed successfully.');
                     console.log('Response:', response);

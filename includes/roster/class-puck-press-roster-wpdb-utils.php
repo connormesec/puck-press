@@ -18,6 +18,7 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             name VARCHAR(100) NOT NULL,
             type TEXT NOT NULL,
             source_url_or_path TEXT DEFAULT NULL,
+            stats_url TEXT DEFAULT NULL,
             last_updated DATETIME DEFAULT NULL,
             status ENUM('active', 'inactive') DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -67,6 +68,24 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             year_in_school varchar(50),
             major varchar(100),
             PRIMARY KEY  (id)
+        ",
+        'pp_roster_stats' => "
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            player_id VARCHAR(50) NOT NULL,
+            source VARCHAR(100) NOT NULL,
+            games_played SMALLINT DEFAULT NULL,
+            goals SMALLINT DEFAULT NULL,
+            assists SMALLINT DEFAULT NULL,
+            points SMALLINT DEFAULT NULL,
+            points_per_game DECIMAL(5,2) DEFAULT NULL,
+            power_play_goals SMALLINT DEFAULT NULL,
+            short_handed_goals SMALLINT DEFAULT NULL,
+            game_winning_goals SMALLINT DEFAULT NULL,
+            shootout_winning_goals SMALLINT DEFAULT NULL,
+            penalty_minutes SMALLINT DEFAULT NULL,
+            shooting_percentage DECIMAL(5,2) DEFAULT NULL,
+            rank SMALLINT DEFAULT NULL,
+            PRIMARY KEY (id)
         "
     ];
 
@@ -207,5 +226,48 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
         $full_table = $wpdb->prefix . $table_name;
 
         return $wpdb->delete($full_table, ['player_id' => $player_id]);
+    }
+
+    public function truncate_table($table_name)
+    {
+        global $wpdb;
+        $full_table = $wpdb->prefix . $table_name;
+        $wpdb->query("TRUNCATE TABLE $full_table");
+    }
+
+    public function insert_stats_rows( $stats_rows = [] ) {
+        global $wpdb;
+
+        if ( empty( $stats_rows ) || ! is_array( $stats_rows ) ) {
+            return new WP_Error( 'no_data', 'No stats rows provided.' );
+        }
+
+        $table_name      = 'pp_roster_stats';
+        $full_table_name = $this->get_full_table_name( $table_name );
+        $inserted_ids    = [];
+        $insert_errors   = [];
+
+        foreach ( $stats_rows as $index => $row ) {
+            $inserted = $wpdb->insert(
+                $full_table_name,
+                $row,
+                $this->get_format_array_for_insert( $row )
+            );
+
+            if ( $inserted !== false ) {
+                $inserted_ids[] = $wpdb->insert_id;
+            } else {
+                $insert_errors[] = [
+                    'row_index' => $index,
+                    'row_data'  => $row,
+                    'db_error'  => $wpdb->last_error
+                ];
+            }
+        }
+
+        return [
+            'inserted_ids'  => $inserted_ids,
+            'insert_errors' => $insert_errors,
+        ];
     }
 }

@@ -1,11 +1,11 @@
 (function ($) {
     jQuery(document).ready(function ($) {
-        const dimGameListStyles = () => $('#pp-card-roster-preview, #pp-card-raw-roster-table , #pp-card-roster-edits-table, .pp-modal').css({
+        const dimGameListStyles = () => $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
             'opacity': '0.5',
             'pointer-events': 'none' // disables interaction
         });
         const restoreGameListStyles = () => {
-            $('#pp-card-roster-preview, #pp-card-raw-roster-table , #pp-card-roster-edits-table, .pp-modal').css({
+            $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
                 'opacity': '1',
                 'pointer-events': 'auto' // re-enables interaction
             });
@@ -67,26 +67,16 @@
 
                     if (type === 'achaRosterUrl') {
                         data.url = $('#pp-source-url').val();
+                        const statsUrl = $('#pp-stats-url').val();
+                        if (statsUrl) {
+                            data.stats_url = statsUrl;
+                        }
                     } else if (type === 'usphlRosterUrl') {
                         data.url = $('#pp-usphl-source-url').val();
                     } else if (type === 'csv') {
                         const file = $('#pp-roster-fileInput')[0].files[0];
                         if (!file) throw new Error('Please select a CSV file.');
                         data.csv = file;
-                    } else if (type === 'customPlayer') {
-                        data.other_data = JSON.stringify({
-                            name: $('#pp-player-name').val(),
-                            number: $('#pp-player-number').val(),
-                            pos: $('#pp-player-position').val(),
-                            ht: $('#pp-player-height').val(),
-                            wt: $('#pp-player-weight').val(),
-                            shoots: $('#pp-player-shoots').val(),
-                            hometown: $('#pp-player-hometown').val(),
-                            last_team: $('#pp-player-last-team').val(),
-                            year: $('#pp-player-year').val(),
-                            major: $('#pp-player-major').val(),
-                            headshot_link: $('#pp-player-headshot-url').val(),
-                        });
                     }
                     console.log('Data to be sent:', data);
                     return data;
@@ -307,16 +297,14 @@
             // Config object mapping type to visibility and required states
             const config = {
                 achaRosterUrl: {
-                    required: ['#pp-source-url']
+                    required: ['#pp-source-url'],
+                    optional: ['#pp-stats-url']
                 },
                 usphlRosterUrl: {
                     required: ['#pp-usphl-source-url']
                 },
                 csv: {
                     required: ['#pp-schedule-fileInput']
-                },
-                customPlayer: {
-                    required: []
                 }
             };
 

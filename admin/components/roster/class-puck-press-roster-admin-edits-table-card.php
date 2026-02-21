@@ -7,206 +7,424 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
     {
         return $this->render_edits_table();
     }
+
     public function render_header_button_content()
     {
-        return '';
+        return '<button class="pp-button pp-button-primary" id="pp-add-player-button">+ Add Player</button>';
     }
-    
+
     public function render_edits_table()
     {
-        $roster_db_utils = new Puck_Press_Roster_Wpdb_Utils;
-        $roster_db_utils->maybe_create_or_update_table($this->table_name);
-        $edits = $roster_db_utils->get_all_table_data($this->table_name, 'ARRAY_A');
-        
-        if ($edits == null) {
-            return '<table class="pp-table" id="pp-edits-table"><caption>' . esc_html__('No roster edits', 'puck-press') . '</caption></table>';
+        global $wpdb;
+        $display_table = $wpdb->prefix . 'pp_roster_for_display';
+        $mods_table    = $wpdb->prefix . 'pp_roster_mods';
+        $raw_table     = $wpdb->prefix . 'pp_roster_raw';
+
+        // Active players: from for_display, LEFT JOIN update mods for override highlighting
+        $active_players = $wpdb->get_results(
+            "SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
+             FROM $display_table f
+             LEFT JOIN $mods_table m ON f.player_id = m.external_id AND m.edit_action = 'update'",
+            ARRAY_A
+        ) ?: [];
+
+        // Deleted sourced players: in raw but have a delete mod
+        $deleted_players = $wpdb->get_results(
+            "SELECT r.*, dm.id AS delete_mod_id
+             FROM $raw_table r
+             INNER JOIN $mods_table dm ON r.player_id = dm.external_id AND dm.edit_action = 'delete'",
+            ARRAY_A
+        ) ?: [];
+
+        foreach ($active_players as &$p) {
+            $p['row_status']    = 'active';
+            $p['delete_mod_id'] = null;
+        }
+        unset($p);
+
+        foreach ($deleted_players as &$p) {
+            $p['row_status']    = 'deleted';
+            $p['mod_id']        = null;
+            $p['override_data'] = null;
+        }
+        unset($p);
+
+        $players = array_merge($active_players, $deleted_players);
+
+        usort($players, function ($a, $b) {
+            return strcmp($a['name'] ?? '', $b['name'] ?? '');
+        });
+
+        if (empty($players)) {
+            return '<table class="pp-table pp-roster-table-full" id="pp-roster-edits-table"><caption>' . esc_html__('No players in roster. Add a source or click "+ Add Player" to get started.', 'puck-press') . '</caption></table>';
         }
 
+        $skip_keys = ['external_id'];
+
         ob_start();
-?>
-        <table class="pp-table" id="pp-edits-table">
+    ?>
+        <table class="pp-table pp-roster-table-full" id="pp-roster-edits-table">
             <thead class="pp-thead">
                 <tr>
-                    <th class="pp-th"><?php esc_html_e('Operation', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Player ID', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Field', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Change', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('ID', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Source', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('#', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Name', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Pos', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Ht', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Wt', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Shoots', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Hometown', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Last Team', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Year', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Major', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Headshot', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($edits as $edit) :
-                    $edit_data = json_decode($edit['edit_data'], true); // Decode the JSON into an array
+                <?php foreach ($players as $player) :
+                    $is_deleted  = $player['row_status'] === 'deleted';
+                    $is_manual   = strpos($player['player_id'], 'manual_') === 0;
+                    $source_type = $is_manual ? 'manual' : 'sourced';
+                    $source_tag_class = $is_manual ? 'pp-tag-manual' : 'pp-tag-regular-season';
+
+                    $override_keys = [];
+                    if (!$is_deleted && !empty($player['override_data'])) {
+                        $decoded = json_decode($player['override_data'], true);
+                        if (is_array($decoded)) {
+                            $override_keys = array_values(array_diff(array_keys($decoded), $skip_keys));
+                        }
+                    }
+                    $mod_id = $player['mod_id'] ?? '';
                 ?>
-                    <tr data-edit-id="<?php echo esc_html($edit['id']) ?>">
-                        <td class="pp-td"><?php echo esc_html($edit['edit_action']); ?></td>
-                        <td class="pp-td"><?php echo esc_html($edit['external_id']); ?></td>
-                        <td class="pp-td">
-                            <?php if (!empty($edit_data)) : ?>
-                                <?php foreach ($edit_data as $key => $value) : ?>
-                                    <?php
-                                    $display_value = (strlen($value) > 20)
-                                        ? esc_html(substr($value, 0, 20)) . '...'
-                                        : esc_html($value);
-                                    ?>
-                                    <span
-                                        class="pp-tag pp-tag-<?php echo sanitize_html_class(strtolower($key)); ?>"
-                                        title="<?php echo esc_attr($value); ?>">
-                                        <?php echo esc_html(ucfirst($key)) . ': ' . $display_value; ?>
-                                    </span>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </td>
-                        <td class="pp-td">
-                            <span class="pp-tag pp-tag-regular-season">
-                                <?php echo esc_html(isset($edit['source']) ? $edit['source'] : 'No Source'); ?>
-                            </span>
-                        </td>
-                        <td class="pp-td">Yo Mama</td>
+                    <?php if ($is_deleted) : ?>
+                    <tr class="pp-row-deleted"
+                        data-player-id="<?php echo esc_attr($player['player_id']); ?>"
+                        data-source-type="sourced"
+                        data-mod-id=""
+                        data-overrides="[]">
+                        <td class="pp-td" data-field="player_id"><?php echo esc_html($player['player_id']); ?></td>
+                        <td class="pp-td"><span class="pp-tag pp-tag-regular-season"><?php echo esc_html($player['source']); ?></span></td>
+                        <td class="pp-td" data-field="number"><?php echo esc_html($player['number']); ?></td>
+                        <td class="pp-td" data-field="name"><?php echo esc_html($player['name']); ?></td>
+                        <td class="pp-td" data-field="pos"><?php echo esc_html($player['pos']); ?></td>
+                        <td class="pp-td" data-field="ht"><?php echo esc_html($player['ht']); ?></td>
+                        <td class="pp-td" data-field="wt"><?php echo esc_html($player['wt']); ?></td>
+                        <td class="pp-td" data-field="shoots"><?php echo esc_html($player['shoots']); ?></td>
+                        <td class="pp-td" data-field="hometown"><?php echo esc_html($player['hometown']); ?></td>
+                        <td class="pp-td" data-field="last_team"><?php echo esc_html($player['last_team']); ?></td>
+                        <td class="pp-td" data-field="year_in_school"><?php echo esc_html($player['year_in_school']); ?></td>
+                        <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
+                        <td class="pp-td" data-field="headshot_link"><?php echo esc_html($player['headshot_link']); ?></td>
                         <td class="pp-td">
                             <div class="pp-flex-small-gap">
-                                <button class="pp-button-icon" id="pp-delete-edit-button" data-edit-id="<?php echo esc_attr($edit['id']); ?>">🗑️</button>
+                                <button class="pp-button-icon pp-restore-player-btn" title="Restore player"
+                                    data-delete-mod-id="<?php echo esc_attr($player['delete_mod_id']); ?>">&#x21A9;</button>
                             </div>
                         </td>
                     </tr>
+                    <?php else : ?>
+                    <tr data-player-id="<?php echo esc_attr($player['player_id']); ?>"
+                        data-source-type="<?php echo esc_attr($source_type); ?>"
+                        data-mod-id="<?php echo esc_attr($mod_id); ?>"
+                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>">
+                        <td class="pp-td"><?php echo esc_html($player['player_id']); ?></td>
+                        <td class="pp-td"><span class="pp-tag <?php echo esc_attr($source_tag_class); ?>"><?php echo esc_html($player['source']); ?></span></td>
+                        <td class="pp-td" data-field="number"><?php echo esc_html($player['number']); ?></td>
+                        <td class="pp-td" data-field="name"><?php echo esc_html($player['name']); ?></td>
+                        <td class="pp-td" data-field="pos"><?php echo esc_html($player['pos']); ?></td>
+                        <td class="pp-td" data-field="ht"><?php echo esc_html($player['ht']); ?></td>
+                        <td class="pp-td" data-field="wt"><?php echo esc_html($player['wt']); ?></td>
+                        <td class="pp-td" data-field="shoots"><?php echo esc_html($player['shoots']); ?></td>
+                        <td class="pp-td" data-field="hometown"><?php echo esc_html($player['hometown']); ?></td>
+                        <td class="pp-td" data-field="last_team"><?php echo esc_html($player['last_team']); ?></td>
+                        <td class="pp-td" data-field="year_in_school"><?php echo esc_html($player['year_in_school']); ?></td>
+                        <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
+                        <td class="pp-td" data-field="headshot_link"><?php echo esc_html($player['headshot_link']); ?></td>
+                        <td class="pp-td">
+                            <div class="pp-flex-small-gap">
+                                <button class="pp-button-icon pp-edit-player-btn" title="Edit player"
+                                    data-player-id="<?php echo esc_attr($player['player_id']); ?>">&#x270F;&#xFE0F;</button>
+                                <button class="pp-button-icon pp-delete-player-btn" title="Delete player"
+                                    data-player-id="<?php echo esc_attr($player['player_id']); ?>"
+                                    data-source-type="<?php echo esc_attr($source_type); ?>">&#x1F5D1;&#xFE0F;</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
                 <?php endforeach; ?>
             </tbody>
         </table>
 <?php
         return ob_get_clean();
     }
-    
-    function ajax_refresh_roster_edits_table_card_callback(){
+
+    function ajax_refresh_roster_edits_table_card_callback()
+    {
         $response_html = $this->render_edits_table();
         if ($response_html !== false) {
             wp_send_json_success($response_html);
         } else {
             wp_send_json_error(['message' => 'Edits table refresh failed']);
         }
-        wp_die(); // Always required for AJAX handlers
-
+        wp_die();
     }
 
-    function ajax_save_player_edit_callback() {
+    function ajax_get_player_data_callback()
+    {
         global $wpdb;
+        $player_id = sanitize_text_field($_POST['player_id'] ?? '');
+        if (empty($player_id)) {
+            wp_send_json_error(['message' => 'Missing player_id']);
+            wp_die();
+        }
+        $display_table = $wpdb->prefix . 'pp_roster_for_display';
+        $player = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $display_table WHERE player_id = %s LIMIT 1",
+            $player_id
+        ), ARRAY_A);
+        if ($player) {
+            wp_send_json_success(['player' => $player]);
+        } else {
+            wp_send_json_error(['message' => 'Player not found']);
+        }
+        wp_die();
+    }
 
-        // Table name (make sure it's set correctly in your class/namespace)
+    function ajax_save_player_edit_callback()
+    {
+        global $wpdb;
         $table = $wpdb->prefix . 'pp_roster_mods';
-    
-        // Check for posted data
+
         if (!isset($_POST['edit_data'])) {
             wp_send_json_error(['message' => 'Missing edit_data']);
             wp_die();
         }
-    
-        // Parse the incoming JSON string from FormData
+
         $parsed_data = json_decode(stripslashes($_POST['edit_data']), true);
-    
-        if (json_last_error() !== JSON_ERROR_NONE || 
+
+        if (json_last_error() !== JSON_ERROR_NONE ||
             !isset($parsed_data['edit_action'], $parsed_data['fields']['external_id'])) {
             wp_send_json_error(['message' => 'Invalid or incomplete edit_data']);
             wp_die();
         }
-    
-        // Extract and sanitize
-        $edit_action = sanitize_text_field($parsed_data['edit_action']);
-        $external_id = sanitize_text_field($parsed_data['fields']['external_id']); // game ID
+
+        $edit_action   = sanitize_text_field($parsed_data['edit_action']);
+        $external_id   = sanitize_text_field($parsed_data['fields']['external_id']);
         $edit_data_json = wp_json_encode($parsed_data['fields']);
-    
-        // Check if there's already a record for this external_id + action
+        $current_time  = current_time('mysql');
+
         $existing_row_id = $wpdb->get_var($wpdb->prepare(
             "SELECT id FROM $table WHERE external_id = %s AND edit_action = %s LIMIT 1",
             $external_id, $edit_action
         ));
-    
-        $current_time = current_time('mysql');
-    
+
         if ($existing_row_id) {
-            // Update existing row
-            $result = $wpdb->update(
+            // Merge with existing edit_data to preserve prior overrides
+            $existing_json = $wpdb->get_var($wpdb->prepare(
+                "SELECT edit_data FROM $table WHERE id = %d",
+                $existing_row_id
+            ));
+            $existing_fields = json_decode($existing_json, true) ?: [];
+            $merged_fields   = array_merge($existing_fields, $parsed_data['fields']);
+            $edit_data_json  = wp_json_encode($merged_fields);
+
+            $wpdb->update(
                 $table,
-                [
-                    'edit_data'   => $edit_data_json,
-                    'updated_at'  => $current_time,
-                ],
+                ['edit_data' => $edit_data_json, 'updated_at' => $current_time],
                 ['id' => $existing_row_id]
             );
-    
-            if ($result !== false) {
-                wp_send_json_success([
-                    'message' => 'Edit updated',
-                    'id' => $existing_row_id
-                ]);
-            } else {
-                wp_send_json_error(['message' => 'Update failed']);
-            }
         } else {
-            // Insert new row
-            $result = $wpdb->insert(
-                $table,
-                [
-                    'external_id' => $external_id,
-                    'edit_action' => $edit_action,
-                    'edit_data'   => $edit_data_json,
-                    'created_at'  => $current_time,
-                    'updated_at'  => $current_time,
-                ]
-            );
-    
-            if ($result) {
-                wp_send_json_success([
-                    'message' => 'Edit recorded',
-                    'id' => $wpdb->insert_id
-                ]);
-            } else {
-                wp_send_json_error(['message' => 'Insert failed']);
-            }
+            $wpdb->insert($table, [
+                'external_id' => $external_id,
+                'edit_action' => $edit_action,
+                'edit_data'   => $edit_data_json,
+                'created_at'  => $current_time,
+                'updated_at'  => $current_time,
+            ]);
         }
-    
-        wp_die(); // Always required for AJAX handlers
+
+        // Rebuild the display table
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+
+        wp_send_json_success([
+            'message'           => 'Edit saved',
+            'roster_table_html' => $this->render_edits_table(),
+        ]);
+        wp_die();
     }
 
-    function ajax_delete_player_edit_callback() {
+    function ajax_delete_player_edit_callback()
+    {
         global $wpdb;
-    
         $table = $wpdb->prefix . 'pp_roster_mods';
-    
-        // Ensure required fields are provided
-        $id = isset($_POST['id']) ? sanitize_text_field($_POST['id']) : '';
-    
+        $id    = isset($_POST['id']) ? sanitize_text_field($_POST['id']) : '';
+
         if (empty($id)) {
             wp_send_json_error(['message' => 'Missing required fields']);
             wp_die();
         }
-    
-        // Attempt to delete the record
-        $result = $wpdb->delete(
-            $table,
-            [
-                'id' => $id
-            ],
-            [
-                '%s'
-            ]
-        );
-    
+
+        $result = $wpdb->delete($table, ['id' => $id], ['%s']);
+
         if ($result !== false) {
-            wp_send_json_success(['message' => 'Edit deleted']);
+            // Rebuild display table
+            $importer = new Puck_Press_Roster_Source_Importer();
+            $importer->apply_edits_and_save_to_display_table();
+
+            wp_send_json_success([
+                'message'           => 'Edit deleted',
+                'roster_table_html' => $this->render_edits_table(),
+            ]);
         } else {
             wp_send_json_error(['message' => 'Delete failed or record not found']);
         }
-    
-        wp_die(); // Always terminate after AJAX callbacks
+
+        wp_die();
     }
 
-    function console_log($output, $with_script_tags = true)
+    function ajax_revert_player_field_callback()
     {
-        $js_code = 'console.log(' . json_encode($output, JSON_HEX_TAG) .
-            ');';
-        if ($with_script_tags) {
-            $js_code = '<script>' . $js_code . '</script>';
+        global $wpdb;
+        $table  = $wpdb->prefix . 'pp_roster_mods';
+        $mod_id = intval($_POST['mod_id'] ?? 0);
+        $fields = isset($_POST['fields']) ? (array) $_POST['fields'] : [];
+
+        if (!$mod_id || empty($fields)) {
+            wp_send_json_error(['message' => 'Missing mod_id or fields']);
+            wp_die();
         }
-        echo $js_code;
+
+        $existing_json = $wpdb->get_var($wpdb->prepare(
+            "SELECT edit_data FROM $table WHERE id = %d AND edit_action = 'update'",
+            $mod_id
+        ));
+
+        if ($existing_json === null) {
+            wp_send_json_error(['message' => 'Mod record not found']);
+            wp_die();
+        }
+
+        $edit_data = json_decode($existing_json, true) ?: [];
+
+        foreach ($fields as $field) {
+            $field = sanitize_key($field);
+            unset($edit_data[$field]);
+        }
+
+        // Remove metadata key
+        $meaningful_keys = array_diff(array_keys($edit_data), ['external_id']);
+
+        if (empty($meaningful_keys)) {
+            // No fields left — delete the entire mod record
+            $wpdb->delete($table, ['id' => $mod_id], ['%d']);
+        } else {
+            $wpdb->update(
+                $table,
+                ['edit_data' => wp_json_encode($edit_data), 'updated_at' => current_time('mysql')],
+                ['id' => $mod_id]
+            );
+        }
+
+        // Rebuild the display table
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+
+        wp_send_json_success([
+            'message'           => 'Field reverted',
+            'roster_table_html' => $this->render_edits_table(),
+        ]);
+        wp_die();
+    }
+
+    function ajax_add_manual_player_callback()
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'pp_roster_mods';
+
+        $name         = sanitize_text_field($_POST['name'] ?? '');
+        if (empty($name)) {
+            wp_send_json_error(['message' => 'Player name is required']);
+            wp_die();
+        }
+
+        $player_data = [
+            'player_id'      => 'manual_placeholder',
+            'source'         => 'Manual',
+            'name'           => $name,
+            'number'         => sanitize_text_field($_POST['number'] ?? ''),
+            'pos'            => sanitize_text_field($_POST['pos'] ?? ''),
+            'ht'             => sanitize_text_field($_POST['ht'] ?? ''),
+            'wt'             => sanitize_text_field($_POST['wt'] ?? ''),
+            'shoots'         => sanitize_text_field($_POST['shoots'] ?? ''),
+            'hometown'       => sanitize_text_field($_POST['hometown'] ?? ''),
+            'last_team'      => sanitize_text_field($_POST['last_team'] ?? ''),
+            'year_in_school' => sanitize_text_field($_POST['year_in_school'] ?? ''),
+            'major'          => sanitize_text_field($_POST['major'] ?? ''),
+            'headshot_link'  => esc_url_raw($_POST['headshot_link'] ?? ''),
+        ];
+
+        $current_time = current_time('mysql');
+        $wpdb->insert($table, [
+            'external_id' => null,
+            'edit_action' => 'insert',
+            'edit_data'   => wp_json_encode($player_data),
+            'created_at'  => $current_time,
+            'updated_at'  => $current_time,
+        ]);
+
+        $mod_id = $wpdb->insert_id;
+        $player_data['player_id'] = 'manual_' . $mod_id;
+
+        $wpdb->update(
+            $table,
+            [
+                'external_id' => 'manual_' . $mod_id,
+                'edit_data'   => wp_json_encode($player_data),
+                'updated_at'  => $current_time,
+            ],
+            ['id' => $mod_id]
+        );
+
+        // Rebuild the display table
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+
+        wp_send_json_success([
+            'message'           => 'Player added',
+            'roster_table_html' => $this->render_edits_table(),
+        ]);
+        wp_die();
+    }
+
+    function ajax_delete_manual_player_callback()
+    {
+        global $wpdb;
+        $table     = $wpdb->prefix . 'pp_roster_mods';
+        $player_id = sanitize_text_field($_POST['player_id'] ?? '');
+
+        if (empty($player_id) || strpos($player_id, 'manual_') !== 0) {
+            wp_send_json_error(['message' => 'Invalid player_id']);
+            wp_die();
+        }
+
+        // Delete the insert mod row for this manual player
+        $result = $wpdb->delete($table, ['external_id' => $player_id, 'edit_action' => 'insert']);
+
+        if ($result !== false) {
+            $importer = new Puck_Press_Roster_Source_Importer();
+            $importer->apply_edits_and_save_to_display_table();
+
+            wp_send_json_success([
+                'message'           => 'Player deleted',
+                'roster_table_html' => $this->render_edits_table(),
+            ]);
+        } else {
+            wp_send_json_error(['message' => 'Delete failed']);
+        }
+
+        wp_die();
     }
 }
