@@ -90,7 +90,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                     $source_tag_class = $is_manual ? 'pp-tag-manual' : 'pp-tag-regular-season';
 
                     $override_keys = [];
-                    if (!$is_deleted && !empty($player['override_data'])) {
+                    if (!$is_deleted && !$is_manual && !empty($player['override_data'])) {
                         $decoded = json_decode($player['override_data'], true);
                         if (is_array($decoded)) {
                             $override_keys = array_values(array_diff(array_keys($decoded), $skip_keys));
@@ -245,9 +245,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
             ]);
         }
 
-        // Rebuild the display table
+        // Rebuild and normalize the display table
         $importer = new Puck_Press_Roster_Source_Importer();
         $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
 
         wp_send_json_success([
             'message'           => 'Edit saved',
@@ -270,9 +271,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
         $result = $wpdb->delete($table, ['id' => $id], ['%s']);
 
         if ($result !== false) {
-            // Rebuild display table
+            // Rebuild and normalize the display table
             $importer = new Puck_Press_Roster_Source_Importer();
             $importer->apply_edits_and_save_to_display_table();
+            $importer->sanitize_roster_display_table();
 
             wp_send_json_success([
                 'message'           => 'Edit deleted',
@@ -328,9 +330,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
             );
         }
 
-        // Rebuild the display table
+        // Rebuild and normalize the display table
         $importer = new Puck_Press_Roster_Source_Importer();
         $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
 
         wp_send_json_success([
             'message'           => 'Field reverted',
@@ -388,9 +391,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
             ['id' => $mod_id]
         );
 
-        // Rebuild the display table
+        // Rebuild and normalize the display table
         $importer = new Puck_Press_Roster_Source_Importer();
         $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
 
         wp_send_json_success([
             'message'           => 'Player added',
@@ -416,6 +420,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
         if ($result !== false) {
             $importer = new Puck_Press_Roster_Source_Importer();
             $importer->apply_edits_and_save_to_display_table();
+            $importer->sanitize_roster_display_table();
 
             wp_send_json_success([
                 'message'           => 'Player deleted',

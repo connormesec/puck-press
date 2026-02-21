@@ -34,6 +34,7 @@ class Puck_Press_Roster_Source_Importer
     private function load_dependencies()
     {
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-wpdb-utils.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-normalizer.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-url.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-stats.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-csv-data.php';
@@ -189,6 +190,11 @@ class Puck_Press_Roster_Source_Importer
                 $edit_data = json_decode($edit['edit_data'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($edit_data)) {
                     $edit_data['source'] = $edit_data['source'] ?? 'Manual';
+                    // Apply any subsequent edits saved for this manual player
+                    $manual_id = $edit_data['player_id'] ?? null;
+                    if ($manual_id && isset($edit_map[$manual_id])) {
+                        $edit_data = array_merge($edit_data, $edit_map[$manual_id]);
+                    }
                     $this->roster_db_utils->insert_or_replace_row($table_c, $edit_data);
                     $results[] = "Inserted manual player: " . ($edit_data['player_id'] ?? 'unknown');
                 }
@@ -253,46 +259,40 @@ class Puck_Press_Roster_Source_Importer
 
         $table = "{$wpdb->prefix}pp_roster_for_display";
 
-        $rows = $wpdb->get_results("SELECT id, pos FROM $table", ARRAY_A);
+        $rows = $wpdb->get_results("SELECT id, pos, shoots, ht, wt FROM $table", ARRAY_A);
 
         foreach ($rows as $row) {
             $id = (int) $row['id'];
-            $originalPos = isset($row['pos']) ? trim($row['pos']) : '';
-            $position = $this->normalizePosition($originalPos);
 
-            if ($position !== $originalPos) {
-                $wpdb->update(
-                    $table,
-                    ['pos' => $position],
-                    ['id' => $id],
-                    ['%s'],
-                    ['%d']
-                );
+            $normalized = [
+                'pos'    => Puck_Press_Roster_Normalizer::normalize_position((string) ($row['pos']    ?? '')),
+                'shoots' => Puck_Press_Roster_Normalizer::normalize_shoots(  (string) ($row['shoots'] ?? '')),
+                'ht'     => Puck_Press_Roster_Normalizer::normalize_height(  (string) ($row['ht']     ?? '')),
+                'wt'     => Puck_Press_Roster_Normalizer::normalize_weight(  (string) ($row['wt']     ?? '')),
+            ];
+
+            $updates     = [];
+            $formats     = [];
+            $null_fields = [];
+            foreach ($normalized as $field => $value) {
+                $current = (string) ($row[$field] ?? '');
+                if ($value === null && $current !== '') {
+                    // Explicit NULL — handled via direct query below
+                    $null_fields[] = esc_sql($field);
+                } elseif ($value !== null && $value !== $current) {
+                    $updates[$field] = $value;
+                    $formats[]       = '%s';
+                }
+            }
+
+            if (!empty($updates)) {
+                $wpdb->update($table, $updates, ['id' => $id], $formats, ['%d']);
+            }
+
+            if (!empty($null_fields)) {
+                $set = implode(', ', array_map(fn($f) => "`$f` = NULL", $null_fields));
+                $wpdb->query($wpdb->prepare("UPDATE `$table` SET $set WHERE id = %d", $id));
             }
         }
-    }
-
-    function normalizePosition(string $pos): string
-    {
-        $pos = strtolower(trim($pos));
-
-        $forwards = ['f', 'forward', 'forwards'];
-        $defense  = ['d', 'defense', 'defenceman', 'defender'];
-        $goalies  = ['g', 'goalie', 'goaltender'];
-
-        if (in_array($pos, $forwards, true)) {
-            return 'F';
-        }
-
-        if (in_array($pos, $defense, true)) {
-            return 'D';
-        }
-
-        if (in_array($pos, $goalies, true)) {
-            return 'G';
-        }
-
-        // Leave as-is if not recognized
-        return $pos;
     }
 }
