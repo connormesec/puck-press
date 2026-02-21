@@ -44,7 +44,7 @@ $season_options = $this->get_season_options_array();
     </div>
     <!-- CSV Upload Section -->
     <div class="pp-form-group pp-dynamic-source-group-csv">
-        <label for="pp-source-csv" class="pp-form-label">Upload CSV</label>
+        <label for="pp-schedule-fileInput" class="pp-form-label">Upload CSV</label>
         <div class="upload-container">
             <div class="file-input-container">
                 <input type="file" id="pp-schedule-fileInput" class="pp-form-input" accept=".csv">

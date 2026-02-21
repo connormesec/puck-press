@@ -140,6 +140,7 @@ class Puck_Press_Roster_Source_Importer
 
         // Fetch all base data
         $originals = $this->roster_db_utils->get_all_table_data($table_a, 'ARRAY_A') ?? [];
+        $originals = $this->deduplicate_by_player_id($originals);
 
         // Fetch all edits
         $edits = $this->roster_db_utils->get_all_table_data($table_b, 'ARRAY_A');
@@ -195,6 +196,45 @@ class Puck_Press_Roster_Source_Importer
         }
 
         return $results;
+    }
+
+    /**
+     * Deduplicate raw roster rows by player_id.
+     *
+     * Keeps the row with the most non-empty fields. On a tie, the last
+     * occurrence wins (most recently added, so more likely to be current).
+     */
+    private function deduplicate_by_player_id(array $rows): array
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            $grouped[$row['player_id']][] = $row;
+        }
+
+        $deduplicated = [];
+        foreach ($grouped as $duplicates) {
+            $best       = null;
+            $best_score = -1;
+            foreach ($duplicates as $candidate) {
+                $score = 0;
+                foreach ($candidate as $key => $val) {
+                    if ($key === 'id') {
+                        continue;
+                    }
+                    if ($val !== null && $val !== '') {
+                        $score++;
+                    }
+                }
+                // >= so that on a tie the last duplicate wins
+                if ($score >= $best_score) {
+                    $best       = $candidate;
+                    $best_score = $score;
+                }
+            }
+            $deduplicated[] = $best;
+        }
+
+        return $deduplicated;
     }
 
     public function get_results()

@@ -74,6 +74,8 @@ class Puck_Press_Schedule_Admin_Display
                         <div class="pp-shortcode-input-group">
                             <input
                                 type="text"
+                                id="pp-schedule-shortcode"
+                                name="pp-schedule-shortcode"
                                 class="pp-shortcode-input"
                                 value="[pp-schedule]"
                                 spellcheck="false"

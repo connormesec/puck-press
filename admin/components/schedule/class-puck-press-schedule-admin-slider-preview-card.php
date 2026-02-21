@@ -55,6 +55,8 @@ class Puck_Press_Schedule_Admin_Slider_Preview_Card extends Puck_Press_Admin_Car
             <div class="pp-shortcode-input-group">
                 <input
                     type="text"
+                    id="pp-slider-shortcode"
+                    name="pp-slider-shortcode"
                     class="pp-shortcode-input"
                     value="[pp-slider]"
                     spellcheck="false"

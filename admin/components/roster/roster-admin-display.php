@@ -67,6 +67,8 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
                         <div class="pp-shortcode-input-group">
                             <input
                                 type="text"
+                                id="pp-roster-shortcode"
+                                name="pp-roster-shortcode"
                                 class="pp-shortcode-input"
                                 value="[pp-roster]"
                                 spellcheck="false"
