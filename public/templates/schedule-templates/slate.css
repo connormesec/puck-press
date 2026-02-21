@@ -1,0 +1,318 @@
+/* Slate Schedule Template */
+
+/* ── Container ───────────────────────────────────────── */
+.slate_schedule_container {
+  background: var(--pp-slate-page_bg);
+  padding: 24px 16px;
+  font-family: inherit;
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.slate-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #dde1e7;
+  padding-bottom: 0;
+}
+
+.slate-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 16px 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pp-slate-text);
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.slate-tab-btn:hover {
+  color: var(--pp-slate-accent);
+}
+
+.slate-tab-active {
+  color: var(--pp-slate-accent) !important;
+  border-bottom-color: var(--pp-slate-accent) !important;
+}
+
+/* ── Month heading ───────────────────────────────────── */
+.slate-month-heading {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--pp-slate-text);
+  margin: 24px 0 10px;
+  letter-spacing: -0.3px;
+}
+
+.slate-month-section:first-child .slate-month-heading {
+  margin-top: 0;
+}
+
+/* ── Game card ───────────────────────────────────────── */
+.slate-game-card {
+  background: var(--pp-slate-card_bg);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  border-left: 4px solid transparent;
+}
+
+.slate-game-card.slate-home {
+  border-left-color: var(--pp-slate-accent);
+}
+
+/* ── Main row ────────────────────────────────────────── */
+.slate-game-main-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  gap: 12px;
+}
+
+/* ── Date column ─────────────────────────────────────── */
+.slate-date-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.slate-date-day {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pp-slate-text);
+  line-height: 1.3;
+}
+
+.slate-date-time {
+  font-size: 13px;
+  color: var(--pp-slate-text);
+  opacity: 0.65;
+  line-height: 1.3;
+}
+
+/* ── Match column ────────────────────────────────────── */
+.slate-match-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.slate-vs-at {
+  font-size: 13px;
+  color: var(--pp-slate-text);
+  opacity: 0.55;
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.slate-opp-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.slate-opp-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pp-slate-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Result column (past games) ──────────────────────── */
+.slate-result-col {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.slate-score {
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.slate-score.slate-win {
+  color: var(--pp-slate-accent);
+}
+
+.slate-score.slate-loss {
+  color: #888;
+}
+
+.slate-score.slate-tie {
+  color: #888;
+}
+
+/* ── Action column (buttons) ─────────────────────────── */
+.slate-action-col {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.slate-ticket-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--pp-slate-ticket_btn_bg);
+  color: var(--pp-slate-ticket_btn_text) !important;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.slate-ticket-btn:hover {
+  opacity: 0.82;
+}
+
+.slate-recap-btn {
+  display: inline-block;
+  border: 1.5px solid var(--pp-slate-text);
+  color: var(--pp-slate-text) !important;
+  background: transparent;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.slate-recap-btn:hover {
+  background: var(--pp-slate-text);
+  color: #fff !important;
+}
+
+/* ── Promo section ───────────────────────────────────── */
+.slate-promo-section {
+  padding: 8px 18px 10px;
+  border-top: 1px solid #eaecef;
+}
+
+.slate-promo-header-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.slate-promo-header-line em {
+  font-size: 12px;
+  color: #777;
+  font-style: italic;
+}
+
+.slate-icon-flag {
+  color: var(--pp-slate-accent);
+  flex-shrink: 0;
+}
+
+.slate-promo-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.slate-promo-items li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--pp-slate-text);
+  line-height: 1.7;
+}
+
+.slate-icon-plus {
+  color: var(--pp-slate-accent);
+  flex-shrink: 0;
+}
+
+/* ── Footer row (venue) ──────────────────────────────── */
+.slate-footer-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 18px 12px;
+  border-top: 1px solid #eaecef;
+}
+
+.slate-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--pp-slate-text);
+  opacity: 0.65;
+}
+
+.slate-icon-pin {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ── No-games message ────────────────────────────────── */
+.slate-no-games {
+  font-size: 14px;
+  color: var(--pp-slate-text);
+  opacity: 0.5;
+  padding: 20px 0;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media screen and (max-width: 768px) {
+  .slate-date-col {
+    min-width: 90px;
+  }
+
+  .slate-opp-name {
+    font-size: 14px;
+  }
+
+  .slate-game-main-row {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .slate-result-col {
+    margin-right: 6px;
+  }
+}
+
+@media screen and (max-width: 540px) {
+  .slate-opp-name {
+    display: none;
+  }
+
+  .slate-vs-at {
+    min-width: 20px;
+  }
+
+  .slate-score {
+    font-size: 13px;
+  }
+
+  .slate-ticket-btn,
+  .slate-recap-btn {
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  .slate-date-col {
+    min-width: 72px;
+  }
+}
