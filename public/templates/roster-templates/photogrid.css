@@ -1,0 +1,114 @@
+/* =============================================================
+   Photo Grid Roster Template
+   Color variables are injected as inline CSS by the template
+   manager using the --pp-photogrid-{key} naming convention.
+   ============================================================= */
+
+/* ---- Container ---- */
+.photogrid_roster_container {
+    background-color: var(--pp-photogrid-page_bg);
+    padding: 24px 16px;
+    box-sizing: border-box;
+}
+
+/* ---- Section (Forwards / Defensemen / Goalies) ---- */
+.photogrid_section {
+    margin-bottom: 48px;
+}
+
+.photogrid_heading {
+    color: var(--pp-photogrid-accent_color);
+    font-size: 2.4rem;
+    font-weight: 800;
+    text-transform: capitalize;
+    margin: 0 0 20px 0;
+    line-height: 1.1;
+}
+
+/* ---- Responsive grid ---- */
+.photogrid_grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 1200px) {
+    .photogrid_grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .photogrid_grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .photogrid_grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .photogrid_heading {
+        font-size: 1.8rem;
+    }
+}
+
+/* ---- Individual card ---- */
+.photogrid_card {
+    background-color: var(--pp-photogrid-card_bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ---- Headshot image ---- */
+.photogrid_img_wrap {
+    width: 100%;
+    /* Portrait aspect ratio — matches typical hockey headshots */
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background-color: #d8d8d8;
+}
+
+.photogrid_img_wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Bias toward the top so faces stay in frame */
+    object-position: top center;
+    display: block;
+}
+
+/* ---- Info block (number + position + name) ---- */
+.photogrid_info {
+    padding: 10px 6px 12px;
+}
+
+/* "#76 | Forward" line */
+.photogrid_meta {
+    color: var(--pp-photogrid-accent_color);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.photogrid_sep {
+    /* Inherits accent_color from parent */
+    margin: 0 4px;
+    opacity: 0.7;
+}
+
+/* Player name */
+.photogrid_name {
+    color: var(--pp-photogrid-player_name_color);
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin: 0;
+}

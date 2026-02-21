@@ -60,7 +60,7 @@ class CardStackTemplate extends PuckPressTemplate
 
     public function buildCardStack(array $players)
     {
-        $content = '<div class="cardstack_container clearfix">';
+        $content = '<div class="cardstack_roster_container clearfix">';
         
         // Skaters (players without assigned positions) - shown first
         $skaters = $this->getPlayersWithoutPositions($players);
@@ -193,5 +193,20 @@ class CardStackTemplate extends PuckPressTemplate
         });
 
         return $filtered;
+    }
+
+    private function getPlayersWithoutPositions(array $players): array
+    {
+        $known = ['F', 'C', 'LW', 'RW', 'D', 'LD', 'RD', 'G'];
+
+        $filtered = array_filter($players, function ($player) use ($known) {
+            return empty($player['pos']) || !in_array(strtoupper($player['pos']), $known, true);
+        });
+
+        usort($filtered, function ($a, $b) {
+            return (int)$a['number'] <=> (int)$b['number'];
+        });
+
+        return array_values($filtered);
     }
 }
