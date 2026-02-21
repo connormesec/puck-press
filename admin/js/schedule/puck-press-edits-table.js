@@ -189,7 +189,7 @@
     function mapStatusToInput(status) {
       if (!status) return "";
       var lower = String(status).toLowerCase().trim().replace(/\s+/g, "-");
-      var valid = ["final", "final-ot", "final-so"];
+      var valid = ["final", "final-ot", "final-so", "final/ot", "final/so"];
       return valid.indexOf(lower) !== -1 ? lower : "";
     }
 

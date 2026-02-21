@@ -1,2 +1,3 @@
-// Photo Grid Roster Template
-// Reserved for future interactivity (e.g. player detail modals).
+jQuery(document).ready(function () {
+    PpPlayerDetail.init('.photogrid_roster_container', '.photogrid_card');
+});

@@ -31,6 +31,51 @@ class CardStackTemplate extends PuckPressTemplate
         return false; //only set to true if you want to reset colors, this will overwrite user settings and should be used in development only
     }
 
+    public static function get_js_dependencies(): array
+    {
+        return [ 'jquery', 'pp-player-detail' ];
+    }
+
+    public static function get_player_detail_css_vars(): array
+    {
+        $colors = static::get_template_colors();
+        return [
+            '--pp-pd-accent'  => $colors['header_text']  ?? '#215530',
+            '--pp-pd-body-bg' => $colors['container_bg'] ?? '#ffffff',
+        ];
+    }
+
+    public static function get_color_labels(): array
+    {
+        return [
+            'header_text'   => 'Header Text (Player Detail)',
+            'container_bg'  => 'Card Background (Player Detail)',
+            'border'        => 'Border Color',
+            'month_text'    => 'Position Title Text',
+            'content_text'  => 'Content Text',
+            'number_text'   => 'Jersey Number Text',
+        ];
+    }
+
+    public static function get_default_fonts(): array
+    {
+        return ['roster_font' => ''];
+    }
+
+    public static function get_font_labels(): array
+    {
+        return ['roster_font' => 'Roster Font'];
+    }
+
+    public static function get_player_detail_font_vars(): array
+    {
+        $fonts = static::get_template_fonts();
+        $font  = $fonts['roster_font'] ?? '';
+        if (empty($font)) return [];
+        $safe = str_replace(["'", '"', ';', '}'], '', $font);
+        return ['--pp-pd-font-family' => "'{$safe}', sans-serif"];
+    }
+
     /**
      * Returns an array of default colors
      */
@@ -60,7 +105,10 @@ class CardStackTemplate extends PuckPressTemplate
 
     public function buildCardStack(array $players)
     {
-        $content = '<div class="cardstack_roster_container clearfix">';
+        $content = '<div class="cardstack_roster_container clearfix"'
+            . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
+            . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
+            . '>';
         
         // Skaters (players without assigned positions) - shown first
         $skaters = $this->getPlayersWithoutPositions($players);

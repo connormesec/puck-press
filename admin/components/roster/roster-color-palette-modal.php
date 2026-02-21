@@ -44,8 +44,13 @@ $selected_template = $templates->get_current_template_key();
         </div>
         <div class="pp-modal-content">
             <form id="pp-roster-color-palette-form">
+                <p class="pp-section-label">Colors</p>
                 <div class="pp-form-row" id="pp-roster-dynamic-color-fields">
                     <!-- Color inputs will be dynamically generated here -->
+                </div>
+                <p class="pp-section-label pp-section-label--typography">Typography</p>
+                <div class="pp-form-row" id="pp-roster-dynamic-font-fields">
+                    <!-- Font inputs will be dynamically generated here -->
                 </div>
             </form>
         </div>

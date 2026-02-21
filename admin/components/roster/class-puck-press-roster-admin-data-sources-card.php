@@ -100,7 +100,12 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
                 <?php foreach ($data_sources as $source) : ?>
                     <tr data-id="<?php echo esc_html($source->id) ?>">
                         <td class="pp-td" id="pp-sched-source-name"><?php echo esc_html($source->name) ?></td>
-                        <td class="pp-td"><span class="pp-tag pp-tag-<?php echo esc_html($source->type) ?>"><?php echo esc_html($source->type) ?></span></td>
+                        <td class="pp-td">
+                            <span class="pp-tag pp-tag-<?php echo esc_html($source->type) ?>"><?php echo esc_html($source->type) ?></span>
+                            <?php if ( ! empty( $source->stats_url ) ) : ?>
+                                <span class="pp-tag" style="background:#e8f4fd;color:#1a6fa8;margin-left:4px;" title="<?php echo esc_attr( $source->stats_url ) ?>">Stats</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="pp-td"><?php echo esc_html($source->source_url_or_path) ?></td>
                         <td class="pp-td"><?php echo esc_html(date('M d, Y h:i A', strtotime($source->last_updated))) ?></td>
                         <td class="pp-td">

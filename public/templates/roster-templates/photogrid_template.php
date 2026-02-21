@@ -28,6 +28,49 @@ class PhotoGridTemplate extends PuckPressTemplate
         return false;
     }
 
+    public static function get_js_dependencies(): array
+    {
+        return [ 'jquery', 'pp-player-detail' ];
+    }
+
+    public static function get_player_detail_css_vars(): array
+    {
+        $colors = static::get_template_colors();
+        return [
+            '--pp-pd-accent'  => $colors['accent_color'] ?? '#2a8fa8',
+            '--pp-pd-body-bg' => $colors['page_bg']      ?? '#f0f0f0',
+        ];
+    }
+
+    public static function get_color_labels(): array
+    {
+        return [
+            'accent_color'      => 'Accent Color (Player Detail)',
+            'player_name_color' => 'Player Name Color',
+            'card_bg'           => 'Card Background',
+            'page_bg'           => 'Page Background (Player Detail)',
+        ];
+    }
+
+    public static function get_default_fonts(): array
+    {
+        return ['roster_font' => ''];
+    }
+
+    public static function get_font_labels(): array
+    {
+        return ['roster_font' => 'Roster Font'];
+    }
+
+    public static function get_player_detail_font_vars(): array
+    {
+        $fonts = static::get_template_fonts();
+        $font  = $fonts['roster_font'] ?? '';
+        if (empty($font)) return [];
+        $safe = str_replace(["'", '"', ';', '}'], '', $font);
+        return ['--pp-pd-font-family' => "'{$safe}', sans-serif"];
+    }
+
     /**
      * Returns an array of default colors
      */
@@ -46,7 +89,10 @@ class PhotoGridTemplate extends PuckPressTemplate
      */
     public function render(array $players): string
     {
-        $output = '<div class="photogrid_roster_container">';
+        $output = '<div class="photogrid_roster_container"'
+            . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
+            . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
+            . '>';
 
         // Players with no recognized position
         $skaters = $this->getPlayersWithoutPositions($players);

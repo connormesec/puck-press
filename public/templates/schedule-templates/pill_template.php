@@ -41,7 +41,7 @@ class PillTemplate extends PuckPressTemplate
             'home_tab_bg'       => '#333333',
             'month_text'     => '#cccccc',
             'text'     => '#dedede',
-            'container_bg'     => '#dei787'
+            'container_bg'     => '#66b588',
         ];
     }
 

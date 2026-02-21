@@ -99,7 +99,8 @@ abstract class PuckPressTemplate
      */
     public static function get_inline_css(): ?string
     {
-        $colors = static::get_template_colors();
+        $colors       = static::get_template_colors();
+        $fonts        = static::get_template_fonts();
         $template_key = static::get_key();
 
         if (empty($colors) || !is_array($colors)) {
@@ -107,12 +108,122 @@ abstract class PuckPressTemplate
         }
 
         $css = ':root {';
+
+        // Template-scoped color variables.
         foreach ($colors as $key => $val) {
             $css .= "--pp-{$template_key}-{$key}: {$val};";
         }
+
+        // Template-scoped font variables.
+        foreach ($fonts as $key => $val) {
+            if (!empty($val)) {
+                $safe = str_replace(["'", '"', ';', '}'], '', $val);
+                $css .= "--pp-{$template_key}-{$key}: '{$safe}', sans-serif;";
+            }
+        }
+
+        // Standardized player detail color variables (puck-press-public.css).
+        foreach (static::get_player_detail_css_vars() as $var_name => $val) {
+            $css .= "{$var_name}: {$val};";
+        }
+
+        // Standardized player detail font variable.
+        foreach (static::get_player_detail_font_vars() as $var_name => $val) {
+            $css .= "{$var_name}: {$val};";
+        }
+
         $css .= '}';
 
         return $css;
+    }
+
+    /**
+     * Returns player detail CSS variable overrides.
+     *
+     * Override in roster templates to map template colors to the standardized
+     * --pp-pd-* CSS variables consumed by the shared player detail stylesheet.
+     *
+     * Supported variables:
+     *   --pp-pd-accent    — accent / brand color (tabs, labels, badge, links)
+     *   --pp-pd-body-bg   — background of the player detail body area
+     *
+     * @return array  Map of CSS variable name => value, e.g. ['--pp-pd-accent' => '#2a8fa8']
+     */
+    public static function get_player_detail_css_vars(): array
+    {
+        return [];
+    }
+
+    /**
+     * Returns human-readable labels for each color key defined in get_default_colors().
+     *
+     * Override in templates to provide friendly labels shown in the Customize Colors
+     * admin modal. Keys that also drive the shared player detail view should note
+     * "(Player Detail)" so admins understand their broader impact.
+     *
+     * @return array  Map of color key => label string, e.g. ['accent_color' => 'Accent Color (Player Detail)']
+     */
+    public static function get_color_labels(): array
+    {
+        return [];
+    }
+
+    // -------------------------------------------------------------------------
+    // Font settings (parallel system to colors, stored in a separate option)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Default font settings for this template.
+     *
+     * Keys follow the same naming convention as colors (snake_case).
+     * Current standard key: 'roster_font' (the unified font for all roster text).
+     * Future keys: 'header_font', 'body_font'.
+     *
+     * Values are Google Font names (e.g. 'Roboto', 'Open Sans') or empty string
+     * to inherit from the active WordPress theme.
+     *
+     * @return array  Map of font key => default font name, e.g. ['roster_font' => '']
+     */
+    public static function get_default_fonts(): array
+    {
+        return [];
+    }
+
+    /**
+     * Human-readable labels for each font key, shown in the admin Typography section.
+     *
+     * @return array  Map of font key => label string.
+     */
+    public static function get_font_labels(): array
+    {
+        return [];
+    }
+
+    /**
+     * Retrieves saved font settings for this template (falls back to defaults).
+     *
+     * @return array  Map of font key => font name string.
+     */
+    public static function get_template_fonts(): array
+    {
+        $directory = static::get_directory();
+        $type      = str_replace('-templates', '', $directory);
+        $option    = "pp_{$type}_template_fonts_" . static::get_key();
+        return get_option($option, static::get_default_fonts());
+    }
+
+    /**
+     * Returns player detail font variable overrides.
+     *
+     * Override in roster templates to map the saved roster_font setting to the
+     * standardized --pp-pd-font-family CSS variable used by puck-press-public.css.
+     *
+     * @return array  Map of CSS variable name => fully-formatted value,
+     *                e.g. ['--pp-pd-font-family' => "'Open Sans', sans-serif"]
+     */
+    public static function get_player_detail_font_vars(): array
+    {
+        return [];
     }
 
 

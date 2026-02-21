@@ -9,7 +9,9 @@
 
         $openBtn.on('click', function () {
             $paletteModal.css('display', 'flex');
-            generateColorFields($('#pp-roster-template-selector').val());
+            const templateKey = $('#pp-roster-template-selector').val();
+            generateColorFields(templateKey);
+            generateFontFields(templateKey);
         });
 
         function closeModal() {
@@ -34,6 +36,7 @@
 
             const templateKey = $('#pp-roster-template-selector').val();
             const colorSettings = getColorSettings();
+            const fontSettings  = getFontSettings();
 
             $.ajax({
                 url: ajaxurl,
@@ -41,14 +44,16 @@
                 data: {
                     action: 'puck_press_update_roster_colors',
                     template_key: templateKey,
-                    colors: colorSettings
+                    colors: colorSettings,
+                    fonts:  fontSettings
                 },
                 success: function (response) {
                     if (response.success) {
-                        console.log(response.data);
                         ppRosterTemplates.rosterTemplates[templateKey] = colorSettings;
+                        ppRosterTemplates.fontSettings[templateKey]    = fontSettings;
                         ppRosterTemplates.selected_template = templateKey;
                         generateColorFields(templateKey);
+                        generateFontFields(templateKey);
                     } else {
                         console.log(response.data);
                     }
@@ -59,12 +64,14 @@
             });
         });
 
+        // ── Color fields ─────────────────────────────────────────────────────
+
         function getColorSettings() {
             const settings = {};
             $('#pp-roster-dynamic-color-fields .pp-palette-form-group').each(function () {
-                const label = $(this).find('.pp-form-label').text().trim().toLowerCase();
+                const colorKey = $(this).data('color-key');
                 const value = $(this).find('.pp-color-pallette-color-value').val().trim();
-                settings[label] = value;
+                settings[colorKey] = value;
             });
             return settings;
         }
@@ -72,16 +79,18 @@
         function generateColorFields(templateKey) {
             const template = ppRosterTemplates.rosterTemplates[templateKey];
             if (!template) return;
+            const labels = (ppRosterTemplates.colorLabels && ppRosterTemplates.colorLabels[templateKey]) || {};
             $('#pp-roster-dynamic-color-fields').empty();
             Object.entries(template).forEach(([colorKey, colorValue]) => {
-                const colorLabel = colorKey.charAt(0).toUpperCase() + colorKey.slice(1);
+                const colorLabel = labels[colorKey]
+                    || colorKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                 const field = `
-                    <div class="pp-palette-form-group">
+                    <div class="pp-palette-form-group" data-color-key="${colorKey}">
                         <label for="pp-${templateKey}-${colorKey}-color" class="pp-form-label">${colorLabel}</label>
                         <div class="pp-color-pallette-color-input-group">
-                            <input type="color" class="pp-color-pallette-color-preview" 
+                            <input type="color" class="pp-color-pallette-color-preview"
                                    id="pp-${templateKey}-${colorKey}-color-picker-input" value="${colorValue}">
-                            <input type="text" class="pp-color-pallette-color-value" 
+                            <input type="text" class="pp-color-pallette-color-value"
                                    id="pp-${templateKey}-${colorKey}-color-text-input" value="${colorValue}">
                         </div>
                     </div>
@@ -102,14 +111,68 @@
             });
         }
 
+        // ── Font fields ──────────────────────────────────────────────────────
+
+        function getFontSettings() {
+            const settings = {};
+            $('#pp-roster-dynamic-font-fields .pp-font-form-group').each(function () {
+                const fontKey = $(this).data('font-key');
+                const value   = $(this).find('.pp-font-value').val().trim();
+                settings[fontKey] = value;
+            });
+            return settings;
+        }
+
+        function fontFamilyCss(fontName) {
+            return fontName ? `'${fontName}', sans-serif` : 'inherit';
+        }
+
+        function generateFontFields(templateKey) {
+            const fonts  = (ppRosterTemplates.fontSettings && ppRosterTemplates.fontSettings[templateKey]) || {};
+            const labels = (ppRosterTemplates.fontLabels   && ppRosterTemplates.fontLabels[templateKey])   || {};
+            const $container = $('#pp-roster-dynamic-font-fields').empty();
+
+            Object.entries(fonts).forEach(([fontKey, fontValue]) => {
+                const fontLabel = labels[fontKey]
+                    || fontKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const field = `
+                    <div class="pp-font-form-group" data-font-key="${fontKey}">
+                        <label class="pp-form-label">${fontLabel}</label>
+                        <div class="pp-font-input-group">
+                            <input type="text"
+                                   class="pp-font-value"
+                                   id="pp-${templateKey}-${fontKey}-font-input"
+                                   value="${fontValue}"
+                                   placeholder="e.g. Roboto, Open Sans (leave blank for theme font)">
+                        </div>
+                    </div>
+                `;
+                $container.append(field);
+            });
+
+            // Live preview: update CSS var as the user types
+            $container.find('.pp-font-value').off('input').on('input', function () {
+                const fontKey   = $(this).closest('.pp-font-form-group').data('font-key');
+                const fontName  = $(this).val().trim();
+                const cssValue  = fontFamilyCss(fontName);
+                document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
+                document.documentElement.style.setProperty('--pp-pd-font-family', cssValue);
+            });
+        }
+
+        // ── Template selector ────────────────────────────────────────────────
+
         $('#pp-roster-template-selector').on('change', function () {
             const selected = $(this).val();
             generateColorFields(selected);
+            generateFontFields(selected);
             for (let key in ppRosterTemplates.rosterTemplates) {
                 $(`.${key}_roster_container`).hide();
             }
             $(`.${selected}_roster_container`).show();
         });
+
+        // ── Initial CSS var setup (live preview before any modal interaction) ─
 
         $.each(ppRosterTemplates.rosterTemplates, function (templateKey, colorSet) {
             $.each(colorSet, function (colorKey, defaultValue) {

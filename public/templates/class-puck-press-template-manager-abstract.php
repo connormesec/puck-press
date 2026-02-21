@@ -51,6 +51,8 @@ abstract class Puck_Press_Template_Manager
                     $defaults_data ?? [],
                     $force_reset ?? false
                 );
+
+                $this->register_template_fonts($key, $class_name::get_default_fonts());
             }
         }
 
@@ -110,6 +112,18 @@ abstract class Puck_Press_Template_Manager
         $js_url = $class_name::get_js_url();
         $css_path = $class_name::get_css_path();
         $js_path = $class_name::get_js_path();
+
+        // Google Fonts — enqueue before template CSS so it's available as a dependency
+        $template_fonts = $class_name::get_template_fonts();
+        if (!empty($template_fonts['roster_font'])) {
+            $font_url_name = urlencode($template_fonts['roster_font']);
+            wp_enqueue_style(
+                "$handle_prefix-template-$template_key-gf",
+                "https://fonts.googleapis.com/css2?family={$font_url_name}:wght@400;600;700;800&display=swap",
+                [],
+                null
+            );
+        }
 
         // CSS enqueue
         if (file_exists($css_path)) {
@@ -243,6 +257,56 @@ abstract class Puck_Press_Template_Manager
             $colors[$key] = $class_name::get_template_colors();
         }
         return $colors;
+    }
+
+    public function get_all_template_color_labels()
+    {
+        $labels = [];
+        foreach ($this->templates as $key => $class_name) {
+            $labels[$key] = $class_name::get_color_labels();
+        }
+        return $labels;
+    }
+
+    // -------------------------------------------------------------------------
+    // Font management (parallel to color management)
+    // -------------------------------------------------------------------------
+
+    protected function get_fonts_option_prefix(): string
+    {
+        return str_replace('_colors_', '_fonts_', $this->get_option_prefix());
+    }
+
+    protected function register_template_fonts(string $key, array $defaults): void
+    {
+        $option = $this->get_fonts_option_prefix() . $key;
+        if (get_option($option) === false) {
+            update_option($option, $defaults);
+        }
+    }
+
+    public function get_all_template_fonts(): array
+    {
+        $fonts = [];
+        foreach ($this->templates as $key => $class_name) {
+            $fonts[$key] = $class_name::get_template_fonts();
+        }
+        return $fonts;
+    }
+
+    public function get_all_template_font_labels(): array
+    {
+        $labels = [];
+        foreach ($this->templates as $key => $class_name) {
+            $labels[$key] = $class_name::get_font_labels();
+        }
+        return $labels;
+    }
+
+    public function save_template_fonts(string $key, array $fonts): bool
+    {
+        if (!isset($this->templates[$key])) return false;
+        return (bool) update_option($this->get_fonts_option_prefix() . $key, $fonts);
     }
 
     public function save_template_colors($key, $colors)

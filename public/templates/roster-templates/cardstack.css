@@ -20,6 +20,16 @@
 }
 
 
+.cardstack_roster_container {
+  font-family: var(--pp-cardstack-roster_font, inherit);
+}
+
+/* Force all descendants to inherit the roster font so theme rules on
+   bare elements (h2, h3, p, etc.) cannot override it. */
+.cardstack_roster_container * {
+  font-family: inherit;
+}
+
 .clearfix::after {
   content: "";
   display: table;

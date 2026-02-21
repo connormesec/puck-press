@@ -516,7 +516,7 @@ class Puck_Press_Schedule_Source_Importer
      */
     public static function format_game_status( $gameStatus, $gameTime = null )
     {
-        $normalizedStatus = strtolower( str_replace( [ ' ', '_' ], '-', $gameStatus ) );
+        $normalizedStatus = strtolower( str_replace( [ ' ', '_', '/' ], '-', $gameStatus ) );
 
         switch ( $normalizedStatus ) {
             case 'final':

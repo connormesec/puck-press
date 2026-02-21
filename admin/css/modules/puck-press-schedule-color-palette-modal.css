@@ -59,4 +59,43 @@
   color: #666;
 }
 
+/* ---- Section labels (Colors / Typography) ---- */
+.pp-section-label {
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin: 16px 0 6px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.pp-section-label:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* ---- Font input group ---- */
+.pp-font-form-group {
+  width: 100%;
+}
+
+.pp-font-input-group {
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pp-font-value {
+  flex-grow: 1;
+  border: none;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+}
 

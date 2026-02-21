@@ -7,8 +7,15 @@
 /* ---- Container ---- */
 .photogrid_roster_container {
     background-color: var(--pp-photogrid-page_bg);
+    font-family: var(--pp-photogrid-roster_font, inherit);
     padding: 24px 16px;
     box-sizing: border-box;
+}
+
+/* Force all descendants to inherit the roster font so theme rules on
+   bare elements (h2, h3, p, etc.) cannot override it. */
+.photogrid_roster_container * {
+    font-family: inherit;
 }
 
 /* ---- Section (Forwards / Defensemen / Goalies) ---- */
@@ -61,6 +68,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.photogrid_card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* ---- Headshot image ---- */

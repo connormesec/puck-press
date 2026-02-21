@@ -230,7 +230,7 @@ class SlateTemplate extends PuckPressTemplate
         $t_score = (int)($game['target_score'] ?? 0);
         $o_score = (int)($game['opponent_score'] ?? 0);
 
-        if (!in_array($status, ['Final', 'Final OT', 'Final SO'], true)) {
+        if (!in_array($status, ['Final', 'Final OT', 'Final SO', 'Final/SO', 'Final/OT'], true)) {
             return ['display' => '', 'css_class' => ''];
         }
 
@@ -243,9 +243,9 @@ class SlateTemplate extends PuckPressTemplate
         }
 
         $suffix = '';
-        if ($status === 'Final OT') {
+        if ($status === 'Final OT' || $status === 'Final/OT') {
             $suffix = ' (OT)';
-        } elseif ($status === 'Final SO') {
+        } elseif ($status === 'Final SO' || $status === 'Final/SO') {
             $suffix = ' (SO)';
         }
 
