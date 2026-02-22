@@ -24,9 +24,9 @@ function refreshGamesTable(successCallback, errorCallback) {
                         }
                     }
                     for (let key in ppRosterTemplates.rosterTemplates) {
-                        (jQuery)(`.${key}_container`).hide();
+                        (jQuery)(`.${key}_roster_container`).hide();
                     }
-                    (jQuery)(`.${ppRosterTemplates.selected_template}_container`).show();
+                    (jQuery)(`.${ppRosterTemplates.selected_template}_roster_container`).show();
 
                     console.log('Roster table refreshed successfully.');
                     console.log('Response:', response);

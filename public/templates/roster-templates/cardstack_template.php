@@ -105,28 +105,36 @@ class CardStackTemplate extends PuckPressTemplate
 
     public function buildCardStack(array $players)
     {
+        global $wpdb;
+        $stats_source_rows = $wpdb->get_col(
+            "SELECT name FROM {$wpdb->prefix}pp_roster_data_sources WHERE stats_url IS NOT NULL AND stats_url != ''"
+        );
+        $sources_with_stats = array_flip( $stats_source_rows ?: [] );
+
         $content = '<div class="cardstack_roster_container clearfix"'
             . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
             . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
             . '>';
-        
+
         // Skaters (players without assigned positions) - shown first
         $skaters = $this->getPlayersWithoutPositions($players);
         if (!empty($skaters)) {
             $content .= '<div class="player_group">';
             $content .= '<div class="player_position_title"><h2>Skaters</h2></div>';
             foreach ($skaters as $player) {
-                $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
+                $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+                $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
             }
             $content .= '</div>';
         }
-        
+
         //forwards
         $content .= '<div class="player_group">';
         $content .= '<div class="player_position_title"><h2>Forwards</h2></div>';
         $forwards = $this->getPlayersByPositions($players, ['F', 'C', 'LW', 'RW']);
         foreach ($forwards as $player) {
-            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
+            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';
 
@@ -134,7 +142,8 @@ class CardStackTemplate extends PuckPressTemplate
         $content .= '<div class="player_position_title"><h2>Defense</h2></div>';
         $defense = $this->getPlayersByPositions($players, ['D', 'LD', 'RD']);
         foreach ($defense as $player) {
-            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
+            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';
 
@@ -142,7 +151,8 @@ class CardStackTemplate extends PuckPressTemplate
         $content .= '<div class="player_position_title"><h2>Goalies</h2></div>';
         $goalies = $this->getPlayersByPositions($players, ['G']);
         foreach ($goalies as $player) {
-            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null);
+            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';
 
@@ -165,7 +175,8 @@ class CardStackTemplate extends PuckPressTemplate
         $shoots,
         $year_in_school = null,
         $last_team = null,
-        $major = null
+        $major = null,
+        $has_stats = true
     ) {
         $fallback_headshot = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
 
@@ -197,8 +208,11 @@ class CardStackTemplate extends PuckPressTemplate
         $year_html = $year_in_school ? "<span class=\"year\">Year: {$year_in_school}</span>" : '';
         $last_team_html = $last_team ? "<div><span class=\"prev_team\">Last Team: {$last_team}</span></div>" : '';
 
+        $id_attr     = $has_stats ? ' id="' . esc_attr( $player_id ) . '"' : '';
+        $extra_class = $has_stats ? '' : ' no-stats';
+
         $card = <<<HTML
-        <div class="player_item clearfix" id="{$player_id}" data-primary-key="{$id}">
+        <div class="player_item clearfix{$extra_class}"{$id_attr} data-primary-key="{$id}">
             <div class="thumb">
                 <img src="{$headshot_image}" onerror="this.onerror=null;this.src='{$fallback_headshot}';" alt="player headshot" loading="lazy"/>
             </div>

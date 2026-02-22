@@ -8,6 +8,7 @@
  */
 class PhotoGridTemplate extends PuckPressTemplate
 {
+    private array $sources_with_stats = [];
     public static function get_key(): string
     {
         return 'photogrid';
@@ -89,6 +90,12 @@ class PhotoGridTemplate extends PuckPressTemplate
      */
     public function render(array $players): string
     {
+        global $wpdb;
+        $rows = $wpdb->get_col(
+            "SELECT name FROM {$wpdb->prefix}pp_roster_data_sources WHERE stats_url IS NOT NULL AND stats_url != ''"
+        );
+        $this->sources_with_stats = array_flip( $rows ?: [] );
+
         $output = '<div class="photogrid_roster_container"'
             . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
             . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
@@ -146,6 +153,9 @@ class PhotoGridTemplate extends PuckPressTemplate
         $pos        = esc_html($player['pos'] ?? '');
         $id         = esc_attr($player['player_id'] ?? '');
         $primary_key = esc_attr($player['id'] ?? '');
+        $has_stats   = isset( $this->sources_with_stats[ $player['source'] ?? '' ] );
+        $id_attr     = $has_stats ? ' id="' . $id . '"' : '';
+        $extra_class = $has_stats ? '' : ' no-stats';
 
         // Build the "#76 | Forward" meta line
         if ($number && $pos) {
@@ -159,7 +169,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         }
 
         return <<<HTML
-<div class="photogrid_card" id="{$id}" data-primary-key="{$primary_key}">
+<div class="photogrid_card{$extra_class}"{$id_attr} data-primary-key="{$primary_key}">
     <div class="photogrid_img_wrap">
         <img src="{$img}" onerror="this.onerror=null;this.src='{$fallback}';" alt="{$name}" loading="lazy" />
     </div>
