@@ -46,6 +46,16 @@ class AccordionTemplate extends PuckPressTemplate
         ];
     }
 
+    public static function get_default_fonts(): array
+    {
+        return ['schedule_font' => ''];
+    }
+
+    public static function get_font_labels(): array
+    {
+        return ['schedule_font' => 'Schedule Font'];
+    }
+
     /**
      * Returns the template output
      */

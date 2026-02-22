@@ -4,6 +4,11 @@
 .slate_schedule_container {
   background: var(--pp-slate-page_bg);
   padding: 24px 16px;
+  font-family: var(--pp-slate-schedule_font, inherit);
+}
+/* Force all descendants to inherit the schedule font so theme rules on
+   bare elements (h2, h3, p, etc.) cannot override it. */
+.slate_schedule_container * {
   font-family: inherit;
 }
 

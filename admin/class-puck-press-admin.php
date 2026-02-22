@@ -202,18 +202,19 @@ class Puck_Press_Admin
 		}
 
 		// Fonts — optional payload alongside colors, sanitized as text (not hex).
+		$fonts_updated = false;
 		if (!empty($_POST['fonts']) && is_array($_POST['fonts'])) {
 			$fonts = [];
 			foreach ($_POST['fonts'] as $key => $value) {
 				$fonts[sanitize_key($key)] = sanitize_text_field($value);
 			}
-			$template_manager->save_template_fonts($template_key, $fonts);
+			$fonts_updated = $template_manager->save_template_fonts($template_key, $fonts);
 		}
 
 		$colors_updated = $template_manager->save_template_colors($template_key, $colors);
 		$template_key_changed = $template_manager->set_current_template_key($template_key);
 
-		if ($colors_updated || $template_key_changed) {
+		if ($colors_updated || $template_key_changed || $fonts_updated) {
 			wp_send_json_success([
 				'message' => 'Template updated successfully.',
 				'colors'  => $colors
@@ -332,6 +333,9 @@ class Puck_Press_Admin
 		$selected_template =  $template_manager->get_current_template_key();
 		$templates = [
 			'scheduleTemplates' => $scheduleTemplates,
+			'colorLabels'       => $template_manager->get_all_template_color_labels(),
+			'fontSettings'      => $template_manager->get_all_template_fonts(),
+			'fontLabels'        => $template_manager->get_all_template_font_labels(),
 			'selected_template' => $selected_template
 		];
 		wp_localize_script('puck-press-color-picker', 'ppScheduleTemplates', $templates);

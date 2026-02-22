@@ -1,3 +1,12 @@
+.accordion_schedule_container {
+  font-family: var(--pp-accordion-schedule_font, inherit);
+}
+/* Force all descendants to inherit the schedule font so theme rules on
+   bare elements (h2, h3, p, etc.) cannot override it. */
+.accordion_schedule_container * {
+  font-family: inherit;
+}
+
 .accordion.active .accordion_title_right_content:after {
   border-bottom-color: var(--pp-accordion-month_text);
 }

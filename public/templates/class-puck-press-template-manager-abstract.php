@@ -113,16 +113,18 @@ abstract class Puck_Press_Template_Manager
         $css_path = $class_name::get_css_path();
         $js_path = $class_name::get_js_path();
 
-        // Google Fonts — enqueue before template CSS so it's available as a dependency
+        // Google Fonts — enqueue any saved font for this template
         $template_fonts = $class_name::get_template_fonts();
-        if (!empty($template_fonts['roster_font'])) {
-            $font_url_name = urlencode($template_fonts['roster_font']);
-            wp_enqueue_style(
-                "$handle_prefix-template-$template_key-gf",
-                "https://fonts.googleapis.com/css2?family={$font_url_name}:wght@400;600;700;800&display=swap",
-                [],
-                null
-            );
+        foreach ($template_fonts as $font_key => $font_name) {
+            if (!empty($font_name)) {
+                $font_url_name = urlencode($font_name);
+                wp_enqueue_style(
+                    "$handle_prefix-template-$template_key-gf-$font_key",
+                    "https://fonts.googleapis.com/css2?family={$font_url_name}:wght@400;600;700;800&display=swap",
+                    [],
+                    null
+                );
+            }
         }
 
         // CSS enqueue
@@ -279,9 +281,28 @@ abstract class Puck_Press_Template_Manager
 
     protected function register_template_fonts(string $key, array $defaults): void
     {
-        $option = $this->get_fonts_option_prefix() . $key;
-        if (get_option($option) === false) {
+        $option   = $this->get_fonts_option_prefix() . $key;
+        $existing = get_option($option);
+
+        if ($existing === false) {
             update_option($option, $defaults);
+            return;
+        }
+
+        if (!is_array($existing)) {
+            $existing = [];
+        }
+
+        $has_new = false;
+        foreach ($defaults as $k => $v) {
+            if (!array_key_exists($k, $existing)) {
+                $existing[$k] = $v;
+                $has_new = true;
+            }
+        }
+
+        if ($has_new) {
+            update_option($option, $existing);
         }
     }
 

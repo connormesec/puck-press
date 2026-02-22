@@ -37,6 +37,16 @@ class SlateTemplate extends PuckPressTemplate
         ];
     }
 
+    public static function get_default_fonts(): array
+    {
+        return ['schedule_font' => ''];
+    }
+
+    public static function get_font_labels(): array
+    {
+        return ['schedule_font' => 'Schedule Font'];
+    }
+
     public function render(array $games): string
     {
         $inline_css = self::get_inline_css();

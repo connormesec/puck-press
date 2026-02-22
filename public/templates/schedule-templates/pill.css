@@ -1,3 +1,12 @@
+.pill_schedule_container {
+  font-family: var(--pp-pill-schedule_font, inherit);
+}
+/* Force all descendants to inherit the schedule font so theme rules on
+   bare elements (h2, h3, p, etc.) cannot override it. */
+.pill_schedule_container * {
+  font-family: inherit;
+}
+
 .home{
   color: var(--pp-pill-home_tab_text);
   background-color: var(--pp-pill-home_tab_bg);

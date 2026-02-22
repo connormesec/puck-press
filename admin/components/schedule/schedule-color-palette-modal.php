@@ -48,6 +48,10 @@ $selected_template = $templates->get_current_template_key();
                 <div class="pp-form-row" id="pp-dynamic-color-fields">
                     <!-- Color inputs will be dynamically generated here -->
                 </div>
+                <p class="pp-form-label" style="font-weight:600;margin-top:1rem;">Typography</p>
+                <div class="pp-form-row" id="pp-schedule-dynamic-font-fields">
+                    <!-- Font inputs will be dynamically generated here -->
+                </div>
             </form>
         </div>
         <div class="pp-modal-footer">
