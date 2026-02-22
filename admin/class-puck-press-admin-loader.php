@@ -46,6 +46,7 @@ class Puck_Press_Admin_Loader {
 		// Abstracts
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-card-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-modal-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-preview-card-abstract.php';
 
 		// Schedule Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-data-sources-card.php';

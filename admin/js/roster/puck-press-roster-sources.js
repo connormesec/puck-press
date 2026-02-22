@@ -262,7 +262,6 @@
                                 alert('An error occurred while refreshing all sources.');
                             }).then(() => {
                                 restoreGameListStyles();
-                                countGameRows();
                             });
                     } else {
                         alert('There was an error deleting the data source.');

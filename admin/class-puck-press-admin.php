@@ -303,7 +303,8 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-roster-sources', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-edits', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-edits.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-add-player', plugin_dir_url(__FILE__) . 'js/roster/puck-press-add-player.js', array('jquery', 'puck-press-roster-edits'), $this->version, false);
-				wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js'), $this->version, false);
+				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
+			wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
 				break;
 			case 'game-summary':
@@ -319,8 +320,9 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-schedule-sources', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-edits-table', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-edits-table.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-add-game', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-add-game.js', array('jquery', 'puck-press-admin-shared', 'select2-js'), $this->version, false);
-				wp_enqueue_script('puck-press-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-color-picker.js', array('jquery'), $this->version, false);
-				wp_enqueue_script('puck-press-slider-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
+			wp_enqueue_script('puck-press-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-color-picker.js', array('jquery', 'puck-press-color-picker-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-slider-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array('jquery', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-preview', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-preview.js', array('jquery'), $this->version, false);
 				break;
 		}

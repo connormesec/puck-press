@@ -191,4 +191,118 @@ abstract class Puck_Press_Wpdb_Utils_Base
 
         return $formats;
     }
+
+    protected function get_required_fields_from_schema($short_table_name)
+    {
+        if (!isset($this->table_schemas[$short_table_name])) {
+            return [];
+        }
+
+        $schema = $this->table_schemas[$short_table_name];
+        $required_fields = [];
+        $lines = explode("\n", $schema);
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if (preg_match('/^(\w+)\s+[\w\(\)]+.*NOT NULL/i', $line, $matches)) {
+                $column = $matches[1];
+
+                if (stripos($line, 'AUTO_INCREMENT') !== false) continue;
+                if (stripos($line, 'DEFAULT') !== false) continue;
+
+                $required_fields[] = $column;
+            }
+        }
+
+        return $required_fields;
+    }
+
+    protected function get_column_names_from_schema($table_name)
+    {
+        if (!isset($this->table_schemas[$table_name])) {
+            return [];
+        }
+
+        $schema = $this->table_schemas[$table_name];
+        preg_match_all('/^\s*(\w+)\s+/m', $schema, $matches);
+        return $matches[1] ?? [];
+    }
+
+    protected function get_format_array_for_insert($data)
+    {
+        $formats = [];
+
+        foreach ($data as $value) {
+            if (is_int($value)) {
+                $formats[] = '%d';
+            } elseif (is_float($value)) {
+                $formats[] = '%f';
+            } else {
+                $formats[] = '%s';
+            }
+        }
+
+        return $formats;
+    }
+
+    protected function insert_multiple_rows($table_name, array $rows, $rows_key, callable $is_field_missing)
+    {
+        global $wpdb;
+
+        if (empty($rows) || !is_array($rows)) {
+            return new WP_Error('no_data', 'No rows provided.');
+        }
+
+        $full_table_name    = $this->get_full_table_name($table_name);
+        $required_fields    = $this->get_required_fields_from_schema($table_name);
+        $valid_columns      = $this->get_column_names_from_schema($table_name);
+        $inserted_ids       = [];
+        $insert_errors      = [];
+        $missing_fields_all = [];
+
+        foreach ($rows as $index => $row) {
+            $missing_fields = [];
+
+            foreach ($required_fields as $field) {
+                if ($is_field_missing($row, $field)) {
+                    $missing_fields[] = $field;
+                }
+            }
+
+            if (!empty($missing_fields)) {
+                $missing_fields_all = array_merge($missing_fields_all, $missing_fields);
+                continue;
+            }
+
+            if (empty($row['created_at'])) {
+                $row['created_at'] = current_time('mysql');
+            }
+
+            $filtered_row = array_intersect_key($row, array_flip($valid_columns));
+
+            $inserted = $wpdb->insert(
+                $full_table_name,
+                $filtered_row,
+                $this->get_format_array_for_insert($filtered_row)
+            );
+
+            if ($inserted !== false) {
+                $inserted_ids[] = $wpdb->insert_id;
+            } else {
+                $insert_errors[] = [
+                    'row_index' => $index,
+                    'row_data'  => $filtered_row,
+                    'db_error'  => $wpdb->last_error,
+                ];
+            }
+        }
+
+        return [
+            'inserted_ids'   => $inserted_ids,
+            'missing_fields' => array_values(array_unique($missing_fields_all)),
+            'insert_errors'  => $insert_errors,
+            $rows_key        => $rows,
+        ];
+    }
 }

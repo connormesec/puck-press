@@ -117,122 +117,14 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
         return $active_sources;
     }
 
-    public function insert_multiple_game_schedule_rows( $game_rows = [] ) {
-        global $wpdb;
-        if ( empty( $game_rows ) || ! is_array( $game_rows ) ) {
-            return new WP_Error( 'no_data', 'No game rows provided.' );
-        }
-    
-        $table_name        = 'pp_game_schedule_raw';
-        $full_table_name   = $this->get_full_table_name( $table_name );
-        $required_fields   = $this->get_required_fields_from_schema( $table_name );
-        $valid_columns     = $this->get_column_names_from_schema( $table_name );
-        $inserted_ids      = [];
-        $insert_errors     = [];
-        $missing_fields_all = [];
-    
-        foreach ( $game_rows as $index => $row ) {
-    
-            $missing_fields = [];
-    
-            foreach ( $required_fields as $field ) {
-                if ( ! isset( $row[ $field ] ) || $row[ $field ] === '' ) {
-                    $missing_fields[] = $field;
-                }
-            }
-    
-            if ( ! empty( $missing_fields ) ) {
-                $missing_fields_all = array_merge( $missing_fields_all, $missing_fields );
-                continue;
-            }
-    
-            if ( empty( $row['created_at'] ) ) {
-                $row['created_at'] = current_time( 'mysql' );
-            }
-    
-            $filtered_row = array_intersect_key( $row, array_flip( $valid_columns ) );
-    
-            $inserted = $wpdb->insert(
-                $full_table_name,
-                $filtered_row,
-                $this->get_format_array_for_insert( $filtered_row )
-            );
-    
-            if ( $inserted !== false ) {
-                $inserted_ids[] = $wpdb->insert_id;
-            } else {
-                $insert_errors[] = [
-                    'row_index' => $index,
-                    'row_data'  => $filtered_row,
-                    'db_error'  => $wpdb->last_error
-                ];
-            }
-        }
-    
-        return [
-            'inserted_ids'    => $inserted_ids,
-            'missing_fields'  => array_values( array_unique( $missing_fields_all ) ),
-            'insert_errors'   => $insert_errors,
-            'game_rows'     => $game_rows
-        ];
-    }
-
-    protected function get_required_fields_from_schema($short_table_name)
+    public function insert_multiple_game_schedule_rows($game_rows = [])
     {
-        if (!isset($this->table_schemas[$short_table_name])) {
-            return [];
-        }
-
-        $schema = $this->table_schemas[$short_table_name];
-        $required_fields = [];
-
-        // Split schema by lines
-        $lines = explode("\n", $schema);
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-
-            // Match lines that define a column (ignore PRIMARY KEY, UNIQUE, etc.)
-            if (preg_match('/^(\w+)\s+[\w\(\)]+.*NOT NULL/i', $line, $matches)) {
-                $column = $matches[1];
-
-                // Skip auto-increment columns or those with DEFAULT
-                if (stripos($line, 'AUTO_INCREMENT') !== false) continue;
-                if (stripos($line, 'DEFAULT') !== false) continue;
-
-                $required_fields[] = $column;
-            }
-        }
-
-        return $required_fields;
-    }
-
-    private function get_column_names_from_schema($table_name)
-    {
-        if (!isset($this->table_schemas[$table_name])) {
-            return [];
-        }
-
-        $schema = $this->table_schemas[$table_name];
-        preg_match_all('/^\s*(\w+)\s+/m', $schema, $matches);
-        return $matches[1] ?? [];
-    }
-
-    protected function get_format_array_for_insert($data)
-    {
-        $formats = [];
-
-        foreach ($data as $value) {
-            if (is_int($value)) {
-                $formats[] = '%d';
-            } elseif (is_float($value)) {
-                $formats[] = '%f';
-            } else {
-                $formats[] = '%s';
-            }
-        }
-
-        return $formats;
+        return $this->insert_multiple_rows(
+            'pp_game_schedule_raw',
+            $game_rows,
+            'game_rows',
+            function ($row, $field) { return !isset($row[$field]) || $row[$field] === ''; }
+        );
     }
 
     public function delete_row_by_game_id($table_name, $game_id)
