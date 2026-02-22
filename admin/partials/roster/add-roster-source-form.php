@@ -24,16 +24,25 @@
             <span class="pp-form-help">URL to the ACHA Roster</span>
         </div>
         <div class="pp-form-group">
-            <label for="pp-stats-url" class="pp-form-label">Stats URL <span style="font-weight:normal;color:#888;">(optional)</span></label>
+            <label for="pp-stats-url" class="pp-form-label">Skater Stats URL <span style="font-weight:normal;color:#888;">(optional)</span></label>
             <input type="url" id="pp-stats-url" class="pp-form-input" placeholder="https://www.achahockey.org/stats/player-stats/51/60?...">
-            <span class="pp-form-help">ACHA stats page URL — used to import player stats</span>
+            <span class="pp-form-help">ACHA skater stats page URL — used to import skater stats</span>
+        </div>
+        <div class="pp-form-group">
+            <label for="pp-goalie-stats-url" class="pp-form-label">Goalie Stats URL <span style="font-weight:normal;color:#888;">(optional)</span></label>
+            <input type="url" id="pp-goalie-stats-url" class="pp-form-input" placeholder="https://www.achahockey.org/stats/goalie-stats/51/60?...">
+            <span class="pp-form-help">ACHA goalie stats page URL — used to import goalie stats</span>
         </div>
     </div>
     <div class="pp-dynamic-source-group-usphlRosterUrl">
         <div class="pp-form-group">
-            <label for="pp-usphl-source-url" class="pp-form-label">URL</label>
-            <input type="url" id="pp-usphl-source-url" class="pp-form-input" placeholder="link to S3 bucket json" required>
-            <span class="pp-form-help">URL to the USPHL Roster</span>
+            <label for="pp-usphl-team-id" class="pp-form-label">Team ID</label>
+            <input type="text" id="pp-usphl-team-id" class="pp-form-input" placeholder="e.g. 2301" required>
+            <span class="pp-form-help">USPHL league-assigned team ID</span>
+        </div>
+        <div class="pp-form-group">
+            <label for="pp-usphl-season-id" class="pp-form-label">Season ID</label>
+            <input type="text" id="pp-usphl-season-id" class="pp-form-input" placeholder="e.g. 65" required>
         </div>
     </div>
     <!-- CSV Upload Section -->

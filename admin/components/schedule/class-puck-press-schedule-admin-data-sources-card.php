@@ -100,7 +100,18 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
                     <tr data-id="<?php echo esc_html($source->id) ?>">
                         <td class="pp-td" id="pp-sched-source-name"><?php echo esc_html($source->name) ?></td>
                         <td class="pp-td"><span class="pp-tag pp-tag-<?php echo esc_html($source->type) ?>"><?php echo esc_html($source->type) ?></span></td>
-                        <td class="pp-td"><?php echo esc_html($source->source_url_or_path) ?></td>
+                        <td class="pp-td"><?php
+                            if ( $source->type === 'usphlGameScheduleUrl' ) {
+                                $other = json_decode( $source->other_data ?? '{}', true );
+                                $display = 'Team: ' . esc_html( $source->source_url_or_path );
+                                if ( ! empty( $other['season_id'] ) ) {
+                                    $display .= ' / Season: ' . esc_html( $other['season_id'] );
+                                }
+                                echo $display;
+                            } else {
+                                echo esc_html( $source->source_url_or_path );
+                            }
+                        ?></td>
                         <td class="pp-td"><?php echo esc_html(date('M d, Y h:i A', strtotime($source->last_updated))) ?></td>
                         <td class="pp-td">
                             <label class="pp-data-source-toggle-switch">
@@ -161,7 +172,9 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
                 break;
 
             case 'usphlGameScheduleUrl':
-                $url = esc_url_raw($post['url'] ?? '');
+                $url       = sanitize_text_field($post['team_id'] ?? '');
+                $season_id = sanitize_text_field($post['season_id'] ?? '');
+                $other_data = !empty($season_id) ? wp_json_encode(['season_id' => $season_id]) : null;
                 break;
 
             case 'csv':

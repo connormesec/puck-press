@@ -19,6 +19,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         $this->roster_db_utils->maybe_create_or_update_table('pp_roster_for_display');
         $this->roster_db_utils->maybe_create_or_update_table('pp_roster_raw');
         $this->roster_db_utils->maybe_create_or_update_table('pp_roster_stats');
+        $this->roster_db_utils->maybe_create_or_update_table('pp_roster_goalie_stats');
     }
 
     public function render_content()
@@ -103,10 +104,24 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
                         <td class="pp-td">
                             <span class="pp-tag pp-tag-<?php echo esc_html($source->type) ?>"><?php echo esc_html($source->type) ?></span>
                             <?php if ( ! empty( $source->stats_url ) ) : ?>
-                                <span class="pp-tag" style="background:#e8f4fd;color:#1a6fa8;margin-left:4px;" title="<?php echo esc_attr( $source->stats_url ) ?>">Stats</span>
+                                <span class="pp-tag" style="background:#e8f4fd;color:#1a6fa8;margin-left:4px;" title="<?php echo esc_attr( $source->stats_url ) ?>">Skater Stats</span>
+                            <?php endif; ?>
+                            <?php if ( ! empty( $source->goalie_stats_url ) ) : ?>
+                                <span class="pp-tag" style="background:#fde8f4;color:#a81a6f;margin-left:4px;" title="<?php echo esc_attr( $source->goalie_stats_url ) ?>">Goalie Stats</span>
                             <?php endif; ?>
                         </td>
-                        <td class="pp-td"><?php echo esc_html($source->source_url_or_path) ?></td>
+                        <td class="pp-td"><?php
+                            if ( $source->type === 'usphlRosterUrl' ) {
+                                $other = json_decode( $source->other_data ?? '{}', true );
+                                $display = 'Team: ' . esc_html( $source->source_url_or_path );
+                                if ( ! empty( $other['season_id'] ) ) {
+                                    $display .= ' / Season: ' . esc_html( $other['season_id'] );
+                                }
+                                echo $display;
+                            } else {
+                                echo esc_html( $source->source_url_or_path );
+                            }
+                        ?></td>
                         <td class="pp-td"><?php echo esc_html(date('M d, Y h:i A', strtotime($source->last_updated))) ?></td>
                         <td class="pp-td">
                             <label class="pp-data-source-toggle-switch">
@@ -208,16 +223,19 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         $type   = sanitize_text_field($post['type'] ?? '');
         $active = isset($post['active']) ? intval($post['active']) : 0;
 
-        $url = $csv_content = $other_data = $stats_url = null;
+        $url = $csv_content = $other_data = $stats_url = $goalie_stats_url = null;
 
         switch ($type) {
             case 'achaRosterUrl':
-                $url       = esc_url_raw($post['url'] ?? '');
-                $stats_url = !empty($post['stats_url']) ? esc_url_raw($post['stats_url']) : null;
+                $url              = esc_url_raw($post['url'] ?? '');
+                $stats_url        = !empty($post['stats_url'])        ? esc_url_raw($post['stats_url'])        : null;
+                $goalie_stats_url = !empty($post['goalie_stats_url']) ? esc_url_raw($post['goalie_stats_url']) : null;
                 break;
 
             case 'usphlRosterUrl':
-                $url = esc_url_raw($post['url'] ?? '');
+                $url        = sanitize_text_field($post['team_id'] ?? '');
+                $season_id  = sanitize_text_field($post['season_id'] ?? '');
+                $other_data = !empty($season_id) ? wp_json_encode(['season_id' => $season_id]) : null;
                 break;
                 
             case 'csv':
@@ -248,15 +266,16 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         }
 
         return [
-            'name' => $name,
-            'type' => $type,
+            'name'               => $name,
+            'type'               => $type,
             'source_url_or_path' => $url,
-            'stats_url' => $stats_url,
-            'csv_data' => $csv_content,
-            'other_data' => $other_data,
-            'status' => $active ? 'active' : 'inactive',
-            'created_at' => current_time('mysql'),
-            'last_updated' => current_time('mysql'),
+            'stats_url'          => $stats_url,
+            'goalie_stats_url'   => $goalie_stats_url,
+            'csv_data'           => $csv_content,
+            'other_data'         => $other_data,
+            'status'             => $active ? 'active' : 'inactive',
+            'created_at'         => current_time('mysql'),
+            'last_updated'       => current_time('mysql'),
         ];
     }
 

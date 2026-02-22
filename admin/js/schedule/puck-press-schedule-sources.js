@@ -76,7 +76,9 @@
 						data.url = $('#pp-source-url').val();
 						data.season = $('#pp-source-season-year').val();
 					} else if (type === 'usphlGameScheduleUrl') {
-						data.url = $('#pp-source-url-usphl').val();
+						data.team_id = $('#pp-usphl-team-id').val();
+						const seasonId = $('#pp-usphl-season-id').val();
+						if (seasonId) data.season_id = seasonId;
 					} else if (type === 'csv') {
 						const file = $('#pp-schedule-fileInput')[0].files[0];
 						if (!file) throw new Error('Please select a CSV file.');
@@ -97,7 +99,8 @@
 					if (type === 'csv'){
 						displayValue = csvFile.name;
 					} else if (type === 'usphlGameScheduleUrl') {
-						displayValue = $('#pp-source-url-usphl').val();
+						const sid = $('#pp-usphl-season-id').val();
+						displayValue = 'Team: ' + $('#pp-usphl-team-id').val() + (sid ? ' / Season: ' + sid : '');
 					}
 					
 					createNewSourceRow(name, type, displayValue, active, response.data.id);
@@ -287,7 +290,7 @@
 					required: ['#pp-source-url', '#pp-source-season-year']
 				},
 				usphlGameScheduleUrl: {
-					required: ['#pp-source-url-usphl']
+					required: ['#pp-usphl-team-id']
 				},
 				csv: {
 					required: ['#pp-schedule-fileInput']

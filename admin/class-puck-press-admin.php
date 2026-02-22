@@ -138,6 +138,7 @@ class Puck_Press_Admin
 		$utils->reset_table('pp_roster_raw');
 		$utils->reset_table('pp_roster_for_display');
 		$utils->reset_table('pp_roster_stats');
+		$utils->reset_table('pp_roster_goalie_stats');
 
 		$importer = new Puck_Press_Roster_Source_Importer();
 		$raw_table_results = $importer->populate_raw_roster_table_from_sources();

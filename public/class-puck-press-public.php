@@ -110,9 +110,15 @@ class Puck_Press_Public {
 			return;
 		}
 
+		// Query the appropriate stats table based on whether the player is a goalie.
+		$is_goalie  = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
+		$stats_table = $is_goalie
+			? "{$wpdb->prefix}pp_roster_goalie_stats"
+			: "{$wpdb->prefix}pp_roster_stats";
+
 		$stats = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}pp_roster_stats WHERE player_id = %s LIMIT 1",
+				"SELECT * FROM {$stats_table} WHERE player_id = %s LIMIT 1",
 				$player_id
 			),
 			ARRAY_A

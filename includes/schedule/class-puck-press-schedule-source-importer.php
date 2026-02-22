@@ -255,8 +255,10 @@ class Puck_Press_Schedule_Source_Importer
                 // ----------------------------------------------------------------
                 } elseif ( $source->type === 'usphlGameScheduleUrl' ) {
 
-                    $processor = new Puck_Press_Schedule_Process_Usphl_Url(
-                        $source->source_url_or_path
+                    $usphl_other = json_decode( $source->other_data ?? '{}', true );
+                    $processor   = new Puck_Press_Schedule_Process_Usphl_Url(
+                        $source->source_url_or_path,
+                        $usphl_other['season_id'] ?? ''
                     );
 
                     $games = $this->stamp_source( $processor->raw_schedule_data, $source );

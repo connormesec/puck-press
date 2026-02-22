@@ -19,6 +19,7 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             type TEXT NOT NULL,
             source_url_or_path TEXT DEFAULT NULL,
             stats_url TEXT DEFAULT NULL,
+            goalie_stats_url TEXT DEFAULT NULL,
             last_updated DATETIME DEFAULT NULL,
             status ENUM('active', 'inactive') DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -86,6 +87,27 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             shooting_percentage DECIMAL(5,2) DEFAULT NULL,
             rank SMALLINT DEFAULT NULL,
             PRIMARY KEY (id)
+        ",
+        'pp_roster_goalie_stats' => "
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            player_id VARCHAR(50) NOT NULL,
+            source VARCHAR(100) NOT NULL,
+            games_played SMALLINT DEFAULT NULL,
+            wins SMALLINT DEFAULT NULL,
+            losses SMALLINT DEFAULT NULL,
+            overtime_losses SMALLINT DEFAULT NULL,
+            shootout_losses SMALLINT DEFAULT NULL,
+            shootout_wins SMALLINT DEFAULT NULL,
+            shots_against SMALLINT DEFAULT NULL,
+            saves SMALLINT DEFAULT NULL,
+            save_percentage DECIMAL(6,3) DEFAULT NULL,
+            goals_against_average DECIMAL(5,2) DEFAULT NULL,
+            goals_against SMALLINT DEFAULT NULL,
+            goals SMALLINT DEFAULT NULL,
+            assists SMALLINT DEFAULT NULL,
+            penalty_minutes SMALLINT DEFAULT NULL,
+            rank SMALLINT DEFAULT NULL,
+            PRIMARY KEY (id)
         "
     ];
 
@@ -126,14 +148,21 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
         $wpdb->query("TRUNCATE TABLE $full_table");
     }
 
+    public function insert_goalie_stats_rows( $stats_rows = [] ) {
+        return $this->insert_stats_rows_into( 'pp_roster_goalie_stats', $stats_rows );
+    }
+
     public function insert_stats_rows( $stats_rows = [] ) {
+        return $this->insert_stats_rows_into( 'pp_roster_stats', $stats_rows );
+    }
+
+    private function insert_stats_rows_into( string $table_name, array $stats_rows ) {
         global $wpdb;
 
         if ( empty( $stats_rows ) || ! is_array( $stats_rows ) ) {
             return new WP_Error( 'no_data', 'No stats rows provided.' );
         }
 
-        $table_name      = 'pp_roster_stats';
         $full_table_name = $this->get_full_table_name( $table_name );
         $inserted_ids    = [];
         $insert_errors   = [];

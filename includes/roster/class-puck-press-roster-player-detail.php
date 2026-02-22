@@ -20,7 +20,7 @@ class Puck_Press_Roster_Player_Detail
      * Renders the player detail HTML.
      *
      * @param array $player Row from pp_roster_for_display (ARRAY_A).
-     * @param array $stats  Row from pp_roster_stats (ARRAY_A), or empty array if none.
+     * @param array $stats  Row from pp_roster_stats or pp_roster_goalie_stats (ARRAY_A), or empty array if none.
      * @return string HTML string.
      */
     public static function render(array $player, array $stats): string
@@ -63,55 +63,119 @@ class Puck_Press_Roster_Player_Detail
             $bio_html = '<p class="pp-no-stats">No bio information available.</p>';
         }
 
-        // Stats tab content
-        if (!empty($stats)) {
-            $gp  = esc_html($stats['games_played']         ?? '-');
-            $g   = esc_html($stats['goals']                ?? '-');
-            $a   = esc_html($stats['assists']              ?? '-');
-            $pts = esc_html($stats['points']               ?? '-');
-            $ppg = esc_html($stats['points_per_game']      ?? '-');
-            $pp  = esc_html($stats['power_play_goals']     ?? '-');
-            $shg = esc_html($stats['short_handed_goals']   ?? '-');
-            $gw  = esc_html($stats['game_winning_goals']   ?? '-');
-            $pim = esc_html($stats['penalty_minutes']      ?? '-');
-            $pct = esc_html($stats['shooting_percentage']  ?? '-');
+        // Stats tab content — choose skater or goalie table based on position
+        $is_goalie = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
 
-            $stats_html = '
-            <div class="pp-stats-wrap">
-                <h3 class="pp-stats-heading">Season Statistics</h3>
-                <div class="pp-stats-table-wrap">
-                    <table class="pp-player-stats-table">
-                        <thead>
-                            <tr>
-                                <th>GP</th>
-                                <th>G</th>
-                                <th>A</th>
-                                <th>PTS</th>
-                                <th>Pt/G</th>
-                                <th>PPG</th>
-                                <th>SHG</th>
-                                <th>GWG</th>
-                                <th>PIM</th>
-                                <th>SH%</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>' . $gp  . '</td>
-                                <td>' . $g   . '</td>
-                                <td>' . $a   . '</td>
-                                <td>' . $pts . '</td>
-                                <td>' . $ppg . '</td>
-                                <td>' . $pp  . '</td>
-                                <td>' . $shg . '</td>
-                                <td>' . $gw  . '</td>
-                                <td>' . $pim . '</td>
-                                <td>' . $pct . '</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>';
+        if (!empty($stats)) {
+            if ( $is_goalie ) {
+                $gp  = esc_html($stats['games_played']          ?? '-');
+                $w   = esc_html($stats['wins']                  ?? '-');
+                $l   = esc_html($stats['losses']                ?? '-');
+                $otl = esc_html($stats['overtime_losses']       ?? '-');
+                $sol = esc_html($stats['shootout_losses']       ?? '-');
+                $sow = esc_html($stats['shootout_wins']         ?? '-');
+                $sa  = esc_html($stats['shots_against']         ?? '-');
+                $sv  = esc_html($stats['saves']                 ?? '-');
+                $svp = esc_html($stats['save_percentage']       ?? '-');
+                $gaa = esc_html($stats['goals_against_average'] ?? '-');
+                $ga  = esc_html($stats['goals_against']         ?? '-');
+                $g   = esc_html($stats['goals']                 ?? '-');
+                $a   = esc_html($stats['assists']               ?? '-');
+                $pim = esc_html($stats['penalty_minutes']       ?? '-');
+
+                $stats_html = '
+                <div class="pp-stats-wrap">
+                    <h3 class="pp-stats-heading">Season Statistics</h3>
+                    <div class="pp-stats-table-wrap">
+                        <table class="pp-player-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>GP</th>
+                                    <th>W</th>
+                                    <th>L</th>
+                                    <th>OTL</th>
+                                    <th>SOL</th>
+                                    <th>SOW</th>
+                                    <th>SA</th>
+                                    <th>SV</th>
+                                    <th>SV%</th>
+                                    <th>GAA</th>
+                                    <th>GA</th>
+                                    <th>G</th>
+                                    <th>A</th>
+                                    <th>PIM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>' . $gp  . '</td>
+                                    <td>' . $w   . '</td>
+                                    <td>' . $l   . '</td>
+                                    <td>' . $otl . '</td>
+                                    <td>' . $sol . '</td>
+                                    <td>' . $sow . '</td>
+                                    <td>' . $sa  . '</td>
+                                    <td>' . $sv  . '</td>
+                                    <td>' . $svp . '</td>
+                                    <td>' . $gaa . '</td>
+                                    <td>' . $ga  . '</td>
+                                    <td>' . $g   . '</td>
+                                    <td>' . $a   . '</td>
+                                    <td>' . $pim . '</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>';
+            } else {
+                $gp  = esc_html($stats['games_played']         ?? '-');
+                $g   = esc_html($stats['goals']                ?? '-');
+                $a   = esc_html($stats['assists']              ?? '-');
+                $pts = esc_html($stats['points']               ?? '-');
+                $ppg = esc_html($stats['points_per_game']      ?? '-');
+                $pp  = esc_html($stats['power_play_goals']     ?? '-');
+                $shg = esc_html($stats['short_handed_goals']   ?? '-');
+                $gw  = esc_html($stats['game_winning_goals']   ?? '-');
+                $pim = esc_html($stats['penalty_minutes']      ?? '-');
+                $pct = esc_html($stats['shooting_percentage']  ?? '-');
+
+                $stats_html = '
+                <div class="pp-stats-wrap">
+                    <h3 class="pp-stats-heading">Season Statistics</h3>
+                    <div class="pp-stats-table-wrap">
+                        <table class="pp-player-stats-table">
+                            <thead>
+                                <tr>
+                                    <th>GP</th>
+                                    <th>G</th>
+                                    <th>A</th>
+                                    <th>PTS</th>
+                                    <th>Pt/G</th>
+                                    <th>PPG</th>
+                                    <th>SHG</th>
+                                    <th>GWG</th>
+                                    <th>PIM</th>
+                                    <th>SH%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>' . $gp  . '</td>
+                                    <td>' . $g   . '</td>
+                                    <td>' . $a   . '</td>
+                                    <td>' . $pts . '</td>
+                                    <td>' . $ppg . '</td>
+                                    <td>' . $pp  . '</td>
+                                    <td>' . $shg . '</td>
+                                    <td>' . $gw  . '</td>
+                                    <td>' . $pim . '</td>
+                                    <td>' . $pct . '</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>';
+            }
         } else {
             $stats_html = '<p class="pp-no-stats">No stats available for this player.</p>';
         }

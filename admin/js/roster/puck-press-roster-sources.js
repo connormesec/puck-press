@@ -71,8 +71,14 @@
                         if (statsUrl) {
                             data.stats_url = statsUrl;
                         }
+                        const goalieStatsUrl = $('#pp-goalie-stats-url').val();
+                        if (goalieStatsUrl) {
+                            data.goalie_stats_url = goalieStatsUrl;
+                        }
                     } else if (type === 'usphlRosterUrl') {
-                        data.url = $('#pp-usphl-source-url').val();
+                        data.team_id = $('#pp-usphl-team-id').val();
+                        const seasonId = $('#pp-usphl-season-id').val();
+                        if (seasonId) data.season_id = seasonId;
                     } else if (type === 'csv') {
                         const file = $('#pp-roster-fileInput')[0].files[0];
                         if (!file) throw new Error('Please select a CSV file.');
@@ -97,7 +103,8 @@
 					if (type === 'csv'){
 						displayValue = csvFile.name;
 					} else if (type === 'usphlRosterUrl') {
-						displayValue = $('#pp-usphl-source-url').val();
+						const sid = $('#pp-usphl-season-id').val();
+						displayValue = 'Team: ' + $('#pp-usphl-team-id').val() + (sid ? ' / Season: ' + sid : '');
 					}
 
                     createNewSourceRow(name, type, displayValue, active, res.data.id);
@@ -297,10 +304,10 @@
             const config = {
                 achaRosterUrl: {
                     required: ['#pp-source-url'],
-                    optional: ['#pp-stats-url']
+                    optional: ['#pp-stats-url', '#pp-goalie-stats-url']
                 },
                 usphlRosterUrl: {
-                    required: ['#pp-usphl-source-url']
+                    required: ['#pp-usphl-team-id', '#pp-usphl-season-id']
                 },
                 csv: {
                     required: ['#pp-schedule-fileInput']

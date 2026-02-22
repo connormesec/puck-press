@@ -73,33 +73,92 @@ class Puck_Press_Roster_Source_Importer
                     $this->results['messages'][] = "Imported source: {$source->name}";
                     $this->results['messages'][] = $inserted;
 
-                    // Import stats if a stats URL is configured
+                    // Import skater stats if a stats URL is configured
                     if ( ! empty( $source->stats_url ) ) {
                         $acha_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->stats_url );
-                        if ( is_array( $acha_stats->raw_stats_data ) && ! isset( $acha_stats->raw_stats_data['error'] ) ) {
+                        if ( is_array( $acha_stats->raw_stats_data ) && ! isset( $acha_stats->raw_stats_data['error'] ) && ! empty( $acha_stats->raw_stats_data ) ) {
                             foreach ( $acha_stats->raw_stats_data as &$stat_row ) {
                                 $stat_row['source'] = $source->name;
                             }
                             unset( $stat_row );
                             $stats_inserted = $this->roster_db_utils->insert_stats_rows( $acha_stats->raw_stats_data );
-                            $this->results['messages'][] = "Imported stats for source: {$source->name}";
+                            $this->results['messages'][] = "Imported skater stats for source: {$source->name}";
                             $this->results['messages'][] = $stats_inserted;
                         } else {
-                            $this->results['messages'][] = "Stats import skipped for source: {$source->name} — " . ( $acha_stats->raw_stats_data['error'] ?? 'unknown error' );
+                            $this->results['messages'][] = "Skater stats import skipped for source: {$source->name} — " . ( $acha_stats->raw_stats_data['error'] ?? 'unknown error or empty' );
+                        }
+                    }
+
+                    // Import goalie stats if a goalie stats URL is configured
+                    if ( ! empty( $source->goalie_stats_url ) ) {
+                        $acha_goalie_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->goalie_stats_url );
+                        if ( is_array( $acha_goalie_stats->raw_goalie_stats_data ) && ! isset( $acha_goalie_stats->raw_goalie_stats_data['error'] ) && ! empty( $acha_goalie_stats->raw_goalie_stats_data ) ) {
+                            foreach ( $acha_goalie_stats->raw_goalie_stats_data as &$stat_row ) {
+                                $stat_row['source'] = $source->name;
+                            }
+                            unset( $stat_row );
+                            $goalie_stats_inserted = $this->roster_db_utils->insert_goalie_stats_rows( $acha_goalie_stats->raw_goalie_stats_data );
+                            $this->results['messages'][] = "Imported goalie stats for source: {$source->name}";
+                            $this->results['messages'][] = $goalie_stats_inserted;
+                        } else {
+                            $this->results['messages'][] = "Goalie stats import skipped for source: {$source->name} — " . ( $acha_goalie_stats->raw_goalie_stats_data['error'] ?? 'unknown error or empty' );
                         }
                     }
                 } elseif ($source->type === 'usphlRosterUrl') {
-                    $raw_usphl_data = new Puck_Press_Roster_Process_Usphl_Url($source->source_url_or_path);
+                    $usphl_other    = json_decode( $source->other_data ?? '{}', true );
+                    $raw_usphl_data = new Puck_Press_Roster_Process_Usphl_Url(
+                        $source->source_url_or_path,
+                        $usphl_other['season_id'] ?? ''
+                    );
+
+                    // Log any fetch errors so they surface in the refresh response.
+                    if ( ! empty( $raw_usphl_data->fetch_errors ) ) {
+                        foreach ( $raw_usphl_data->fetch_errors as $endpoint => $error ) {
+                            $this->results['errors'][]   = [
+                                'source'  => $source->name,
+                                'message' => "USPHL /{$endpoint} fetch error: {$error}",
+                            ];
+                            $this->results['messages'][] = "USPHL /{$endpoint} fetch error for {$source->name}: {$error}";
+                        }
+                    }
+
                     //append source name to each row
                     foreach ($raw_usphl_data->raw_roster_data as &$row) {
                         $row['source'] = $source->name;
                     }
+                    unset( $row );
 
                     $inserted = $this->roster_db_utils->insert_multiple_roster_rows($raw_usphl_data->raw_roster_data);
 
                     $this->results['success_count']++;
                     $this->results['messages'][] = "Imported source: {$source->name}";
                     $this->results['messages'][] = $inserted;
+
+                    // Skater stats from /get_skaters (or inline fallback from /get_roster).
+                    if ( ! empty( $raw_usphl_data->raw_stats_data ) ) {
+                        foreach ( $raw_usphl_data->raw_stats_data as &$stat_row ) {
+                            $stat_row['source'] = $source->name;
+                        }
+                        unset( $stat_row );
+                        $stats_inserted = $this->roster_db_utils->insert_stats_rows( $raw_usphl_data->raw_stats_data );
+                        $this->results['messages'][] = "Imported skater stats for source: {$source->name} (" . count( $raw_usphl_data->raw_stats_data ) . " players)";
+                        $this->results['messages'][] = $stats_inserted;
+                    } else {
+                        $this->results['messages'][] = "No skater stats returned for source: {$source->name}";
+                    }
+
+                    // Goalie stats from /get_goalies endpoint.
+                    if ( ! empty( $raw_usphl_data->raw_goalie_stats_data ) ) {
+                        foreach ( $raw_usphl_data->raw_goalie_stats_data as &$stat_row ) {
+                            $stat_row['source'] = $source->name;
+                        }
+                        unset( $stat_row );
+                        $goalie_stats_inserted = $this->roster_db_utils->insert_goalie_stats_rows( $raw_usphl_data->raw_goalie_stats_data );
+                        $this->results['messages'][] = "Imported goalie stats for source: {$source->name} (" . count( $raw_usphl_data->raw_goalie_stats_data ) . " goalies)";
+                        $this->results['messages'][] = $goalie_stats_inserted;
+                    } else {
+                        $this->results['messages'][] = "No goalie stats returned for source: {$source->name}";
+                    }
                 } elseif ($source->type === 'csv') {
                     $csv_data = $source->csv_data ?? null;
                     $process_csv = new Puck_Press_Roster_Process_Csv_Data($csv_data, $source->name);

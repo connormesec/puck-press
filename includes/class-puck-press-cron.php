@@ -168,6 +168,7 @@ class Puck_Press_Cron
             $r_utils->reset_table('pp_roster_raw');
             $r_utils->reset_table('pp_roster_for_display');
             $r_utils->reset_table('pp_roster_stats');
+            $r_utils->reset_table('pp_roster_goalie_stats');
 
             $r_importer = new Puck_Press_Roster_Source_Importer();
             $r_importer->populate_raw_roster_table_from_sources();

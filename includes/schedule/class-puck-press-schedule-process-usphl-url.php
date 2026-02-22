@@ -4,22 +4,23 @@
  * Class Puck_Press_Schedule_Process_Usphl_Url
  *
  * Fetches and normalizes game schedule data from the USPHL (United States
- * Premier Hockey League) JSON API.
+ * Premier Hockey League) TimeToScore API using HMAC-SHA256 signed requests.
  *
  * =========================================================================
  * USPHL API OVERVIEW
  * =========================================================================
  *
- * The user provides a direct URL to the USPHL schedule API endpoint. Unlike ACHA,
- * no URL parsing is needed — the URL is used as-is. The response is plain JSON
- * (not JSONP-wrapped).
+ * The user provides a source URL containing `team` and `season` query parameters
+ * (e.g. https://stats.usphl.timetoscore.com/?team=2301&season=65). The URL itself
+ * is never fetched — it is only used to extract the IDs needed to build the signed
+ * API request.
+ *
+ * The signed request is sent to:
+ *   https://api.usphl.timetoscore.com/get_schedule
  *
  * The response structure:
  *   {
- *     "url": "...?season=65&team=2298",   ← team ID is extracted from here
- *     "schedule": {
- *       "games": [ { ...game fields... }, ... ]
- *     }
+ *     "games": [ { ...game fields... }, ... ]
  *   }
  *
  * Relevant fields per game object:
@@ -32,11 +33,11 @@
  *   - away_goals     : Away team goals scored
  *   - home_smlogo    : URL to the home team's small logo image
  *   - away_smlogo    : URL to the away team's small logo image
- *   - result_string  : Game status/result string (e.g. "W 4-2", "L 1-3", "")
+ *   - result_string  : Game status/result string (e.g. "Final", "Final/OT", "")
  *   - date           : ISO date string (e.g. "2025-09-13")
  *   - time           : Local time string (e.g. "19:30:00")
  *   - gmt_time       : GMT datetime with microseconds (e.g. "2025-09-14 00:30:00.000000")
- *   - timezn         : PHP timezone identifier (e.g. "America/New_York")
+ *   - timezn         : PHP timezone identifier (e.g. "US/Mountain")
  *   - location       : Venue/rink name
  *
  * Unlike ACHA, USPHL provides team names as a single "City Nickname" string rather
@@ -56,7 +57,15 @@
  */
 class Puck_Press_Schedule_Process_Usphl_Url
 {
-    private $raw_usphl_schedule_url;
+    // =========================================================================
+    // TimeToScore API credentials
+    // =========================================================================
+    const TTS_SECRET     = '7csjfsXdUYuLs1Nq2datfxIdrpOjgFln';
+    const TTS_AUTH_KEY   = 'leagueapps';
+    const TTS_LEAGUE_ID  = '2';
+    const TTS_STAT_CLASS = '1';
+    const TTS_BASE_URL   = 'https://api.usphl.timetoscore.com';
+    const TTS_BODY_MD5   = 'd41d8cd98f00b204e9800998ecf8427e'; // MD5 of empty string
 
     /**
      * Normalized game records ready for insertion into pp_game_schedule_raw.
@@ -67,28 +76,51 @@ class Puck_Press_Schedule_Process_Usphl_Url
     public $raw_schedule_data;
 
     /**
-     * The league-assigned ID of the tracked team, extracted from the API response URL.
+     * The league-assigned ID of the tracked team.
      * Used in normalize() to distinguish home vs away.
      *
      * @var string
      */
     private $team_id = '';
 
-    public function __construct( $raw_usphl_schedule_url )
+    /**
+     * The season ID. Empty string means the API uses the current season.
+     *
+     * @var string
+     */
+    private $season_id = '';
+
+    /**
+     * @param string $team_id   USPHL league-assigned team ID (required).
+     * @param string $season_id Season ID — leave empty for the current season.
+     */
+    public function __construct( string $team_id, string $season_id = '' )
     {
-        $this->raw_usphl_schedule_url = $raw_usphl_schedule_url;
-        $jsonData                     = $this->getJsonUsphlUrl();
-        $this->raw_schedule_data      = $this->extractHockeySchedule( $jsonData );
+        $this->team_id   = $team_id;
+        $this->season_id = $season_id;
+        $jsonData                = $this->getJsonUsphlUrl();
+        $this->raw_schedule_data = $this->extractHockeySchedule( $jsonData );
     }
 
     /**
-     * Fetches and decodes the USPHL schedule JSON from the provided URL.
+     * Builds a signed request to the TimeToScore API and decodes the JSON response.
      *
      * @return array Decoded JSON response, or an array with an 'error' key on failure.
      */
     public function getJsonUsphlUrl()
     {
-        $raw_data = @file_get_contents( $this->raw_usphl_schedule_url );
+        if ( empty( $this->team_id ) ) {
+            return [ 'error' => 'Team ID is required' ];
+        }
+
+        $signed_url = $this->build_signed_url( 'get_schedule', $this->team_id, $this->season_id );
+        $response   = wp_remote_get( $signed_url, [ 'timeout' => 15 ] );
+
+        if ( is_wp_error( $response ) ) {
+            return [ 'error' => 'HTTP request failed: ' . $response->get_error_message() ];
+        }
+
+        $raw_data = wp_remote_retrieve_body( $response );
         $jsonData = json_decode( $raw_data, true );
 
         if ( json_last_error() !== JSON_ERROR_NONE ) {
@@ -101,32 +133,21 @@ class Puck_Press_Schedule_Process_Usphl_Url
     /**
      * Loops through raw API games and produces a normalized array for each one.
      *
-     * The team ID is extracted from the API's 'url' field (the URL it reports
-     * that was used to generate the response), then used in normalize() to
-     * determine home vs away for each game.
+     * team_id is already set by parse_source_url() (called inside getJsonUsphlUrl())
+     * and is used in normalize() to determine home vs away for each game.
      *
      * @param array $jsonData Decoded USPHL API response.
      * @return array          Array of normalized game arrays.
      */
     private function extractHockeySchedule( array $jsonData ): array
     {
-        if ( ! isset( $jsonData['schedule']['games'] ) ) {
+        if ( ! isset( $jsonData['games'] ) ) {
             return [ 'error' => 'Expected data structure not found' ];
-        }
-
-        // The team ID isn't returned as a top-level field — USPHL embeds it in the
-        // response's 'url' field as a query parameter (?team=XXXX).
-        $parts = parse_url( $jsonData['url'] );
-        parse_str( $parts['query'], $query );
-        $this->team_id = $query['team'] ?? null;
-
-        if ( $this->team_id === null ) {
-            return [ 'error' => 'Team ID not found in USPHL response URL' ];
         }
 
         $schedule = [];
 
-        foreach ( $jsonData['schedule']['games'] as $raw_game ) {
+        foreach ( $jsonData['games'] as $raw_game ) {
             // normalize() maps this USPHL-specific game structure to the canonical schema.
             $schedule[] = $this->normalize( $raw_game );
         }
@@ -216,6 +237,35 @@ class Puck_Press_Schedule_Process_Usphl_Url
     // =========================================================================
     // Helpers specific to USPHL
     // =========================================================================
+
+    /**
+     * Builds a signed request URL for the TimeToScore API.
+     *
+     * The signature is HMAC-SHA256 over "GET\n/{endpoint}\n{query_string}".
+     * PHP's hash_hmac zero-pads keys ≤ 64 bytes (RFC 2104), which matches the
+     * Node.js deriveKey() behaviour for this 32-byte secret.
+     *
+     * @param string $endpoint  API endpoint name (e.g. 'get_schedule').
+     * @param string $team_id   Team ID to include in the request.
+     * @param string $season_id Season ID to include in the request.
+     * @return string           Fully signed URL ready to fetch.
+     */
+    private function build_signed_url( string $endpoint, string $team_id, string $season_id ): string
+    {
+        $params = [
+            'auth_key'       => self::TTS_AUTH_KEY,
+            'auth_timestamp' => (string) time(),
+            'body_md5'       => self::TTS_BODY_MD5,
+            'league_id'      => self::TTS_LEAGUE_ID,
+            'stat_class'     => self::TTS_STAT_CLASS,
+            'season_id'      => $season_id,
+            'team_id'        => $team_id,
+        ];
+        $qs        = http_build_query( $params );
+        $message   = "GET\n/{$endpoint}\n{$qs}";
+        $signature = hash_hmac( 'sha256', $message, self::TTS_SECRET );
+        return self::TTS_BASE_URL . "/{$endpoint}?{$qs}&auth_signature={$signature}";
+    }
 
     /**
      * Splits a combined USPHL team name into city and nickname components.
