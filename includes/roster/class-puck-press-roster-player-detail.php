@@ -42,15 +42,17 @@ class Puck_Press_Roster_Player_Detail
         $major     = esc_html($player['major'] ?? '');
         $shoots    = esc_html($player['shoots'] ?? '');
 
+        $is_goalie = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
+
         // Bio rows — only include non-empty fields
         $bio_rows = [];
-        if ($pos_label)  $bio_rows[] = ['Position',  $pos_label];
-        if ($year)        $bio_rows[] = ['Class',      $year];
-        if ($ht_wt)       $bio_rows[] = ['Ht / Wt',   $ht_wt];
-        if ($shoots)      $bio_rows[] = ['Shoots',     $shoots];
-        if ($hometown)    $bio_rows[] = ['Hometown',   $hometown];
-        if ($last_team)   $bio_rows[] = ['Last Team',  $last_team];
-        if ($major)       $bio_rows[] = ['Major',      $major];
+        if ($pos_label)  $bio_rows[] = ['Position',                          $pos_label];
+        if ($year)        $bio_rows[] = ['Class',                             $year];
+        if ($ht_wt)       $bio_rows[] = ['Ht / Wt',                          $ht_wt];
+        if ($shoots)      $bio_rows[] = [$is_goalie ? 'Catches' : 'Shoots',  $shoots];
+        if ($hometown)    $bio_rows[] = ['Hometown',                          $hometown];
+        if ($last_team)   $bio_rows[] = ['Last Team',                         $last_team];
+        if ($major)       $bio_rows[] = ['Major',                             $major];
 
         $bio_html = '';
         foreach ($bio_rows as [$label, $value]) {
@@ -64,7 +66,6 @@ class Puck_Press_Roster_Player_Detail
         }
 
         // Stats tab content — choose skater or goalie table based on position
-        $is_goalie = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
 
         if (!empty($stats)) {
             if ( $is_goalie ) {

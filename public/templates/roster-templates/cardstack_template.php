@@ -106,10 +106,10 @@ class CardStackTemplate extends PuckPressTemplate
     public function buildCardStack(array $players)
     {
         global $wpdb;
-        $stats_source_rows = $wpdb->get_col(
-            "SELECT name FROM {$wpdb->prefix}pp_roster_data_sources WHERE stats_url IS NOT NULL AND stats_url != ''"
+        $player_ids_with_stats = $wpdb->get_col(
+            "SELECT player_id FROM {$wpdb->prefix}pp_roster_stats UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats"
         );
-        $sources_with_stats = array_flip( $stats_source_rows ?: [] );
+        $players_with_stats = array_flip( $player_ids_with_stats ?: [] );
 
         $content = '<div class="cardstack_roster_container clearfix"'
             . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
@@ -122,7 +122,7 @@ class CardStackTemplate extends PuckPressTemplate
             $content .= '<div class="player_group">';
             $content .= '<div class="player_position_title"><h2>Skaters</h2></div>';
             foreach ($skaters as $player) {
-                $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+                $has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
                 $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
             }
             $content .= '</div>';
@@ -133,7 +133,7 @@ class CardStackTemplate extends PuckPressTemplate
         $content .= '<div class="player_position_title"><h2>Forwards</h2></div>';
         $forwards = $this->getPlayersByPositions($players, ['F', 'C', 'LW', 'RW']);
         foreach ($forwards as $player) {
-            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';
@@ -142,7 +142,7 @@ class CardStackTemplate extends PuckPressTemplate
         $content .= '<div class="player_position_title"><h2>Defense</h2></div>';
         $defense = $this->getPlayersByPositions($players, ['D', 'LD', 'RD']);
         foreach ($defense as $player) {
-            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';
@@ -151,7 +151,7 @@ class CardStackTemplate extends PuckPressTemplate
         $content .= '<div class="player_position_title"><h2>Goalies</h2></div>';
         $goalies = $this->getPlayersByPositions($players, ['G']);
         foreach ($goalies as $player) {
-            $has_stats = isset( $sources_with_stats[ $player['source'] ?? '' ] );
+            $has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
             $content .= $this->createPlayerCard($player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats);
         }
         $content .= '</div>';

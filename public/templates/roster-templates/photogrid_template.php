@@ -8,7 +8,7 @@
  */
 class PhotoGridTemplate extends PuckPressTemplate
 {
-    private array $sources_with_stats = [];
+    private array $players_with_stats = [];
     public static function get_key(): string
     {
         return 'photogrid';
@@ -91,10 +91,10 @@ class PhotoGridTemplate extends PuckPressTemplate
     public function render(array $players): string
     {
         global $wpdb;
-        $rows = $wpdb->get_col(
-            "SELECT name FROM {$wpdb->prefix}pp_roster_data_sources WHERE stats_url IS NOT NULL AND stats_url != ''"
+        $ids = $wpdb->get_col(
+            "SELECT player_id FROM {$wpdb->prefix}pp_roster_stats UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats"
         );
-        $this->sources_with_stats = array_flip( $rows ?: [] );
+        $this->players_with_stats = array_flip( $ids ?: [] );
 
         $output = '<div class="photogrid_roster_container"'
             . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
@@ -153,7 +153,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         $pos        = esc_html($player['pos'] ?? '');
         $id         = esc_attr($player['player_id'] ?? '');
         $primary_key = esc_attr($player['id'] ?? '');
-        $has_stats   = isset( $this->sources_with_stats[ $player['source'] ?? '' ] );
+        $has_stats   = isset( $this->players_with_stats[ $player['player_id'] ?? '' ] );
         $id_attr     = $has_stats ? ' id="' . $id . '"' : '';
         $extra_class = $has_stats ? '' : ' no-stats';
 
