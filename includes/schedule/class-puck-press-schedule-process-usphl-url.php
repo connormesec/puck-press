@@ -57,16 +57,6 @@
  */
 class Puck_Press_Schedule_Process_Usphl_Url
 {
-    // =========================================================================
-    // TimeToScore API credentials
-    // =========================================================================
-    const TTS_SECRET     = '7csjfsXdUYuLs1Nq2datfxIdrpOjgFln';
-    const TTS_AUTH_KEY   = 'leagueapps';
-    const TTS_LEAGUE_ID  = '2';
-    const TTS_STAT_CLASS = '1';
-    const TTS_BASE_URL   = 'https://api.usphl.timetoscore.com';
-    const TTS_BODY_MD5   = 'd41d8cd98f00b204e9800998ecf8427e'; // MD5 of empty string
-
     /**
      * Normalized game records ready for insertion into pp_game_schedule_raw.
      * Each element conforms to the canonical schema in Puck_Press_Schedule_Source_Importer.
@@ -113,7 +103,16 @@ class Puck_Press_Schedule_Process_Usphl_Url
             return [ 'error' => 'Team ID is required' ];
         }
 
-        $signed_url = $this->build_signed_url( 'get_schedule', $this->team_id, $this->season_id );
+        $params = [
+            'auth_key'       => Puck_Press_Tts_Api::TTS_AUTH_KEY,
+            'auth_timestamp' => (string) time(),
+            'body_md5'       => Puck_Press_Tts_Api::TTS_BODY_MD5,
+            'league_id'      => Puck_Press_Tts_Api::TTS_LEAGUE_ID,
+            'stat_class'     => Puck_Press_Tts_Api::TTS_STAT_CLASS,
+            'season_id'      => $this->season_id,
+            'team_id'        => $this->team_id,
+        ];
+        $signed_url = Puck_Press_Tts_Api::build_signed_url( 'get_schedule', $params );
         $response   = wp_remote_get( $signed_url, [ 'timeout' => 15 ] );
 
         if ( is_wp_error( $response ) ) {
@@ -237,35 +236,6 @@ class Puck_Press_Schedule_Process_Usphl_Url
     // =========================================================================
     // Helpers specific to USPHL
     // =========================================================================
-
-    /**
-     * Builds a signed request URL for the TimeToScore API.
-     *
-     * The signature is HMAC-SHA256 over "GET\n/{endpoint}\n{query_string}".
-     * PHP's hash_hmac zero-pads keys ≤ 64 bytes (RFC 2104), which matches the
-     * Node.js deriveKey() behaviour for this 32-byte secret.
-     *
-     * @param string $endpoint  API endpoint name (e.g. 'get_schedule').
-     * @param string $team_id   Team ID to include in the request.
-     * @param string $season_id Season ID to include in the request.
-     * @return string           Fully signed URL ready to fetch.
-     */
-    private function build_signed_url( string $endpoint, string $team_id, string $season_id ): string
-    {
-        $params = [
-            'auth_key'       => self::TTS_AUTH_KEY,
-            'auth_timestamp' => (string) time(),
-            'body_md5'       => self::TTS_BODY_MD5,
-            'league_id'      => self::TTS_LEAGUE_ID,
-            'stat_class'     => self::TTS_STAT_CLASS,
-            'season_id'      => $season_id,
-            'team_id'        => $team_id,
-        ];
-        $qs        = http_build_query( $params );
-        $message   = "GET\n/{$endpoint}\n{$qs}";
-        $signature = hash_hmac( 'sha256', $message, self::TTS_SECRET );
-        return self::TTS_BASE_URL . "/{$endpoint}?{$qs}&auth_signature={$signature}";
-    }
 
     /**
      * Splits a combined USPHL team name into city and nickname components.

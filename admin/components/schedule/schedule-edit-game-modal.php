@@ -92,7 +92,7 @@ if (!defined('ABSPATH')) {
                 <div class="pp-form-row">
                     <div class="pp-form-group">
                         <label for="pp-promo-text" class="pp-form-label">Promo Text</label>
-                        <input type="text" id="pp-promo-text" class="pp-form-input">
+                        <textarea id="pp-promo-text" class="pp-form-input" rows="4" style="resize:vertical;"></textarea>
                     </div>
                 </div>
                 <div class="pp-form-row">

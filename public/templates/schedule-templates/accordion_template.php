@@ -89,16 +89,17 @@ class AccordionTemplate extends PuckPressTemplate
                             <div class="accordion_panel' . $showActive . '">';
 
             foreach ($month as $game) {
-                $vs_at = $game['home_or_away'] === 'away' ? 'AT' : 'VS';
+                $vs_at   = $game['home_or_away'] === 'away' ? 'AT' : 'VS';
+                $is_over = $this->is_game_over($game);
 
                 $promotion_section = '';
-                if (!empty($game['promo_header']) || !empty($game['promo_text']) || !empty($game['promo_img_url'])) {
+                if (!$is_over && (!empty($game['promo_header']) || !empty($game['promo_text']) || !empty($game['promo_img_url']))) {
                     $promotion_section = $this->addGameDetails($game['promo_header'], $game['promo_text'], $game['promo_img_url']);
                 }
 
                 $game_result_message = $this->gameResultMessage($game);
 
-                $content .= $this->renderAccordionGameRow($game, $vs_at, $promotion_section, $game_result_message);
+                $content .= $this->renderAccordionGameRow($game, $vs_at, $promotion_section, $game_result_message, $is_over);
             }
             $content .= '</div></div>';
         }
@@ -106,12 +107,17 @@ class AccordionTemplate extends PuckPressTemplate
         return $content;
     }
 
-    private function renderAccordionGameRow(array $game, string $vs_at, string $promotion_section, string $result_message): string
+    private function renderAccordionGameRow(array $game, string $vs_at, string $promotion_section, string $result_message, bool $is_over = false): string
     {
         $opponent_logo_html = '';
 
         if (! empty($game['opponent_team_logo'])) {
             $opponent_logo_html = '<img src="' . esc_url($game['opponent_team_logo']) . '" decoding="async" loading="lazy" alt="Opponent Team Logo" />';
+        }
+
+        $ticket_btn_html = '';
+        if (! $is_over && ! empty($game['promo_ticket_link'])) {
+            $ticket_btn_html = '<a class="accordion_ticket_btn" href="' . esc_url($game['promo_ticket_link']) . '" target="_blank" rel="noopener">BUY TICKETS</a>';
         }
 
         return '
@@ -128,6 +134,7 @@ class AccordionTemplate extends PuckPressTemplate
             </div>
             <div class="accordion_game_detail">
                 <span class="accordion_game_outcome">' . esc_html($result_message) . '</span>
+                ' . $ticket_btn_html . '
             </div>
             ' . $promotion_section . '
         </div>';
@@ -135,22 +142,42 @@ class AccordionTemplate extends PuckPressTemplate
 
     private function addGameDetails($header = '', $text = '', $img_url = '')
     {
+        $img_html = '';
+        if (! empty($img_url)) {
+            $img_html = '<div class="accordion_game_promotion_image">
+						<img src="' . $img_url . '" loading="lazy" alt="">
+                    </div>';
+        }
+
         $content = '
             <div class="accordion_game_promotions_container" data-toggle-id="461">
 				<div class="accordion_game_detail_reveal accordion_game_promotion_item">
-					<div class="accordion_game_promotion_image">
-						<img src="' . $img_url . '" loading="lazy" alt="">
-                    </div>
+					' . $img_html . '
 					<div class="accordion_game_promotion_body">
 						<p class="accordion_game_promotion_item_header">
 							<strong>' . $header . ' </strong>
 						</p>
-						<p>' . $text . '</p>
+						<p>' . nl2br( $text ) . '</p>
 					</div>
 				</div>
 			</div>
         ';
         return $content;
+    }
+
+    /**
+     * Returns true if the game is over: either it has a recorded result status,
+     * or its timestamp has already passed.
+     */
+    private function is_game_over(array $game): bool
+    {
+        if (! empty($game['game_status'])) {
+            return true;
+        }
+        if (! empty($game['game_timestamp']) && strtotime($game['game_timestamp']) < time()) {
+            return true;
+        }
+        return false;
     }
 
     private function gameResultMessage($game)

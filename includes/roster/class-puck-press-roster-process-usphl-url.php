@@ -26,16 +26,6 @@
  */
 class Puck_Press_Roster_Process_Usphl_Url
 {
-    // =========================================================================
-    // TimeToScore API credentials
-    // =========================================================================
-    const TTS_SECRET     = '7csjfsXdUYuLs1Nq2datfxIdrpOjgFln';
-    const TTS_AUTH_KEY   = 'leagueapps';
-    const TTS_LEAGUE_ID  = '2';
-    const TTS_STAT_CLASS = '1';
-    const TTS_BASE_URL   = 'https://api.usphl.timetoscore.com';
-    const TTS_BODY_MD5   = 'd41d8cd98f00b204e9800998ecf8427e'; // MD5 of empty string
-
     /** Normalized player records ready for pp_roster_raw. @var array */
     public $raw_roster_data = [];
 
@@ -101,7 +91,7 @@ class Puck_Press_Roster_Process_Usphl_Url
             return [];
         }
 
-        $signed_url = $this->build_signed_url( $endpoint, $params );
+        $signed_url = Puck_Press_Tts_Api::build_signed_url( $endpoint, $params );
         $response   = wp_remote_get( $signed_url, [ 'timeout' => 15 ] );
 
         if ( is_wp_error( $response ) ) {
@@ -139,11 +129,11 @@ class Puck_Press_Roster_Process_Usphl_Url
     private function build_roster_params(): array
     {
         return [
-            'auth_key'       => self::TTS_AUTH_KEY,
+            'auth_key'       => Puck_Press_Tts_Api::TTS_AUTH_KEY,
             'auth_timestamp' => (string) time(),
-            'body_md5'       => self::TTS_BODY_MD5,
-            'league_id'      => self::TTS_LEAGUE_ID,
-            'stat_class'     => self::TTS_STAT_CLASS,
+            'body_md5'       => Puck_Press_Tts_Api::TTS_BODY_MD5,
+            'league_id'      => Puck_Press_Tts_Api::TTS_LEAGUE_ID,
+            'stat_class'     => Puck_Press_Tts_Api::TTS_STAT_CLASS,
             'season_id'      => $this->season_id,
             'team_id'        => $this->team_id,
         ];
@@ -153,11 +143,11 @@ class Puck_Press_Roster_Process_Usphl_Url
     private function build_stats_params(): array
     {
         return [
-            'auth_key'       => self::TTS_AUTH_KEY,
+            'auth_key'       => Puck_Press_Tts_Api::TTS_AUTH_KEY,
             'auth_timestamp' => (string) time(),
-            'body_md5'       => self::TTS_BODY_MD5,
+            'body_md5'       => Puck_Press_Tts_Api::TTS_BODY_MD5,
             'team_id'        => $this->team_id,
-            'league_id'      => self::TTS_LEAGUE_ID,
+            'league_id'      => Puck_Press_Tts_Api::TTS_LEAGUE_ID,
         ];
     }
 
@@ -292,15 +282,4 @@ class Puck_Press_Roster_Process_Usphl_Url
         }
     }
 
-    // =========================================================================
-    // Signing helper
-    // =========================================================================
-
-    private function build_signed_url( string $endpoint, array $params ): string
-    {
-        $qs        = http_build_query( $params );
-        $message   = "GET\n/{$endpoint}\n{$qs}";
-        $signature = hash_hmac( 'sha256', $message, self::TTS_SECRET );
-        return self::TTS_BASE_URL . "/{$endpoint}?{$qs}&auth_signature={$signature}";
-    }
 }

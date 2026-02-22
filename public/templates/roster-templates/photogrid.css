@@ -79,6 +79,7 @@
 
 .photogrid_card.no-stats {
     cursor: default;
+    transition: none;
 }
 
 .photogrid_card.no-stats:hover {

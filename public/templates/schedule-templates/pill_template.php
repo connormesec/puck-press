@@ -160,39 +160,54 @@ class PillTemplate extends PuckPressTemplate
 
         $hide = '';
         $accordion = '';
-        $promo_header = '';
-        $chevron = '';
+        $right_actions = '';
         $promo_content = '';
+
         if ($should_hide_score === true) {
+            // Future game: hide score; show right-side actions and promo content if present.
             $hide = 'style="display: none;"';
 
+            $promo_label_part = '';
+            if ($game['promo_header']) {
+                $promo_label_part = '<div class="promotion">' . $game['promo_header'] . '</div>';
+            }
+
+            $ticket_part = '';
+            if (!empty($game['promo_ticket_link'])) {
+                $ticket_part = '<a class="pill_ticket_btn" href="' . esc_url($game['promo_ticket_link']) . '" target="_blank" rel="noopener">BUY TICKETS</a>';
+            }
+
+            $chevron_part = '';
             if ($game['promo_text'] || $game['promo_img_url']) {
                 $accordion = 'pill_accordion';
-                $chevron = '<div class="arrow_wrap">
-                    <span class="Chevron"></span>
-                </div>';
+                $chevron_part = '<div class="arrow_wrap"><span class="Chevron"></span></div>';
+
+                $img_html = '';
+                if (!empty($game['promo_img_url'])) {
+                    $img_html = '<div class="item game_promotion_image">
+                        <img src="' . esc_url($game['promo_img_url']) . '" loading="lazy" alt="">
+                    </div>';
+                }
                 $promo_content = '<div class="accordion-content">
-                    <div class="item game_promotion_image">
-                            <img src="' . $game['promo_img_url'] . '" loading="lazy" alt="">
-                    </div>
+                    ' . $img_html . '
                 <div class="promo_group">
                     <div class="item promo_dropdown_header">
                         ' . $game['promo_header'] . '
                     </div>
                     <div class="item promotion_text">
-                    
-                        ' . $game['promo_text'] . '
-                    
+                        ' . nl2br( $game['promo_text'] ) . '
                     </div>
                 </div>
                 </div>';
             }
-            if ($game['promo_header']) {
-                $promo_header = '
-                <div class="promotion">
-                    ' . $game['promo_header'] . '
-                </div>
-                ' . $chevron;
+
+            // Order: promo label → ticket button → chevron (chevron always rightmost).
+            if ($promo_label_part || $ticket_part || $chevron_part) {
+                $right_actions = '<div class="pill_right_actions">'
+                    . $promo_label_part
+                    . $ticket_part
+                    . $chevron_part
+                    . '</div>';
             }
         }
         $content = '
@@ -233,12 +248,12 @@ class PillTemplate extends PuckPressTemplate
                                         ' . $game_result_message . '
                                     </span>
                                     <span class="results_text_score">
-                                        ' . $game['target_score'] . '-' . $game['opponent_score'] . ' 
+                                        ' . $game['target_score'] . '-' . $game['opponent_score'] . '
                                     </span>
                                 </span>
                             </div>
                         </div>
-                        ' . $promo_header . '
+                        ' . $right_actions . '
                     </div>
                     ' . $promo_content;
         return $content;

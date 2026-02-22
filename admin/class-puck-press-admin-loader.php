@@ -27,6 +27,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-wpdb-utils.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
         
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-tts-api.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-acha-url.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-usphl-url.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-csv-data.php';

@@ -283,8 +283,30 @@
   padding-top: 5px;
 }
 
+.accordion_ticket_btn {
+  display: inline-block;
+  background: var(--pp-accordion-header_bg);
+  color: var(--pp-accordion-month_text);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.accordion_ticket_btn:hover {
+  opacity: 0.85;
+  color: var(--pp-accordion-month_text);
+}
+
 .accordion_game_promotions_container {
   display: flex !important;
+  padding-top: 20px;
+  float: none;
+  clear: both;
+  width: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
@@ -293,13 +315,15 @@
 .accordion_game_detail_reveal,
 .accordion_game_promotion_item {
   display: flex;
+  width: 100%;
 }
 
 .accordion_game_promotion_image {
   flex: 1 1 30%;
-  max-width: 30%;
+  max-width: 40%;
   height: auto;
   object-fit: cover;
+  padding-right: 10px;
 }
 
 .accordion_game_promotion_image img {
