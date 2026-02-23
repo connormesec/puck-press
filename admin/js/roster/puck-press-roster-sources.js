@@ -29,8 +29,12 @@
             //Reset source URL or file upload input
             toggleInputs();
             // Initialize the dropdown for selecting the opponent
-            $('.pp-select2-opponent').select2();
-            $('.pp-select2-target').select2();
+        if ($.fn.select2) {
+    		$('.pp-select2-opponent').select2();
+    		$('.pp-select2-target').select2();
+		} else {
+    		console.warn('Select2 not loaded');
+		}		
 
         });
 
