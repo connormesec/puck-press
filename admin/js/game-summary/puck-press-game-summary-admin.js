@@ -1,12 +1,12 @@
 jQuery(document).ready(function ($) {
     $('#pp-test-openai').on('click', function (e) {
         e.preventDefault();
-        let $result = $('#pp-test-openai-result');
+        const $result = $('#pp-test-openai-result');
         $result.text('Testing...');
         $.post(ppGameSummary.ajax_url, {
             action: 'pp_test_openai_api',
             nonce: ppGameSummary.nonce
-        }, function (response) {
+        }, (response) => {
             if (response.success) {
                 $result.text(response.data);
             } else {
@@ -55,7 +55,7 @@ jQuery(document).ready(function ($) {
                 source_type: sourceType,
                 pp_action: actionType // <--- tells PHP which button
             },
-            success: function (res) {
+            success: (res) => {
                 console.log(res);
                 if (res.success && res.data) {
                     console.log(res.data);
@@ -101,11 +101,11 @@ jQuery(document).ready(function ($) {
                     $result.html('<p>Failed to load summary.</p>');
                 }
             },
-            error: function (err) {
+            error: (err) => {
                 console.error(err);
                 $result.html('<p style="color:red">Error creating summary.</p>');
             },
-            complete: function () {
+            complete: () => {
                 clickedBtn.prop('disabled', false).html(originalText);
             }
         });

@@ -461,4 +461,24 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
         wp_die();
     }
+
+    function ajax_reset_all_roster_edits_callback() {
+        global $wpdb;
+
+        $table_mods = $wpdb->prefix . 'pp_roster_mods';
+        $wpdb->query( "TRUNCATE TABLE $table_mods" );
+
+        $utils = new Puck_Press_Roster_Wpdb_Utils();
+        $utils->reset_table( 'pp_roster_for_display' );
+
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
+
+        wp_send_json_success( [
+            'message'           => 'All roster edits reset.',
+            'roster_table_html' => $this->render_edits_table(),
+        ] );
+        wp_die();
+    }
 }

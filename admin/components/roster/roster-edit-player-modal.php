@@ -41,11 +41,7 @@ if (!defined('ABSPATH')) {
                     </div>
                     <div class="pp-form-group">
                         <label for="pp-edit-player-position" class="pp-form-label">Position</label>
-                        <select id="pp-edit-player-position" class="pp-form-select">
-                            <option selected="selected" value="forward">Forward</option>
-                            <option value="defense">Defense</option>
-                            <option value="goalie">Goalie</option>
-                        </select>
+                        <input type="text" id="pp-edit-player-position" class="pp-form-input">
                     </div>
                     <div class="pp-form-group">
                         <label for="pp-edit-player-height" class="pp-form-label">Height</label>

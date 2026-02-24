@@ -1,5 +1,5 @@
 (function ($) {
-    $(document).ready(function () {
+    $(document).ready(() => {
         initializePillAccordion();
         // Expose the init function globally so you can call it after AJAX
 	    //window.initializePillAccordion = initializePillAccordion;

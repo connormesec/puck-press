@@ -9,19 +9,19 @@
  */
 window.PpPlayerDetail = (function ($) {
 
-    function init(containerSelector, cardSelector) {
-        var container = $(containerSelector);
+    const init = (containerSelector, cardSelector) => {
+        let container = $(containerSelector);
         if (!container.length) return;
 
-        var ajaxurl = container.data('ajaxurl');
-        var nonce   = container.data('nonce');
+        const ajaxurl = container.data('ajaxurl');
+        const nonce   = container.data('nonce');
         if (!ajaxurl || !nonce) return;
 
-        var originalGridHTML = container.html();
+        const originalGridHTML = container.html();
 
         // Check URL for ?player= param on page load
-        var urlParams = new URLSearchParams(window.location.search);
-        var playerId  = urlParams.get('player');
+        const urlParams = new URLSearchParams(window.location.search);
+        const playerId  = urlParams.get('player');
 
         if (playerId) {
             history.replaceState({ player_id: playerId }, '', window.location.href);
@@ -32,31 +32,31 @@ window.PpPlayerDetail = (function ($) {
 
         // ── Card click ───────────────────────────────────────────────────────
         $(document).on('click', cardSelector, function () {
-            var pid = $(this).attr('id');
+            const pid = $(this).attr('id');
             if (!pid) return;
-            var newUrl = updateQueryParam(window.location.href, 'player', pid);
+            const newUrl = updateQueryParam(window.location.href, 'player', pid);
             history.pushState({ player_id: pid }, '', newUrl);
             loadPlayerDetail(pid);
         });
 
         // ── Back button inside detail view ───────────────────────────────────
-        $(document).on('click', '.pp-player-back-btn', function (e) {
+        $(document).on('click', '.pp-player-back-btn', (e) => {
             e.preventDefault();
             history.back();
         });
 
         // ── Tab switching ────────────────────────────────────────────────────
         $(document).on('click', '.pp-player-tab', function () {
-            var tabId = $(this).data('tab');
+            const tabId = $(this).data('tab');
             $('.pp-player-tab').removeClass('pp-tab-active');
             $(this).addClass('pp-tab-active');
             $('.pp-player-tab-panel').removeClass('pp-panel-active');
-            $('#pp-panel-' + tabId).addClass('pp-panel-active');
+            $(`#pp-panel-${tabId}`).addClass('pp-panel-active');
         });
 
         // ── Browser back / forward ───────────────────────────────────────────
-        window.addEventListener('popstate', function (e) {
-            var state = e.state;
+        window.addEventListener('popstate', (e) => {
+            const state = e.state;
             if (state && state.player_id) {
                 loadPlayerDetail(state.player_id);
             } else {
@@ -82,7 +82,7 @@ window.PpPlayerDetail = (function ($) {
                     player_id: pid,
                     nonce:     nonce,
                 },
-                success: function (response) {
+                success: (response) => {
                     if (response.success && response.data && response.data.html) {
                         container.html(response.data.html);
                         $('html, body').animate({ scrollTop: container.offset().top - 40 }, 200);
@@ -90,7 +90,7 @@ window.PpPlayerDetail = (function ($) {
                         container.html('<div class="pp-player-error">Player not found.</div>');
                     }
                 },
-                error: function () {
+                error: () => {
                     container.html('<div class="pp-player-error">An error occurred. Please try again.</div>');
                 },
             });
@@ -104,12 +104,12 @@ window.PpPlayerDetail = (function ($) {
         }
 
         function updateQueryParam(url, key, value) {
-            var urlObj = new URL(url);
+            const urlObj = new URL(url);
             urlObj.searchParams.set(key, value);
             return urlObj.toString();
         }
-    }
+    };
 
-    return { init: init };
+    return { init };
 
 })(jQuery);

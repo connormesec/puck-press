@@ -36,18 +36,18 @@
 		//############################################################//
 
 		// Toggle dropdown when clicking the button
-		$("#pp-advancedBtn").click(function (e) {
+		$("#pp-advancedBtn").click((e) => {
 			e.stopPropagation();
 			$("#pp-advancedDropdown").css('display', 'block');
 		});
 
 		// Close dropdown when clicking elsewhere
-		$(document).click(function () {
+		$(document).click(() => {
 			$("#pp-advancedDropdown").css('display', 'none');
 		});
 
 		// Prevent dropdown from closing when clicking inside it
-		$("#pp-advancedDropdown").click(function (e) {
+		$("#pp-advancedDropdown").click((e) => {
 			e.stopPropagation();
 		});
 
@@ -75,7 +75,7 @@
 	//                                                            //
 	//############################################################//
 
-	$(window).on('load', function () {
+	$(window).on('load', () => {
 		//remove spinner
 		$('#pp-schedule-preview-wrapper').removeClass('loading');
 		$('#pp-roster-preview-wrapper').removeClass('loading');
@@ -84,7 +84,7 @@
 })(jQuery);
 
 // shortcode js
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
 	const groups = document.querySelectorAll('.pp-shortcode-input-group');
 
 	groups.forEach(group => {
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const urlInput = group.querySelector('.pp-shortcode-input');
 		const tooltip = group.querySelector('.pp-shortcode-tooltip');
 
-		copyBtn.addEventListener('click', function () {
+		copyBtn.addEventListener('click', () => {
 			// Select the text field
 			urlInput.select();
 			urlInput.setSelectionRange(0, 99999); // For mobile devices

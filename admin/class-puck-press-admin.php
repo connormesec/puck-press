@@ -422,6 +422,7 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_revert_player_field',  [$roster_edits_card, 'ajax_revert_player_field_callback']);
 		add_action('wp_ajax_pp_add_manual_player',    [$roster_edits_card, 'ajax_add_manual_player_callback']);
 		add_action('wp_ajax_pp_delete_manual_player', [$roster_edits_card, 'ajax_delete_manual_player_callback']);
+		add_action('wp_ajax_pp_reset_all_roster_edits', [$roster_edits_card, 'ajax_reset_all_roster_edits_callback']);
 
 		$game_summary_post_display = new Puck_Press_Admin_Game_Summary_Post_Display();
 		add_action('wp_ajax_pp_test_openai_api', [$game_summary_post_display, 'ajax_test_openai']);

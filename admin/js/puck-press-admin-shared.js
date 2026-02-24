@@ -1,6 +1,25 @@
 (function ($) {
     window.gameScheduleInitializers = [];
 
+    window.withRefresh = function (ajaxOptions, { dim, restore, onSuccess }) {
+        dim();
+        return $.ajax(Object.assign(
+            { url: ajaxurl, type: 'POST' },
+            ajaxOptions,
+            {
+                success: (response) => {
+                    if (response.success) {
+                        onSuccess(response);
+                    } else {
+                        console.error('withRefresh: action failed', response);
+                        restore();
+                    }
+                },
+                error: () => restore()
+            }
+        ));
+    };
+
 }(jQuery));
 function refreshGamesTable(successCallback, errorCallback) {
     const params = new URLSearchParams(window.location.search);
@@ -12,7 +31,7 @@ function refreshGamesTable(successCallback, errorCallback) {
             data: {
                 action: 'pp_refresh_all_roster_sources', // The action hook for refreshing all sources
             },
-            success: function (response) {
+            success: (response) => {
                 if (response.success) {
                     // Replace the table with the refreshed game table from the response
                     console.log(response.data);
@@ -51,7 +70,7 @@ function refreshGamesTable(successCallback, errorCallback) {
                     }
                 }
             },
-            error: function (xhr, status, error) {
+            error: (xhr, status, error) => {
                 alert('An error occurred while refreshing the games table.');
                 console.error('Error:', error);
 
@@ -69,7 +88,7 @@ function refreshGamesTable(successCallback, errorCallback) {
             data: {
                 action: 'pp_refresh_all_sources', // The action hook for refreshing all sources
             },
-            success: function (response) {
+            success: (response) => {
                 if (response.success) {
                     // Replace the table with the refreshed game table from the response
                     (jQuery)('#pp-games-table').html(response.data.refreshed_game_table_ui);
@@ -115,7 +134,7 @@ function refreshGamesTable(successCallback, errorCallback) {
                     }
                 }
             },
-            error: function (xhr, status, error) {
+            error: (xhr, status, error) => {
                 alert('An error occurred while refreshing the games table.');
                 console.error('Error:', error);
 

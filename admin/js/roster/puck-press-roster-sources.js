@@ -24,7 +24,7 @@
         const $addSourceForm = $('#pp-add-source-form');
 
         // Open modal
-        $addSourceBtn.on('click', function () {
+        $addSourceBtn.on('click', () => {
             $modal.css('display', 'flex');
             //Reset source URL or file upload input
             toggleInputs();
@@ -39,10 +39,10 @@
         });
 
         // Close modal function
-        function closeModal() {
+        const closeModal = () => {
             $modal.css('display', 'none');
             $addSourceForm[0].reset();
-        }
+        };
 
         $closeBtn.on('click', closeModal);
         $cancelBtn.on('click', closeModal);
@@ -50,7 +50,7 @@
         // Close modal when clicking outside
         enableClickOutsideToClose($modal, closeModal);
 
-        $confirmBtn.on('click', function () {
+        $confirmBtn.on('click', () => {
             dimGameListStyles();
             PPDataSourceUtils.handleFormSubmit({
                 $form: $('#pp-add-source-form'),
@@ -88,9 +88,8 @@
                     return data;
                 },
 
-                onSuccess: function (res) {
-                    
-                    
+                onSuccess: (res) => {
+
 
                     const type = $('#pp-source-type').val();
                     const name = $('#pp-source-name').val();
@@ -104,11 +103,11 @@
 						displayValue = csvFile.name;
 					} else if (type === 'usphlRosterUrl') {
 						const sid = $('#pp-usphl-season-id').val();
-						displayValue = 'Team: ' + $('#pp-usphl-team-id').val() + (sid ? ' / Season: ' + sid : '');
+						displayValue = `Team: ${$('#pp-usphl-team-id').val()}${sid ? ' / Season: ' + sid : ''}`;
 					}
 
                     createNewSourceRow(name, type, displayValue, active, res.data.id);
-                    
+
                     refreshGamesTable().then(() => {
                         restoreGameListStyles();
                     });
@@ -117,7 +116,7 @@
                 }
             });
 
-            function createNewSourceRow(name, type, urlDisplay = '', active, id) {
+            const createNewSourceRow = (name, type, urlDisplay = '', active, id) => {
                 const $tbody = $('#pp-sources-table tbody');
                 const currentDate = new Date().toLocaleString('en-US', {
                     year: 'numeric',
@@ -150,7 +149,7 @@
 				`;
                 $('#kill-me-please').remove();
                 $tbody.append(newRow);
-            }
+            };
         });
 
 
@@ -182,10 +181,10 @@
                     source_id: sourceId,
                     status: status,
                 },
-                success: function (response) {
+                success: (response) => {
                     if (response.success) {
                         refreshGamesTable(
-                            function (refreshResponse) {
+                            (refreshResponse) => {
                                 if (refreshResponse.success) {
                                     // Replace the table with the refreshed game table from the response
 
@@ -194,7 +193,7 @@
                                     alert('Failed to refresh all sources.');
                                 }
                             },
-                            function () {
+                            () => {
                                 alert('An error occurred while refreshing all sources.');
                             }).then(() => {
                                 restoreGameListStyles();
@@ -208,7 +207,7 @@
                         restoreToggleStyles();
                     }
                 },
-                error: function (error) {
+                error: (error) => {
                     console.error('Error:', err);
                     alert('Failed to update status.');
                     restoreGameListStyles();
@@ -250,13 +249,13 @@
                     action: 'pp_delete_roster_data_source', // The action hook
                     source_id: dataSourceId, // The ID of the data source to delete
                 },
-                success: function (response) {
+                success: (response) => {
                     if (response.success) {
                         // Remove the row from the HTML table
                         $(`tr[data-id="${dataSourceId}"]`).remove();
                         console.log('Data source deleted successfully.');
                         refreshGamesTable(
-                            function (refreshResponse) {
+                            (refreshResponse) => {
                                 if (refreshResponse.success) {
                                     // Replace the table with the refreshed game table from the response
 
@@ -265,7 +264,7 @@
                                     alert('Failed to refresh all sources.');
                                 }
                             },
-                            function () {
+                            () => {
                                 alert('An error occurred while refreshing all sources.');
                             }).then(() => {
                                 restoreGameListStyles();
@@ -275,7 +274,7 @@
                         restoreGameListStyles();
                     }
                 },
-                error: function () {
+                error: () => {
                     alert('There was an error with the AJAX request to delete the source.');
                     restoreGameListStyles();
                 }
@@ -293,7 +292,7 @@
         toggleInputs();
 
         // When the selection changes, toggle the visibility of the inputs
-        $(document).on('change', '#pp-source-type', function () {
+        $(document).on('change', '#pp-source-type', () => {
             toggleInputs();
         });
 
@@ -339,7 +338,7 @@
                 }
             }
 
-            // disable inputs in hidden groups (so they don’t submit)
+            // disable inputs in hidden groups (so they don't submit)
             for (const type in config) {
                 const isVisible = type === selectedType;
                 const group = $(`.pp-dynamic-source-group-${type}`);
@@ -371,7 +370,7 @@
             dimGameListStyles();
             // Perform Ajax request
             refreshGamesTable(
-                function (response) {
+                (response) => {
                     $button.html(originalHtml);
                     $button.prop('disabled', false);
                     if (response.success) {
@@ -384,7 +383,7 @@
                         }
                     }
                 },
-                function (error) {
+                (error) => {
                     $button.html(originalHtml);
                     $button.prop('disabled', false);
 

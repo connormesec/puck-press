@@ -176,11 +176,14 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
         if ($existing_row_id) {
             // Merge incoming fields into the existing edit_data so that prior
             // intentional overrides on this game are preserved across multiple edits.
+            $row_id          = intval($existing_row_id);
             $existing_json   = $wpdb->get_var($wpdb->prepare(
                 "SELECT edit_data FROM $table WHERE id = %d",
-                $existing_row_id
+                $row_id
             ));
-            $existing_fields = json_decode($existing_json, true) ?: [];
+            // Guard against null — json_decode(null) emits a deprecation notice in
+            // PHP 8.1+ which would corrupt the JSON response before wp_send_json_*.
+            $existing_fields = !empty($existing_json) ? (json_decode($existing_json, true) ?: []) : [];
             $merged_fields   = array_merge($existing_fields, $parsed_data['fields']);
             $edit_data_json  = wp_json_encode($merged_fields);
 
@@ -190,16 +193,18 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                     'edit_data'  => $edit_data_json,
                     'updated_at' => $current_time,
                 ],
-                ['id' => $existing_row_id]
+                ['id' => $row_id],
+                ['%s', '%s'],
+                ['%d']
             );
 
             if ($result !== false) {
                 wp_send_json_success([
                     'message' => 'Edit updated',
-                    'id'      => $existing_row_id,
+                    'id'      => $row_id,
                 ]);
             } else {
-                wp_send_json_error(['message' => 'Update failed']);
+                wp_send_json_error(['message' => 'Update failed', 'db_error' => $wpdb->last_error]);
             }
         } else {
             $edit_data_json = wp_json_encode($parsed_data['fields']);

@@ -1,5 +1,5 @@
 (function ($) {
-    $(document).ready(function () {
+    $(document).ready(() => {
         initializeSlider();
         // Expose the init function globally so you can call it after AJAX
         //window.initializePillAccordion = initializePillAccordion;
@@ -22,7 +22,7 @@ function initializeSlider() {
                 prev: '.glider-prev',
                 next: '.glider-next',
             },
-            easing: function (x, t, b, c, d) {
+            easing: (x, t, b, c, d) => {
                 return c * (t /= d) * t + b;
             },
             responsive: [

@@ -1,25 +1,24 @@
 (function ($) {
 
-    var currentEditingPlayerId = null;
-    var originalPlayerValues   = {};
+    let currentEditingPlayerId = null;
+    let originalPlayerValues   = {};
 
     // Exposed globally so puck-press-add-player.js and puck-press-admin-shared.js can call it
-    window.applyEditHighlights = function () {
+    window.applyEditHighlights = () => {
         $('#pp-roster-edits-table tbody tr:not(.pp-row-deleted)').each(function () {
-            var $row      = $(this);
-            var overrides = [];
+            const $row = $(this);
+            let overrides = [];
             try { overrides = JSON.parse($row.attr('data-overrides') || '[]'); } catch (e) {}
-            var modId = $row.attr('data-mod-id');
+            const modId = $row.attr('data-mod-id');
 
             $row.find('td[data-field]').each(function () {
-                var $td    = $(this);
-                var field  = $td.attr('data-field');
+                const $td    = $(this);
+                const field  = $td.attr('data-field');
                 if (overrides.indexOf(field) !== -1) {
                     $td.addClass('pp-cell-overridden');
                     if (!$td.find('.pp-revert-btn').length) {
                         $td.append(
-                            '<button class="pp-revert-btn" title="Revert to original" ' +
-                            'data-mod-id="' + modId + '" data-fields="' + field + '">&#x2715;</button>'
+                            `<button class="pp-revert-btn" title="Revert to original" data-mod-id="${modId}" data-fields="${field}">&#x2715;</button>`
                         );
                     }
                 } else {
@@ -30,28 +29,42 @@
         });
     };
 
-    jQuery(document).ready(function ($) {
+    jQuery(() => {
 
         //============================================================//
         //   Dim / restore helpers                                     //
         //============================================================//
-        var dimEditListStyles = function () {
+        const dimEditListStyles = () => {
             $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
                 'opacity': '0.5',
                 'pointer-events': 'none'
             });
         };
-        var restoreEditListStyles = function () {
+        const restoreEditListStyles = () => {
             $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
                 'opacity': '1',
                 'pointer-events': 'auto'
             });
         };
 
-        var afterRefresh = function () {
+        const afterRefresh = () => {
             restoreEditListStyles();
             applyEditHighlights();
         };
+
+        const doWithRosterUpdate = (ajaxOptions) =>
+            withRefresh(ajaxOptions, {
+                dim: dimEditListStyles,
+                restore: restoreEditListStyles,
+                onSuccess: (response) => {
+                    if (response.data && response.data.roster_table_html) {
+                        $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
+                        afterRefresh();
+                    } else {
+                        restoreEditListStyles();
+                    }
+                }
+            });
 
         //============================================================//
         //   Apply highlights on page load                            //
@@ -61,19 +74,19 @@
         //============================================================//
         //   Edit Player Modal                                         //
         //============================================================//
-        var $editPlayerModal = $('#pp-edit-player-modal');
-        var $editPlayerForm  = $('#pp-edit-player-form');
+        const $editPlayerModal = $('#pp-edit-player-modal');
+        const $editPlayerForm  = $('#pp-edit-player-form');
 
-        function closeEditPlayerModal() {
+        const closeEditPlayerModal = () => {
             $editPlayerModal.css('display', 'none');
             if ($editPlayerForm.length) { $editPlayerForm[0].reset(); }
-        }
+        };
 
         $('#pp-edit-player-modal-close').on('click', closeEditPlayerModal);
         $('#pp-cancel-edit-player').on('click', closeEditPlayerModal);
         enableClickOutsideToClose($editPlayerModal, closeEditPlayerModal);
 
-        function openEditModalForPlayer(playerId) {
+        const openEditModalForPlayer = (playerId) => {
             currentEditingPlayerId = playerId;
             originalPlayerValues   = {};
             if ($editPlayerForm.length) { $editPlayerForm[0].reset(); }
@@ -83,20 +96,20 @@
                 url: ajaxurl,
                 method: 'POST',
                 data: { action: 'pp_get_player_data', player_id: playerId },
-                success: function (response) {
+                success: (response) => {
                     if (response.success && response.data && response.data.player) {
                         prefillEditPlayerForm(response.data.player);
                     }
                 }
             });
-        }
+        };
 
-        function prefillEditPlayerForm(player) {
+        const prefillEditPlayerForm = (player) => {
             if (!player) return;
 
-            var posMap    = { 'F': 'forward', 'D': 'defense', 'G': 'goalie' };
-            var shootsMap = { 'R': 'right', 'L': 'left' };
-            var yearMap   = {
+            const posMap    = { 'F': 'forward', 'D': 'defense', 'G': 'goalie' };
+            const shootsMap = { 'R': 'right', 'L': 'left' };
+            const yearMap   = {
                 'FR': 'freshman', 'FRESHMAN': 'freshman',
                 'SO': 'sophomore', 'SOPHOMORE': 'sophomore',
                 'JR': 'junior', 'JUNIOR': 'junior',
@@ -104,21 +117,21 @@
                 'GR': 'graduate', 'GRADUATE': 'graduate'
             };
 
-            var nameVal      = player.name || '';
-            var numberVal    = player.number || '';
-            var posRaw       = (player.pos || '').toUpperCase();
-            var posVal       = posMap[posRaw] || posRaw.toLowerCase();
-            var htVal        = player.ht || '';
-            var wtVal        = player.wt || '';
-            var shootsRaw    = (player.shoots || '').toUpperCase();
-            var shootsVal    = shootsMap[shootsRaw] || shootsRaw.toLowerCase();
-            var hometownVal  = player.hometown || '';
-            var lastTeamVal  = player.last_team || '';
-            var yearRaw      = (player.year_in_school || '').toUpperCase();
-            var yearVal      = yearMap[yearRaw] || yearRaw.toLowerCase() || '';
-            var majorVal      = player.major || '';
-            var headshotVal   = player.headshot_link || '';
-            var heroImageVal  = player.hero_image_url || '';
+            const nameVal      = player.name || '';
+            const numberVal    = player.number || '';
+            const posRaw       = (player.pos || '').toUpperCase();
+            const posVal       = posMap[posRaw] || player.pos || '';
+            const htVal        = player.ht || '';
+            const wtVal        = player.wt || '';
+            const shootsRaw    = (player.shoots || '').toUpperCase();
+            const shootsVal    = shootsMap[shootsRaw] || shootsRaw.toLowerCase();
+            const hometownVal  = player.hometown || '';
+            const lastTeamVal  = player.last_team || '';
+            const yearRaw      = (player.year_in_school || '').toUpperCase();
+            const yearVal      = yearMap[yearRaw] || yearRaw.toLowerCase() || '';
+            const majorVal     = player.major || '';
+            const headshotVal  = player.headshot_link || '';
+            const heroImageVal = player.hero_image_url || '';
 
             $('#pp-edit-player-name').val(nameVal);
             $('#pp-edit-player-number').val(numberVal);
@@ -140,22 +153,22 @@
                 major: majorVal, headshot_link: headshotVal,
                 hero_image_url: heroImageVal
             };
-        }
+        };
 
         // Open edit modal on edit button click
         $(document).on('click', '.pp-edit-player-btn', function () {
-            var playerId = $(this).data('player-id');
+            const playerId = $(this).data('player-id');
             openEditModalForPlayer(playerId);
         });
 
         // Edit modal form submission
-        $('#pp-confirm-edit-player').on('click', function () {
+        $('#pp-confirm-edit-player').on('click', () => {
             if ($editPlayerForm.length && !$editPlayerForm[0].checkValidity()) {
                 $editPlayerForm[0].reportValidity();
                 return;
             }
 
-            var newValues = {
+            const newValues = {
                 name:           $('#pp-edit-player-name').val(),
                 number:         $('#pp-edit-player-number').val(),
                 pos:            $('#pp-edit-player-position').val(),
@@ -170,8 +183,8 @@
                 hero_image_url: $('#pp-edit-player-hero-image-url').val()
             };
 
-            var changedFields = {};
-            Object.keys(newValues).forEach(function (key) {
+            const changedFields = {};
+            Object.keys(newValues).forEach((key) => {
                 if (newValues[key] !== (originalPlayerValues[key] || '')) {
                     changedFields[key] = newValues[key];
                 }
@@ -182,37 +195,18 @@
                 return;
             }
 
-            var editData = {
+            const editData = {
                 edit_action: 'update',
                 fields: Object.assign({ external_id: currentEditingPlayerId }, changedFields)
             };
 
-            dimEditListStyles();
             closeEditPlayerModal();
 
-            var formData = new FormData();
+            const formData = new FormData();
             formData.append('action', 'pp_update_player_edits');
             formData.append('edit_data', JSON.stringify(editData));
 
-            $.ajax({
-                url: ajaxurl, method: 'POST', data: formData,
-                processData: false, contentType: false,
-                success: function (response) {
-                    if (response.success && response.data && response.data.roster_table_html) {
-                        $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
-                        afterRefresh();
-                    } else {
-                        restoreEditListStyles();
-                        if (!response.success) {
-                            alert('Failed to save edit: ' + (response.data && response.data.message || 'Unknown error'));
-                        }
-                    }
-                },
-                error: function () {
-                    restoreEditListStyles();
-                    alert('Error saving edit.');
-                }
-            });
+            doWithRosterUpdate({ data: formData, processData: false, contentType: false });
         });
 
         //============================================================//
@@ -220,102 +214,55 @@
         //============================================================//
         $(document).on('click', '.pp-revert-btn', function (e) {
             e.stopPropagation();
-            var modId  = $(this).data('mod-id');
-            var fields = String($(this).data('fields')).split(',');
-            dimEditListStyles();
-
-            $.ajax({
-                url: ajaxurl, type: 'POST',
-                data: { action: 'pp_revert_player_field', mod_id: modId, fields: fields },
-                success: function (response) {
-                    if (response.success && response.data && response.data.roster_table_html) {
-                        $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
-                        afterRefresh();
-                    } else {
-                        restoreEditListStyles();
-                    }
-                },
-                error: function () { restoreEditListStyles(); }
-            });
+            const modId  = $(this).data('mod-id');
+            const fields = String($(this).data('fields')).split(',');
+            doWithRosterUpdate({ data: { action: 'pp_revert_player_field', mod_id: modId, fields: fields } });
         });
 
         //============================================================//
         //   Restore deleted player button                             //
         //============================================================//
         $(document).on('click', '.pp-restore-player-btn', function () {
-            var deleteModId = $(this).data('delete-mod-id');
-            dimEditListStyles();
-
-            $.ajax({
-                url: ajaxurl, type: 'POST',
-                data: { action: 'ajax_delete_player_edit', id: deleteModId },
-                success: function (response) {
-                    if (response.success) {
+            const deleteModId = $(this).data('delete-mod-id');
+            withRefresh(
+                { data: { action: 'ajax_delete_player_edit', id: deleteModId } },
+                {
+                    dim: dimEditListStyles,
+                    restore: restoreEditListStyles,
+                    onSuccess: (response) => {
                         if (response.data && response.data.roster_table_html) {
                             $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
                             afterRefresh();
                         } else {
                             refreshGamesTable(afterRefresh, restoreEditListStyles);
                         }
-                    } else {
-                        restoreEditListStyles();
-                        alert('Failed to restore player.');
                     }
-                },
-                error: function () { restoreEditListStyles(); }
-            });
+                }
+            );
         });
 
         //============================================================//
         //   Delete player button                                      //
         //============================================================//
         $(document).on('click', '.pp-delete-player-btn', function () {
-            var playerId   = $(this).data('player-id');
-            var sourceType = $(this).data('source-type');
+            const playerId   = $(this).data('player-id');
+            const sourceType = $(this).data('source-type');
 
             if (!confirm('Are you sure you want to delete this player?')) return;
 
-            dimEditListStyles();
-
             if (sourceType === 'manual') {
                 // Delete the insert mod row entirely
-                $.ajax({
-                    url: ajaxurl, type: 'POST',
-                    data: { action: 'pp_delete_manual_player', player_id: playerId },
-                    success: function (response) {
-                        if (response.success && response.data && response.data.roster_table_html) {
-                            $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
-                            afterRefresh();
-                        } else {
-                            restoreEditListStyles();
-                            alert('Failed to delete player.');
-                        }
-                    },
-                    error: function () { restoreEditListStyles(); }
-                });
+                doWithRosterUpdate({ data: { action: 'pp_delete_manual_player', player_id: playerId } });
             } else {
                 // Sourced player — add a delete mod
-                var editData = {
+                const editData = {
                     edit_action: 'delete',
                     fields: { external_id: playerId }
                 };
-                var formData = new FormData();
+                const formData = new FormData();
                 formData.append('action', 'pp_update_player_edits');
                 formData.append('edit_data', JSON.stringify(editData));
-
-                $.ajax({
-                    url: ajaxurl, method: 'POST', data: formData,
-                    processData: false, contentType: false,
-                    success: function (response) {
-                        if (response.success && response.data && response.data.roster_table_html) {
-                            $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
-                            afterRefresh();
-                        } else {
-                            restoreEditListStyles();
-                        }
-                    },
-                    error: function () { restoreEditListStyles(); }
-                });
+                doWithRosterUpdate({ data: formData, processData: false, contentType: false });
             }
         });
 
@@ -324,15 +271,15 @@
         //============================================================//
         $(document).on('click', '.pp-hero-image-browse-btn', function (e) {
             e.preventDefault();
-            var targetSelector = $(this).data('target');
-            var frame = wp.media({
+            const targetSelector = $(this).data('target');
+            const frame = wp.media({
                 title: 'Select Hero Image',
                 button: { text: 'Use this image' },
                 multiple: false,
                 library: { type: 'image' }
             });
-            frame.on('select', function () {
-                var attachment = frame.state().get('selection').first().toJSON();
+            frame.on('select', () => {
+                const attachment = frame.state().get('selection').first().toJSON();
                 $(targetSelector).val(attachment.url).trigger('input');
             });
             frame.open();
@@ -341,22 +288,32 @@
         //============================================================//
         //   Helper: click-outside-to-close                           //
         //============================================================//
-        function enableClickOutsideToClose($modal, closeCallback) {
-            var mouseDownOutside = false;
-
-            function onMouseDown(e) {
-                mouseDownOutside = (e.target === $modal[0]);
+        //============================================================//
+        //   Reset All Roster Edits                                   //
+        //============================================================//
+        $('#pp-reset-all-roster-edits').on('click', () => {
+            if (!confirm('Reset all roster edits? This will remove every override, deletion, and manual player. This cannot be undone.')) {
+                return;
             }
-            function onMouseUp(e) {
+            doWithRosterUpdate({ data: { action: 'pp_reset_all_roster_edits' } });
+        });
+
+        function enableClickOutsideToClose($modal, closeCallback) {
+            let mouseDownOutside = false;
+
+            const onMouseDown = (e) => {
+                mouseDownOutside = (e.target === $modal[0]);
+            };
+            const onMouseUp = (e) => {
                 if (e.target === $modal[0] && mouseDownOutside) {
                     closeCallback();
                 }
-            }
+            };
 
             $modal.on('mousedown.modalClose', onMouseDown);
             $modal.on('mouseup.modalClose', onMouseUp);
 
-            return function () {
+            return () => {
                 $modal.off('mousedown.modalClose', onMouseDown);
                 $modal.off('mouseup.modalClose', onMouseUp);
             };

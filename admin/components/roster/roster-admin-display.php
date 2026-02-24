@@ -104,6 +104,8 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
                                 <div class="pp-dropdown-item">Reset Game Data</div>
                                 <div class="pp-dropdown-item">Reset Data Sources</div>
                                 <div class="pp-dropdown-item danger">Reset Everything</div>
+                                <div class="pp-dropdown-header">Edits</div>
+                                <div class="pp-dropdown-item danger" id="pp-reset-all-roster-edits">Reset All Edits</div>
                             </div>
                         </div>
                     </div>

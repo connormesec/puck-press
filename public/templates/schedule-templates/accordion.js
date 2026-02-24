@@ -1,7 +1,7 @@
 (function ($) {
-    function initializeAccordion() {
+    const initializeAccordion = () => {
 		$(".accordion_schedule_container").removeClass("css-transitions-only-after-page-load");
-		
+
     // Remove existing event listeners to prevent duplicates
 		$(".accordion").off("click").on("click", function () {
 			$(this).toggleClass("active");
@@ -19,10 +19,10 @@
 		$(".accordion_panel.active").each(function () {
 			this.style.maxHeight = this.scrollHeight + "px";
 		});
-	}
+	};
 
 	// Initial run
-	$(document).ready(function () {
+	$(document).ready(() => {
 		initializeAccordion();
 	});
 

@@ -1,42 +1,42 @@
 (function ($) {
     jQuery(document).ready(function ($) {
 
-        var $modal      = $('#pp-add-player-modal');
-        var $addBtn     = $('#pp-add-player-button');
-        var $closeBtn   = $('#pp-add-player-modal-close');
-        var $cancelBtn  = $('#pp-cancel-add-player');
-        var $confirmBtn = $('#pp-confirm-add-player');
-        var $form       = $('#pp-add-player-form');
+        const $modal      = $('#pp-add-player-modal');
+        const $addBtn     = $('#pp-add-player-button');
+        const $closeBtn   = $('#pp-add-player-modal-close');
+        const $cancelBtn  = $('#pp-cancel-add-player');
+        const $confirmBtn = $('#pp-confirm-add-player');
+        const $form       = $('#pp-add-player-form');
 
         // Open modal
-        $(document).on('click', '#pp-add-player-button', function () {
+        $(document).on('click', '#pp-add-player-button', () => {
             $modal.css('display', 'flex');
         });
 
         // Close modal
-        function closeModal() {
+        const closeModal = () => {
             $modal.css('display', 'none');
             if ($form.length) { $form[0].reset(); }
-        }
+        };
 
         $closeBtn.on('click', closeModal);
         $cancelBtn.on('click', closeModal);
 
         // Close on click outside
-        $modal.on('mousedown', function (e) {
+        $modal.on('mousedown', (e) => {
             if (e.target === $modal[0]) {
                 closeModal();
             }
         });
 
         // Submit
-        $confirmBtn.on('click', function () {
+        $confirmBtn.on('click', () => {
             if ($form.length && !$form[0].checkValidity()) {
                 $form[0].reportValidity();
                 return;
             }
 
-            var formData = new FormData();
+            const formData = new FormData();
             formData.append('action',        'pp_add_manual_player');
             formData.append('name',          $('#pp-new-player-name').val());
             formData.append('number',        $('#pp-new-player-number').val());
@@ -56,7 +56,7 @@
             $.ajax({
                 url: ajaxurl, method: 'POST', data: formData,
                 processData: false, contentType: false,
-                success: function (response) {
+                success: (response) => {
                     $confirmBtn.prop('disabled', false).text('Add Player');
                     if (response.success && response.data && response.data.roster_table_html) {
                         $('#pp-roster-edits-table').replaceWith(response.data.roster_table_html);
@@ -68,7 +68,7 @@
                         alert('Failed to add player: ' + (response.data && response.data.message || 'Unknown error'));
                     }
                 },
-                error: function () {
+                error: () => {
                     $confirmBtn.prop('disabled', false).text('Add Player');
                     alert('Error adding player. Please try again.');
                 }
