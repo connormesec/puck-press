@@ -79,6 +79,49 @@ class Puck_Press_Public {
 		return $output;
 	}
 
+	/**
+	 * Injects a player-specific document title when ?player= is active.
+	 * "John Doe – Forward #42" replaces the generic page title.
+	 *
+	 * @param array $title_parts WordPress title parts array.
+	 * @return array
+	 */
+	public function filter_player_page_title( array $title_parts ): array
+	{
+		$player_slug = sanitize_text_field( $_GET['player'] ?? '' );
+		if ( empty( $player_slug ) ) return $title_parts;
+
+		global $wpdb;
+		$all_players = $wpdb->get_results(
+			"SELECT name, pos, number FROM {$wpdb->prefix}pp_roster_for_display",
+			ARRAY_A
+		);
+		$player = null;
+		foreach ( $all_players as $row ) {
+			if ( sanitize_title( $row['name'] ) === $player_slug ) {
+				$player = $row;
+				break;
+			}
+		}
+
+		if ( ! $player ) return $title_parts;
+
+		$position_labels = [
+			'F'  => 'Forward',    'C'  => 'Center',
+			'LW' => 'Left Wing',  'RW' => 'Right Wing',
+			'D'  => 'Defenseman', 'LD' => 'Left Defense',
+			'RD' => 'Right Defense', 'G' => 'Goalie',
+		];
+
+		$pos_code  = strtoupper( $player['pos'] ?? '' );
+		$pos_label = $position_labels[ $pos_code ] ?? $pos_code;
+		$number    = ! empty( $player['number'] ) ? '#' . $player['number'] : '';
+		$suffix    = implode( ' ', array_filter( [ $pos_label, $number ] ) );
+
+		$title_parts['title'] = $player['name'] . ( $suffix ? ' – ' . $suffix : '' );
+		return $title_parts;
+	}
+
 	public function register_ajax_hooks()
 	{
 		add_action( 'wp_ajax_pp_get_player_detail',        [ $this, 'ajax_get_player_detail' ] );
@@ -89,21 +132,25 @@ class Puck_Press_Public {
 	{
 		check_ajax_referer( 'pp_player_detail_nonce', 'nonce' );
 
-		$player_id = sanitize_text_field( $_POST['player_id'] ?? '' );
-		if ( empty( $player_id ) ) {
+		$player_slug = sanitize_text_field( $_POST['player_id'] ?? '' );
+		if ( empty( $player_slug ) ) {
 			wp_send_json_error( [ 'message' => 'Invalid player ID.' ] );
 			return;
 		}
 
 		global $wpdb;
 
-		$player = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}pp_roster_for_display WHERE player_id = %s LIMIT 1",
-				$player_id
-			),
+		$all_players = $wpdb->get_results(
+			"SELECT * FROM {$wpdb->prefix}pp_roster_for_display",
 			ARRAY_A
 		);
+		$player = null;
+		foreach ( $all_players as $row ) {
+			if ( sanitize_title( $row['name'] ) === $player_slug ) {
+				$player = $row;
+				break;
+			}
+		}
 
 		if ( ! $player ) {
 			wp_send_json_error( [ 'message' => 'Player not found.' ] );
@@ -119,7 +166,7 @@ class Puck_Press_Public {
 		$stats = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM {$stats_table} WHERE player_id = %s LIMIT 1",
-				$player_id
+				$player['player_id']
 			),
 			ARRAY_A
 		);

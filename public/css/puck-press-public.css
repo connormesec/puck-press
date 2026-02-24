@@ -4,6 +4,17 @@
  */
 
 /* =============================================================
+   Player card anchor wrapper (SEO progressive enhancement)
+   Wraps clickable cards in <a href="?player=X"> for crawlability.
+   JS intercepts clicks; this just prevents anchor styling side-effects.
+   ============================================================= */
+.pp-player-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* =============================================================
    Player Detail View (shared across roster templates)
    ============================================================= */
 

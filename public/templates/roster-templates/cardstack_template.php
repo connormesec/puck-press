@@ -208,11 +208,15 @@ class CardStackTemplate extends PuckPressTemplate
         $year_html = $year_in_school ? "<span class=\"year\">Year: {$year_in_school}</span>" : '';
         $last_team_html = $last_team ? "<div><span class=\"prev_team\">Last Team: {$last_team}</span></div>" : '';
 
-        $id_attr     = $has_stats ? ' id="' . esc_attr( $player_id ) . '"' : '';
+        $slug        = sanitize_title( $name );
+        $id_attr     = $has_stats ? ' id="' . esc_attr( $slug ) . '"' : '';
         $extra_class = $has_stats ? '' : ' no-stats';
 
+        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( add_query_arg( 'player', $slug ) ) . '">' : '';
+        $link_close = $has_stats ? '</a>' : '';
+
         $card = <<<HTML
-        <div class="player_item clearfix{$extra_class}"{$id_attr} data-primary-key="{$id}">
+        {$link_open}<div class="player_item clearfix{$extra_class}"{$id_attr} data-primary-key="{$id}">
             <div class="thumb">
                 <img src="{$headshot_image}" onerror="this.onerror=null;this.src='{$fallback_headshot}';" alt="{$name} headshot" loading="lazy"/>
             </div>
@@ -232,7 +236,7 @@ class CardStackTemplate extends PuckPressTemplate
                     {$last_team_html}
                 </div>
             </div>
-        </div>
+        </div>{$link_close}
     HTML;
 
         return $card;

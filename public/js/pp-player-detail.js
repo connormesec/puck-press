@@ -31,7 +31,8 @@ window.PpPlayerDetail = (function ($) {
         }
 
         // ── Card click ───────────────────────────────────────────────────────
-        $(document).on('click', cardSelector, function () {
+        $(document).on('click', cardSelector, function (e) {
+            e.preventDefault(); // stop <a href> parent from navigating
             const pid = $(this).attr('id');
             if (!pid) return;
             const newUrl = updateQueryParam(window.location.href, 'player', pid);

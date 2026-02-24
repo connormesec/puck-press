@@ -151,11 +151,15 @@ class PhotoGridTemplate extends PuckPressTemplate
         $name       = esc_html($player['name'] ?? '');
         $number     = !empty($player['number']) ? '#' . esc_html($player['number']) : '';
         $pos        = esc_html($player['pos'] ?? '');
-        $id         = esc_attr($player['player_id'] ?? '');
+        $id          = esc_attr($player['player_id'] ?? '');
         $primary_key = esc_attr($player['id'] ?? '');
+        $slug        = sanitize_title( $player['name'] ?? '' );
         $has_stats   = isset( $this->players_with_stats[ $player['player_id'] ?? '' ] );
-        $id_attr     = $has_stats ? ' id="' . $id . '"' : '';
+        $id_attr     = $has_stats ? ' id="' . esc_attr( $slug ) . '"' : '';
         $extra_class = $has_stats ? '' : ' no-stats';
+
+        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( add_query_arg( 'player', $slug ) ) . '">' : '';
+        $link_close = $has_stats ? '</a>' : '';
 
         // Build the "#76 | Forward" meta line
         if ($number && $pos) {
@@ -169,7 +173,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         }
 
         return <<<HTML
-<div class="photogrid_card{$extra_class}"{$id_attr} data-primary-key="{$primary_key}">
+{$link_open}<div class="photogrid_card{$extra_class}"{$id_attr} data-primary-key="{$primary_key}">
     <div class="photogrid_img_wrap">
         <img src="{$img}" onerror="this.onerror=null;this.src='{$fallback}';" alt="{$name}" loading="lazy" />
     </div>
@@ -177,7 +181,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         <div class="photogrid_meta">{$meta}</div>
         <div class="photogrid_name">{$name}</div>
     </div>
-</div>
+</div>{$link_close}
 HTML;
     }
 
