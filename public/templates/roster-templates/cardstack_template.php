@@ -214,7 +214,7 @@ class CardStackTemplate extends PuckPressTemplate
         $card = <<<HTML
         <div class="player_item clearfix{$extra_class}"{$id_attr} data-primary-key="{$id}">
             <div class="thumb">
-                <img src="{$headshot_image}" onerror="this.onerror=null;this.src='{$fallback_headshot}';" alt="player headshot" loading="lazy"/>
+                <img src="{$headshot_image}" onerror="this.onerror=null;this.src='{$fallback_headshot}';" alt="{$name} headshot" loading="lazy"/>
             </div>
             <div class="info">
                 <div class="label">{$number}</div>

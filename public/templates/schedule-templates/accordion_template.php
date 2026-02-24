@@ -112,7 +112,7 @@ class AccordionTemplate extends PuckPressTemplate
         $opponent_logo_html = '';
 
         if (! empty($game['opponent_team_logo'])) {
-            $opponent_logo_html = '<img src="' . esc_url($game['opponent_team_logo']) . '" decoding="async" loading="lazy" alt="Opponent Team Logo" />';
+            $opponent_logo_html = '<img src="' . esc_url($game['opponent_team_logo']) . '" decoding="async" loading="lazy" alt="' . esc_attr($game['opponent_team_name']) . ' logo" />';
         }
 
         $ticket_btn_html = '';
@@ -127,7 +127,7 @@ class AccordionTemplate extends PuckPressTemplate
                 <span class="accordion_time">' . esc_html($game['game_time']) . '</span>
             </div>
             <div class="accordion_team_info">
-                <img class="accordion_msu_thumb" src="' . esc_url($game['target_team_logo']) . '" decoding="async" loading="lazy" alt="Target Team Logo" />
+                <img class="accordion_msu_thumb" src="' . esc_url($game['target_team_logo']) . '" decoding="async" loading="lazy" alt="' . esc_attr($game['target_team_name']) . ' logo" />
                 <span class="accordion_vs">' . esc_html($vs_at) . '</span>
                 ' . $opponent_logo_html . '
                 <span class="accordion_team_title">' . esc_html($game['opponent_team_name']) . '</span>
