@@ -120,24 +120,22 @@ class Puck_Press_Post_Game_Summary_Initiator
 
         $logos_ids = $this->getHomeAndAwayTeamLogosAndIds($this->game_id, $this->source_type);
 
-        $mapTeam = function ($team, $logo, $team_id) use ($mapPlayer, $mapGoalie) {
-            $splitName = $this->split_usphl_team_name($team['name']);
-
+        $mapTeam = function ($team, $logo, $team_id, $db_name, $db_nickname) use ($mapPlayer, $mapGoalie) {
             return [
                 'info' => [
                     'id'       => $team_id,
-                    'name'     => $team['name'],
-                    'nickname' => $splitName['name'],
+                    'name'     => $db_name,
+                    'nickname' => $db_nickname,
                     'logo'     => $logo,
                 ],
                 'stats' => [
                     'goals'           => $team['final_score'],
                     'shots'           => $team['total_shots'],
-                    'powerPlayGoals'  => $team['special_teams']['power_play']['goals_for'],
-                    'infractionCount' => $team['special_teams']['penalty_kill']['times_short_handed'],
+                    'powerPlayGoals'  => $team['special_teams']['power_play']['goals_for'] ?? null,
+                    'infractionCount' => $team['special_teams']['penalty_kill']['times_short_handed'] ?? null,
                 ],
-                'skaters'   => array_map($mapPlayer, $team['players']),
-                'goalieLog' => array_map($mapGoalie, $team['goalies']),
+                'skaters'   => array_map($mapPlayer, $team['players'] ?? []),
+                'goalieLog' => array_map($mapGoalie, $team['goalies'] ?? []),
             ];
         };
 
@@ -152,8 +150,8 @@ class Puck_Press_Post_Game_Summary_Initiator
             'nextGameInfo' => $next_game,
             'highLevelStats' => [
                 'league'       => 'usphl',
-                'homeTeam'     => $mapTeam($data['home'], $logos_ids['home_team_logo'], $logos_ids['home_team_id']),
-                'visitingTeam' => $mapTeam($data['visitor'], $logos_ids['away_team_logo'], $logos_ids['away_team_id']),
+                'homeTeam'     => $mapTeam($data['home'], $logos_ids['home_team_logo'], $logos_ids['home_team_id'], $logos_ids['home_team_name'], $logos_ids['home_team_nickname']),
+                'visitingTeam' => $mapTeam($data['visitor'], $logos_ids['away_team_logo'], $logos_ids['away_team_id'], $logos_ids['away_team_name'], $logos_ids['away_team_nickname']),
                 'details' => [
                     'status'        => $data['game_status'],
                     'simpleStatus'  => $data['game_status'],
@@ -235,7 +233,8 @@ class Puck_Press_Post_Game_Summary_Initiator
         // Fetch exactly one row that matches game_id and source_type
         $game = $wpdb->get_row(
             $wpdb->prepare("
-            SELECT target_team_logo, opponent_team_logo, home_or_away, target_team_id, opponent_team_id
+            SELECT target_team_logo, opponent_team_logo, home_or_away, target_team_id, opponent_team_id,
+                   target_team_name, target_team_nickname, opponent_team_name, opponent_team_nickname
             FROM $table
             WHERE game_id = %s
               AND source_type = %s
@@ -247,21 +246,29 @@ class Puck_Press_Post_Game_Summary_Initiator
             // Return as associative array
             if ($game->home_or_away === 'home') {
                 return [
-                    'home_team_logo'   => $game->target_team_logo,
-                    'away_team_logo' => $game->opponent_team_logo,
-                    'home_or_away'       => $game->home_or_away,
-                    'home_team_id'       => $game->target_team_id,
-                    'away_team_id'       => $game->opponent_team_id,
-                    'target_team_id'       => $game->target_team_id,
+                    'home_team_logo'         => $game->target_team_logo,
+                    'away_team_logo'         => $game->opponent_team_logo,
+                    'home_or_away'           => $game->home_or_away,
+                    'home_team_id'           => $game->target_team_id,
+                    'away_team_id'           => $game->opponent_team_id,
+                    'target_team_id'         => $game->target_team_id,
+                    'home_team_name'         => $game->target_team_name,
+                    'home_team_nickname'     => $game->target_team_nickname,
+                    'away_team_name'         => $game->opponent_team_name,
+                    'away_team_nickname'     => $game->opponent_team_nickname,
                 ];
             } else {
                 return [
-                    'away_team_logo'   => $game->target_team_logo,
-                    'home_team_logo' => $game->opponent_team_logo,
-                    'home_or_away'       => $game->home_or_away,
-                    'away_team_id'       => $game->target_team_id,
-                    'home_team_id'       => $game->opponent_team_id,
-                    'target_team_id'       => $game->target_team_id,
+                    'away_team_logo'         => $game->target_team_logo,
+                    'home_team_logo'         => $game->opponent_team_logo,
+                    'home_or_away'           => $game->home_or_away,
+                    'away_team_id'           => $game->target_team_id,
+                    'home_team_id'           => $game->opponent_team_id,
+                    'target_team_id'         => $game->target_team_id,
+                    'away_team_name'         => $game->target_team_name,
+                    'away_team_nickname'     => $game->target_team_nickname,
+                    'home_team_name'         => $game->opponent_team_name,
+                    'home_team_nickname'     => $game->opponent_team_nickname,
                 ];
             }
         } else {

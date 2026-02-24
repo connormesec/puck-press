@@ -116,8 +116,9 @@
             var lastTeamVal  = player.last_team || '';
             var yearRaw      = (player.year_in_school || '').toUpperCase();
             var yearVal      = yearMap[yearRaw] || yearRaw.toLowerCase() || '';
-            var majorVal     = player.major || '';
-            var headshotVal  = player.headshot_link || '';
+            var majorVal      = player.major || '';
+            var headshotVal   = player.headshot_link || '';
+            var heroImageVal  = player.hero_image_url || '';
 
             $('#pp-edit-player-name').val(nameVal);
             $('#pp-edit-player-number').val(numberVal);
@@ -130,12 +131,14 @@
             $('#pp-edit-player-year').val(yearVal);
             $('#pp-edit-player-major').val(majorVal);
             $('#pp-edit-player-headshot-url').val(headshotVal);
+            $('#pp-edit-player-hero-image-url').val(heroImageVal);
 
             originalPlayerValues = {
                 name: nameVal, number: numberVal, pos: posVal, ht: htVal,
                 wt: wtVal, shoots: shootsVal, hometown: hometownVal,
                 last_team: lastTeamVal, year_in_school: yearVal,
-                major: majorVal, headshot_link: headshotVal
+                major: majorVal, headshot_link: headshotVal,
+                hero_image_url: heroImageVal
             };
         }
 
@@ -163,7 +166,8 @@
                 last_team:      $('#pp-edit-player-last-team').val(),
                 year_in_school: $('#pp-edit-player-year').val(),
                 major:          $('#pp-edit-player-major').val(),
-                headshot_link:  $('#pp-edit-player-headshot-url').val()
+                headshot_link:  $('#pp-edit-player-headshot-url').val(),
+                hero_image_url: $('#pp-edit-player-hero-image-url').val()
             };
 
             var changedFields = {};
@@ -313,6 +317,25 @@
                     error: function () { restoreEditListStyles(); }
                 });
             }
+        });
+
+        //============================================================//
+        //   WP Media picker for hero image                           //
+        //============================================================//
+        $(document).on('click', '.pp-hero-image-browse-btn', function (e) {
+            e.preventDefault();
+            var targetSelector = $(this).data('target');
+            var frame = wp.media({
+                title: 'Select Hero Image',
+                button: { text: 'Use this image' },
+                multiple: false,
+                library: { type: 'image' }
+            });
+            frame.on('select', function () {
+                var attachment = frame.state().get('selection').first().toJSON();
+                $(targetSelector).val(attachment.url).trigger('input');
+            });
+            frame.open();
         });
 
         //============================================================//

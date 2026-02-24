@@ -59,11 +59,21 @@ class PDUpdater {
     public function modify_transient($transient) {
         if (property_exists($transient, 'checked')) {
             if ($checked = $transient->checked) {
-			//$checked = $transient->checked;
+                if (empty($this->basename) || empty($this->plugin)) {
+                    return $transient;
+                }
+
                 $this->get_repository_info();
 
-                $out_of_date = version_compare($this->github_response['tag_name'], $checked[$this->basename], 'gt');
+                if (empty($this->github_response) || !isset($this->github_response['tag_name'])) {
+                    return $transient;
+                }
 
+                if (!isset($checked[$this->basename])) {
+                    return $transient;
+                }
+
+                $out_of_date = version_compare($this->github_response['tag_name'], $checked[$this->basename], 'gt');
 
                 if ($out_of_date) {
                     $new_files = $this->github_response['zipball_url'];

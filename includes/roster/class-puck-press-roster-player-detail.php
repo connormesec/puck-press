@@ -31,6 +31,7 @@ class Puck_Press_Roster_Player_Detail
         $pos_code  = strtoupper($player['pos'] ?? '');
         $pos_label = self::$position_labels[$pos_code] ?? esc_html($pos_code);
         $headshot  = !empty($player['headshot_link']) ? esc_url($player['headshot_link']) : $fallback;
+        $hero_bg   = !empty($player['hero_image_url']) ? esc_url($player['hero_image_url']) : $headshot;
 
         $ht     = esc_html($player['ht'] ?? '');
         $wt     = !empty($player['wt']) ? esc_html($player['wt']) . ' lbs' : '';
@@ -185,7 +186,7 @@ class Puck_Press_Roster_Player_Detail
 
         return '
 <div class="pp-player-detail">
-    <div class="pp-player-hero" style="background-image: url(\'' . $headshot . '\');">
+    <div class="pp-player-hero" style="background-image: url(\'' . $hero_bg . '\');">
         <div class="pp-player-hero-overlay"></div>
         <div class="pp-player-headshot-wrap">
             <img

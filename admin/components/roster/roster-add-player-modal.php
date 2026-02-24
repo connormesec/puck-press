@@ -84,6 +84,15 @@ if (!defined('ABSPATH')) {
                         <input type="text" id="pp-new-player-headshot-url" class="pp-form-input">
                     </div>
                 </div>
+                <div class="pp-form-row">
+                    <div class="pp-form-group">
+                        <label for="pp-new-player-hero-image-url" class="pp-form-label">Hero Image</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="pp-new-player-hero-image-url" class="pp-form-input" placeholder="Paste URL or use Browse&hellip;">
+                            <button type="button" class="pp-button pp-button-secondary pp-hero-image-browse-btn" data-target="#pp-new-player-hero-image-url">Browse&hellip;</button>
+                        </div>
+                    </div>
+                </div>
             </form>
         </div>
 

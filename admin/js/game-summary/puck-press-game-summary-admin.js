@@ -74,7 +74,7 @@ jQuery(document).ready(function ($) {
                     }
 
                     // Blog text (if present)
-                    if (res.data.blog_data.body && res.data.blog_data.title) {
+                    if (res.data.blog_data && res.data.blog_data.body && res.data.blog_data.title) {
                         html += `
                         <div class="pp-summary-blog">
                             <h3>Game Summary</h3>

@@ -301,7 +301,10 @@ class Puck_Press_Admin
 		// Tab-specific scripts
 		switch ($current_tab) {
 			case 'roster':
-				wp_enqueue_script('puck-press-roster-sources', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-sources.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_media();
+				$roster_db_utils = new Puck_Press_Roster_Wpdb_Utils();
+				$roster_db_utils->maybe_create_or_update_table('pp_roster_for_display');
+				wp_enqueue_script('puck-press-roster-sources', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-sources.js', array('jquery', 'select2-js', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-edits', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-edits.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-add-player', plugin_dir_url(__FILE__) . 'js/roster/puck-press-add-player.js', array('jquery', 'puck-press-roster-edits'), $this->version, false);
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);

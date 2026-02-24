@@ -79,6 +79,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                     <th class="pp-th"><?php esc_html_e('Year', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Major', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Headshot', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Hero Image', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
                 </tr>
             </thead>
@@ -93,7 +94,8 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                     if (!$is_deleted && !$is_manual && !empty($player['override_data'])) {
                         $decoded = json_decode($player['override_data'], true);
                         if (is_array($decoded)) {
-                            $override_keys = array_values(array_diff(array_keys($decoded), $skip_keys));
+                            $non_empty = array_filter($decoded, function ($v) { return $v !== null && $v !== ''; });
+                            $override_keys = array_values(array_diff(array_keys($non_empty), $skip_keys));
                         }
                     }
                     $mod_id = $player['mod_id'] ?? '';
@@ -116,7 +118,20 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                         <td class="pp-td" data-field="last_team"><?php echo esc_html($player['last_team']); ?></td>
                         <td class="pp-td" data-field="year_in_school"><?php echo esc_html($player['year_in_school']); ?></td>
                         <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
-                        <td class="pp-td" data-field="headshot_link"><?php echo esc_html($player['headshot_link']); ?></td>
+                        <td class="pp-td" data-field="headshot_link">
+                            <?php if (!empty($player['headshot_link'])): ?>
+                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot">
+                            <?php else: ?>
+                                <span style="color:#999">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="pp-td">
+                            <?php if (!empty($player['hero_image_url'])): ?>
+                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero">
+                            <?php else: ?>
+                                <span style="color:#999">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="pp-td">
                             <div class="pp-flex-small-gap">
                                 <button class="pp-button-icon pp-restore-player-btn" title="Restore player"
@@ -141,7 +156,20 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                         <td class="pp-td" data-field="last_team"><?php echo esc_html($player['last_team']); ?></td>
                         <td class="pp-td" data-field="year_in_school"><?php echo esc_html($player['year_in_school']); ?></td>
                         <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
-                        <td class="pp-td" data-field="headshot_link"><?php echo esc_html($player['headshot_link']); ?></td>
+                        <td class="pp-td" data-field="headshot_link">
+                            <?php if (!empty($player['headshot_link'])): ?>
+                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot">
+                            <?php else: ?>
+                                <span style="color:#999">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="pp-td" data-field="hero_image_url">
+                            <?php if (!empty($player['hero_image_url'])): ?>
+                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero">
+                            <?php else: ?>
+                                <span style="color:#999">&mdash;</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="pp-td">
                             <div class="pp-flex-small-gap">
                                 <button class="pp-button-icon pp-edit-player-btn" title="Edit player"
@@ -367,6 +395,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
             'year_in_school' => sanitize_text_field($_POST['year_in_school'] ?? ''),
             'major'          => sanitize_text_field($_POST['major'] ?? ''),
             'headshot_link'  => esc_url_raw($_POST['headshot_link'] ?? ''),
+            'hero_image_url' => esc_url_raw($_POST['hero_image_url'] ?? ''),
         ];
 
         $current_time = current_time('mysql');

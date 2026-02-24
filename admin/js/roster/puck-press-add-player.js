@@ -48,7 +48,8 @@
             formData.append('last_team',     $('#pp-new-player-last-team').val());
             formData.append('year_in_school', $('#pp-new-player-year').val());
             formData.append('major',         $('#pp-new-player-major').val());
-            formData.append('headshot_link', $('#pp-new-player-headshot-url').val());
+            formData.append('headshot_link',  $('#pp-new-player-headshot-url').val());
+            formData.append('hero_image_url', $('#pp-new-player-hero-image-url').val());
 
             $confirmBtn.prop('disabled', true).text('Adding...');
 

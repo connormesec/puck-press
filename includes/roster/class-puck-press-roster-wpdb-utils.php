@@ -68,6 +68,7 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             last_team varchar(100),
             year_in_school varchar(50),
             major varchar(100),
+            hero_image_url text,
             PRIMARY KEY  (id)
         ",
         'pp_roster_stats' => "
