@@ -206,6 +206,20 @@ class Puck_Press_Public {
 	 *
 	 * @since    1.0.0
 	 */
+	/**
+	 * Enqueue the active slider template's CSS and JS early enough for wp_head.
+	 * The shortcode fires after wp_head, so CSS enqueued there is missed.
+	 */
+	public function enqueue_slider_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-slider' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-slider-template-manager.php';
+		new Puck_Press_Slider_Template_Manager();
+	}
+
 	public function enqueue_scripts() {
 
 		/**

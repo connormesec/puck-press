@@ -1,0 +1,342 @@
+/* =============================================================================
+   Scoreboard Slider Template
+   ============================================================================= */
+
+.pp-sb-container {
+  --card-h: 150px;
+
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 16px 0;
+}
+
+/* ── Outer flex row: prev arrow · glider-contain · next arrow · calendar ── */
+.pp-sb-outer {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+}
+
+/* ── Glider contain ── */
+.pp-sb-glider-contain {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+  align-content: center;
+}
+
+/* ── Glider.js base CSS (the CDN link only ships JS, not CSS) ── */
+.pp-sb-container .glider {
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  margin-left: 0 !important; /* Cancel gameslider.css's -10px !important bleed */
+}
+
+.pp-sb-container .glider-track {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Glider.js sets inline height: auto on slides at runtime — !important overrides it. */
+.pp-sb-container .glider-slide {
+  user-select: none;
+  min-width: 150px;
+  height: 120px !important;
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pp-sb-container .glider-slide:first-child {
+  margin-left: 0;
+}
+
+/* ── Nav arrows — flex siblings flanking the glider-contain ── */
+.pp-sb-nav {
+  flex-shrink: 0;
+  width: 50px;
+  height: var(--card-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--pp-scoreboard-card_bg);
+  color: var(--pp-scoreboard-accent_color);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: filter 0.15s ease;
+}
+
+.pp-sb-nav:hover {
+  filter: brightness(0.8);
+}
+
+.pp-sb-nav.disabled,
+.pp-sb-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.pp-sb-prev {
+  border-radius: 4px 0 0 4px;
+}
+.pp-sb-next {
+  border-radius: 0 4px 4px 0;
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+
+.pp-sb-card {
+  /* Local colour tokens */
+  --c-bg: var(--pp-scoreboard-card_bg);
+  --c-border: var(--pp-scoreboard-card_border);
+  --c-hdr: var(--pp-scoreboard-header_text);
+  --c-name: var(--pp-scoreboard-team_text);
+  --c-score: var(--pp-scoreboard-score_text);
+  --c-dim: 0.5;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  overflow: hidden; /* clips overlay slide-up */
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  cursor: default;
+  transition: border-color 0.2s ease;
+}
+
+.pp-sb-card--has-ticket:hover {
+  border-color: var(--pp-scoreboard-accent_color);
+}
+
+/* ── Card header ── */
+.pp-sb-card-hdr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 16px 6px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: border-color 0.2s ease;
+}
+
+.pp-sb-date-label,
+.pp-sb-sep,
+.pp-sb-status {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-hdr);
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.pp-sb-sep {
+  flex-shrink: 0;
+}
+.pp-sb-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Teams area ── */
+.pp-sb-teams {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px 10px;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.pp-sb-team-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.pp-sb-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.pp-sb-name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-name);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  transition: color 0.2s ease;
+}
+
+.pp-sb-score {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-score);
+  flex-shrink: 0;
+  min-width: 16px;
+  text-align: right;
+  opacity: var(--c-dim);
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.pp-sb-score--w {
+  --c-dim: 1;
+}
+
+/* ── Full-card overlay — slides up from below on hover ── */
+.pp-sb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 16px;
+  background: var(--pp-scoreboard-accent_color);
+  color: var(--pp-scoreboard-accent_text);
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+  border-radius: 4px;
+}
+
+.pp-sb-card:hover .pp-sb-overlay {
+  transform: translateY(0);
+}
+
+.pp-sb-ovl-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pp-sb-ovl-date {
+  flex-shrink: 0;
+}
+
+.pp-sb-ovl-sep {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pp-sb-ovl-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.pp-sb-ovl-venue {
+  font-size: 16px;
+  font-weight: 400;
+  margin-top: 8px;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pp-sb-ovl-links {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pp-sb-ovl-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pp-scoreboard-accent_text);
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.pp-sb-ovl-link:hover {
+  opacity: 1;
+}
+
+/* ── Corner hint — visible at rest when a card has ticket link ── */
+.pp-sb-hint {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: var(--pp-scoreboard-accent_color);
+  line-height: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.pp-sb-card--has-ticket:hover .pp-sb-hint,
+.pp-sb-card--overlay-open .pp-sb-hint {
+  opacity: 0;
+}
+
+/* Programmatically opened overlay (mobile tap) */
+.pp-sb-card--overlay-open .pp-sb-overlay {
+  transform: translateY(0);
+}
+
+.pp-sb-card--overlay-open.pp-sb-card--has-ticket {
+  border-color: var(--pp-scoreboard-accent_color);
+}
+
+/* ── Calendar CTA button ── */
+.pp-sb-cal-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  background-color: var(--pp-scoreboard-accent_color);
+  color: var(--pp-scoreboard-accent_text);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.pp-sb-cal-btn:hover {
+  opacity: 0.82;
+}
+
+/* ── Mobile scrollbar ── */
+@media (max-width: 640px) {
+  .pp-sb-container .glider::-webkit-scrollbar {
+    opacity: 1;
+    -webkit-appearance: none;
+    height: 3px;
+  }
+  .pp-sb-container .glider::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* ── Narrow screens ── */
+@media (max-width: 480px) {
+  .pp-sb-cal-btn {
+    width: 36px;
+  }
+}

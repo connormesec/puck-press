@@ -272,6 +272,9 @@
             $('.' + cfg.templatesData.selected_template + cfg.containerSuffix).show();
         };
 
+        // On page load, show only the currently selected template in the preview.
+        resetTemplateRendering();
+
     };
 
 })(window, jQuery);
