@@ -89,6 +89,7 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             promo_text TEXT DEFAULT NULL,
             promo_img_url TEXT DEFAULT NULL,
             promo_ticket_link TEXT DEFAULT NULL,
+            post_link TEXT DEFAULT NULL,
             game_date_day VARCHAR(50) NOT NULL,
             game_time VARCHAR(50) DEFAULT NULL,
             game_timestamp DATETIME NULL DEFAULT NULL,

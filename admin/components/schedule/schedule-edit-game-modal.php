@@ -108,6 +108,17 @@ if (!defined('ABSPATH')) {
                     </div>
                 </div>
 
+
+                <p class="pp-form-section-label">Post Summary</p>
+
+                <div class="pp-form-row">
+                    <div class="pp-form-group">
+                        <label for="pp-post-link" class="pp-form-label">Post Link (URL)</label>
+                        <input type="url" id="pp-post-link" class="pp-form-input" placeholder="https://...">
+                        <small class="pp-form-hint">Auto-populated from post game summary. Enter a custom URL to override.</small>
+                    </div>
+                </div>
+
             </form>
         </div>
 

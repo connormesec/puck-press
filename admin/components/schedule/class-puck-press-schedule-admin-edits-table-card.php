@@ -156,6 +156,11 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
             }
         }
 
+        // Sanitize post_link as a URL
+        if (isset($parsed_data['fields']['post_link'])) {
+            $parsed_data['fields']['post_link'] = esc_url_raw($parsed_data['fields']['post_link']);
+        }
+
         // Format game_status for display
         if (isset($parsed_data['fields']['game_status']) && $parsed_data['fields']['game_status'] !== '') {
             $raw_status = $parsed_data['fields']['game_status'];

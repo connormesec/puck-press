@@ -61,6 +61,23 @@ class Puck_Press_Cron_Admin_Display
             }
         }
 
+        // Handle "Autodiscover Post Links" form
+        if (isset($_POST['puck_press_autodiscover_posts']) && check_admin_referer('puck_press_autodiscover_action', 'puck_press_autodiscover_nonce')) {
+            require_once plugin_dir_path(__FILE__) . '../../../includes/game-summary-post/class-puck-press-game-post-creator.php';
+            $creator  = new Puck_Press_Game_Post_Creator();
+            $results  = $creator->autodiscover_post_links();
+            $last_msg = array_pop($results);
+            echo '<div class="notice notice-success"><p><strong>' . esc_html($last_msg) . '</strong></p>';
+            if (!empty($results)) {
+                echo '<ul style="margin:6px 0 0 16px;list-style:disc;">';
+                foreach ($results as $msg) {
+                    echo '<li>' . esc_html($msg) . '</li>';
+                }
+                echo '</ul>';
+            }
+            echo '</div>';
+        }
+
         // Handle "Run Cron Task Now" form
         if (isset($_POST['puck_press_run_cron_now']) && check_admin_referer('puck_press_cron_manual_action', 'puck_press_cron_manual_nonce')) {
             $this->cron->run_cron_task();
@@ -151,6 +168,21 @@ class Puck_Press_Cron_Admin_Display
                 <form method="post" action="">
                     <?php wp_nonce_field('puck_press_cron_manual_action', 'puck_press_cron_manual_nonce'); ?>
                     <?php submit_button('Run Cron Task Now', 'secondary', 'puck_press_run_cron_now'); ?>
+                </form>
+            </div>
+
+            <!-- Autodiscover Post Links -->
+            <div class="card" style="max-width: 800px;">
+                <h2>Autodiscover Post Links</h2>
+                <p>
+                    Scans all published posts and links any that match a game in the schedule —
+                    supports both the old slug format (<code>22746</code>) and the new SEO-friendly format
+                    (<code>terriers-beat-cornell-22746</code>).
+                    Only games that don't already have a post link are updated.
+                </p>
+                <form method="post" action="">
+                    <?php wp_nonce_field('puck_press_autodiscover_action', 'puck_press_autodiscover_nonce'); ?>
+                    <?php submit_button('Autodiscover Post Links', 'secondary', 'puck_press_autodiscover_posts'); ?>
                 </form>
             </div>
 

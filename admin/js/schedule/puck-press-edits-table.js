@@ -16,11 +16,29 @@
       });
     };
 
+    // Wrap cell content in .pp-cell-inner for 2-line clamp and set title tooltips
+    const applyTableCellClamping = () => {
+      $("#pp-games-table .pp-td-compact").each(function () {
+        const $td = $(this);
+        // Skip cells that already have a wrapper or only contain buttons/nothing
+        if ($td.find(".pp-cell-inner").length || $td.find("button").length) return;
+        const fullText = $td.text().trim();
+        if (!fullText) return;
+        // Wrap existing content (may be text node, spans, or anchors)
+        $td.wrapInner('<div class="pp-cell-inner"></div>');
+        // Set tooltip to show full content on hover (use anchor title if present)
+        if (!$td.attr("title") && !$td.find("[title]").length) {
+          $td.attr("title", fullText);
+        }
+      });
+    };
+
     // Restore styles helper for use with refreshGamesTable callbacks
     const afterRefresh = () => {
       restoreEditListStyles();
       countGameRows();
       applyEditHighlights();
+      applyTableCellClamping();
     };
 
     const doWithRefresh = (ajaxOptions, preRefreshFn) =>
@@ -77,6 +95,7 @@
 
     // Apply on initial page load
     applyEditHighlights();
+    applyTableCellClamping();
 
     // Revert a single cell's field(s) back to raw value
     $(document).on("click", ".pp-revert-btn", function (e) {
@@ -198,6 +217,10 @@
       $("#pp-promo-img-url").val(promoImgUrlVal);
       $("#pp-promo-ticket-link").val(promoTicketLinkVal);
 
+      // Post link
+      const postLinkVal = game.post_link || "";
+      $("#pp-post-link").val(postLinkVal);
+
       // Snapshot so the submit handler can detect which fields actually changed.
       originalFormValues = {
         game_date: datePart,
@@ -211,6 +234,7 @@
         promo_text: promoTextVal,
         promo_img_url: promoImgUrlVal,
         promo_ticket_link: promoTicketLinkVal,
+        post_link: postLinkVal,
       };
     };
 
@@ -327,6 +351,9 @@
       const promoTicketLink = $("#pp-promo-ticket-link").val();
       if (promoTicketLink && promoTicketLink !== (orig.promo_ticket_link || ""))
         fields.promo_ticket_link = promoTicketLink;
+
+      const postLink = $("#pp-post-link").val();
+      if (postLink !== (orig.post_link || "")) fields.post_link = postLink;
 
       const edit_data = {
         edit_action: "update",
