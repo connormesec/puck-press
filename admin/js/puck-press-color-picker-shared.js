@@ -65,6 +65,7 @@
             const key = $(cfg.templateSelectorId).val();
             generateColorFields(key);
             if (hasFont) generateFontFields(key);
+            if (cfg.calUrlFieldId) $(cfg.calUrlFieldId).val(cfg.templatesData.cal_url || '');
         });
 
         // ── Close / cancel / click-outside ───────────────────────────────────
@@ -90,6 +91,7 @@
             const colors = getColorSettings();
             const data   = { action: cfg.ajaxAction, template_key: key, colors: colors };
             if (hasFont) data.fonts = getFontSettings();
+            if (cfg.calUrlFieldId) data.cal_url = $(cfg.calUrlFieldId).val().trim();
 
             $.ajax({
                 url: ajaxurl,
@@ -99,6 +101,7 @@
                     if (response.success) {
                         cfg.templatesData[cfg.templatesKey][key] = colors;
                         if (hasFont) cfg.templatesData.fontSettings[key] = data.fonts;
+                        if (cfg.calUrlFieldId) cfg.templatesData.cal_url = data.cal_url || '';
                         cfg.templatesData.selected_template = key;
                         generateColorFields(key);
                         if (hasFont) generateFontFields(key);

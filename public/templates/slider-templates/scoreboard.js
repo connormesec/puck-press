@@ -12,6 +12,10 @@ function initScoreboardSlider() {
     const el = document.querySelector('.pp-sb-glider');
     if (!el) return;
 
+    // Reveal before init so Glider.js can read real dimensions.
+    // Browser does not paint between synchronous JS statements, so no FOUC.
+    el.closest('.pp-sb-container').classList.add('pp-sb-ready');
+
     const glider = new Glider(el, {
         slidesToShow: 1,
         slidesToScroll: 1,

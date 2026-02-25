@@ -180,7 +180,7 @@ class Puck_Press_Admin
 	}
 
 
-	private static function update_template_colors($template_manager)
+	private static function update_template_colors($template_manager, $extra_updated = false)
 	{
 		// Check permissions
 		if (!current_user_can('manage_options')) {
@@ -215,11 +215,15 @@ class Puck_Press_Admin
 		$colors_updated = $template_manager->save_template_colors($template_key, $colors);
 		$template_key_changed = $template_manager->set_current_template_key($template_key);
 
-		if ($colors_updated || $template_key_changed || $fonts_updated) {
-			wp_send_json_success([
+		if ($colors_updated || $template_key_changed || $fonts_updated || $extra_updated) {
+			$response = [
 				'message' => 'Template updated successfully.',
-				'colors'  => $colors
-			]);
+				'colors'  => $colors,
+			];
+			if ( isset( $_POST['cal_url'] ) ) {
+				$response['cal_url'] = get_option( 'pp_slider_cal_url', '' );
+			}
+			wp_send_json_success( $response );
 		} else {
 			wp_send_json_error([
 				'message' => 'No changes were made to the template or colors.'
@@ -234,7 +238,11 @@ class Puck_Press_Admin
 
 	public static function pp_ajax_update_slider_template_colors()
 	{
-		self::update_template_colors(new Puck_Press_Slider_Template_Manager());
+		$url_updated = false;
+		if ( isset( $_POST['cal_url'] ) ) {
+			$url_updated = update_option( 'pp_slider_cal_url', esc_url_raw( wp_strip_all_tags( $_POST['cal_url'] ) ) );
+		}
+		self::update_template_colors(new Puck_Press_Slider_Template_Manager(), $url_updated);
 	}
 
 	public static function pp_ajax_update_roster_template_colors()
@@ -350,8 +358,9 @@ class Puck_Press_Admin
 		$sliderTemplates = $slider_template_manager->get_all_template_colors();
 		$selected_slider_template =  $slider_template_manager->get_current_template_key();
 		$templates = [
-			'sliderTemplates' => $sliderTemplates,
-			'selected_template' => $selected_slider_template
+			'sliderTemplates'   => $sliderTemplates,
+			'selected_template' => $selected_slider_template,
+			'cal_url'           => get_option( 'pp_slider_cal_url', '' ),
 		];
 		wp_localize_script('puck-press-slider-color-picker', 'ppSliderTemplates', $templates);
 

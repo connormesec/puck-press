@@ -48,6 +48,13 @@ $selected_template = $templates->get_current_template_key();
                 <div class="pp-form-row" id="pp-slider-dynamic-color-fields">
                     <!-- Color inputs will be dynamically generated here -->
                 </div>
+                <div class="pp-form-row" style="margin-top: 12px;">
+                    <label for="pp-slider-cal-url" class="pp-form-label">Schedule Page URL</label>
+                    <input type="text" id="pp-slider-cal-url" name="cal_url"
+                           class="pp-text-input" style="width:100%;box-sizing:border-box;"
+                           placeholder="https://example.com/schedule"
+                           value="<?php echo esc_attr( get_option( 'pp_slider_cal_url', '' ) ); ?>">
+                </div>
             </form>
         </div>
         <div class="pp-modal-footer">
