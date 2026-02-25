@@ -58,6 +58,16 @@
         const $modal  = $(cfg.modalId);
         const $form   = $(cfg.formId);
 
+        const updateCalUrlVisibility = (templateKey) => {
+            if (!cfg.calUrlFieldId || !cfg.calUrlShowForTemplates) return;
+            const $row = $(cfg.calUrlFieldId).closest('.pp-form-row');
+            if (cfg.calUrlShowForTemplates.includes(templateKey)) {
+                $row.show();
+            } else {
+                $row.hide();
+            }
+        };
+
         // ── Open ─────────────────────────────────────────────────────────────
 
         $(cfg.openBtnId).on('click', () => {
@@ -66,6 +76,7 @@
             generateColorFields(key);
             if (hasFont) generateFontFields(key);
             if (cfg.calUrlFieldId) $(cfg.calUrlFieldId).val(cfg.templatesData.cal_url || '');
+            updateCalUrlVisibility(key);
         });
 
         // ── Close / cancel / click-outside ───────────────────────────────────
@@ -224,6 +235,7 @@
             const key = $(this).val();
             generateColorFields(key);
             if (hasFont) generateFontFields(key);
+            updateCalUrlVisibility(key);
             for (const k of Object.keys(cfg.templatesData[cfg.templatesKey])) {
                 $('.' + k + cfg.containerSuffix).hide();
             }

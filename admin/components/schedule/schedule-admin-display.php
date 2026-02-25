@@ -124,9 +124,9 @@ class Puck_Press_Schedule_Admin_Display
 
                 <?php echo $this->game_template_preview->render() ?>
 
-                <?php echo $this->pp_sched_admin->render(); ?>
-
                 <?php echo $this->game_slider_preview->render() ?>
+
+                <?php echo $this->pp_sched_admin->render(); ?>
 
             </main>
             <?php

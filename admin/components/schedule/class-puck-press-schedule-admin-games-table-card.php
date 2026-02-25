@@ -76,7 +76,7 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
                     <th class="pp-th"><?php esc_html_e('Status', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('H/A', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Source', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Post Link', 'puck-press'); ?></th>
+                    <th class="pp-th"><?php esc_html_e('Post Summary', 'puck-press'); ?></th>
                     <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
                 </tr>
             </thead>
@@ -159,11 +159,8 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
                             <?php endif; ?>
                         </td>
                         <td class="pp-td pp-td-compact">
-                            <?php if (!empty($game['post_link'])) :
-                                $post_link_path = parse_url($game['post_link'], PHP_URL_PATH);
-                                $display_url = ($post_link_path && $post_link_path !== '/') ? '...' . $post_link_path : $game['post_link'];
-                            ?>
-                                <a href="<?php echo esc_url($game['post_link']); ?>" target="_blank" title="<?php echo esc_attr($game['post_link']); ?>" class="pp-post-link-icon"><?php echo esc_html($display_url); ?></a>
+                            <?php if (!empty($game['post_link'])) : ?>
+                                <a href="<?php echo esc_url($game['post_link']); ?>" target="_blank" title="<?php echo esc_attr($game['post_link']); ?>" class="pp-post-link-icon pp-tag pp-tag-regular-season">📰 Post Summary</a>
                             <?php endif; ?>
                         </td>
                         <td class="pp-td pp-td-compact">

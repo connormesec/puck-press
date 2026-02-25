@@ -195,12 +195,11 @@ class SlateTemplate extends PuckPressTemplate
             $html .= '<span class="slate-score ' . esc_attr($result['css_class']) . '">' . esc_html($result['display']) . '</span>';
             $html .= '</div>';
         }
-        // Game Recap pill temporarily hidden (showing promo image incorrectly)
-        // if (!empty($game['promo_ticket_link'])) {
-        //     $html .= '<div class="slate-action-col">';
-        //     $html .= '<a class="slate-recap-btn" href="' . esc_url($game['promo_ticket_link']) . '" target="_blank" rel="noopener">Game Recap</a>';
-        //     $html .= '</div>';
-        // }
+        if (!empty($game['post_link'])) {
+            $html .= '<div class="slate-action-col">';
+            $html .= '<a class="slate-recap-btn" href="' . esc_url($game['post_link']) . '" target="_blank" rel="noopener">Summary</a>';
+            $html .= '</div>';
+        }
         $html .= '</div>'; // .slate-game-main-row
         $html .= '</div>'; // .slate-game-card
         return $html;

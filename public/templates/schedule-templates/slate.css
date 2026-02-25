@@ -321,3 +321,14 @@
     min-width: 72px;
   }
 }
+
+@media screen and (max-width: 380px) {
+  .slate-date-col {
+    min-width: 60px;
+  }
+
+  .slate-recap-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+}

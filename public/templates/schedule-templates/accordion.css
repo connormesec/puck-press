@@ -89,14 +89,14 @@
     padding: 0px !important;
   }
   .accordion_game_detail {
-    width: 20% !important;
+    width: 26% !important;
   }
   .accordion_date-time {
     width: 25% !important;
   }
   .accordion_team_info {
     padding-left: 5px !important;
-    width: 55% !important;
+    width: 49% !important;
   }
   .accordion_team_title {
     display: none !important;
@@ -116,6 +116,10 @@
   }
   .accordion_vs {
     padding: 18px 6px 18px 6px !important;
+  }
+  .accordion-recap-btn {
+    font-size: 10px;
+    padding: 3px 8px;
   }
 }
 
@@ -254,7 +258,7 @@
   padding-top: 18px;
   font-size: 20px;
   letter-spacing: 0.5px;
-  text-align: left;
+  text-align: center;
   display: block;
 }
 
@@ -262,6 +266,9 @@
   width: 13%;
   float: right !important;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .accordion_team_info {
@@ -299,6 +306,27 @@
 .accordion_ticket_btn:hover {
   opacity: 0.85;
   color: var(--pp-accordion-month_text);
+}
+
+.accordion-recap-btn {
+  display: inline-block;
+  border: 1.5px solid var(--pp-accordion-content_text);
+  color: var(--pp-accordion-content_text) !important;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  margin-top: 6px;
+}
+.accordion-recap-btn:hover {
+  background: var(--pp-accordion-content_text);
+  color: var(--pp-accordion-container_bg) !important;
 }
 
 .accordion_game_promotions_container {

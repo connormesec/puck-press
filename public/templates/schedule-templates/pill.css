@@ -218,6 +218,29 @@
   color: var(--pp-pill-home_tab_text);
 }
 
+.pill_recap_wrap {
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+}
+.pill-recap-btn {
+  display: inline-block;
+  border: 1.5px solid var(--pp-pill-text);
+  color: var(--pp-pill-text) !important;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.pill-recap-btn:hover {
+  background: var(--pp-pill-text);
+  color: var(--pp-pill-container_bg) !important;
+}
+
 .promotion,
 .promo_dropdown_header {
   text-transform: uppercase;
@@ -335,5 +358,162 @@
   }
   .accordion-content {
     flex-direction: column;
+  }
+}
+
+/* ── Mobile card layout (placed after 500px block so it wins on small screens) ── */
+@media screen and (max-width: 640px) {
+
+  /* Card becomes a vertical column */
+  .game_container {
+    flex-direction: column;
+    height: auto;
+    padding: 0 14px 16px 42px;
+    align-items: stretch;
+  }
+
+  /* Full-height home/away strip pinned to the left edge */
+  .home_away_container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 36px;
+    height: auto;
+    border-radius: 0.25rem 0 0 0.25rem;
+    margin-right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .home_away_text {
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    transform-origin: center center;
+    font-size: 13px;
+    display: block;
+  }
+
+  /* 1. Date + time — centered, combined onto one line */
+  .date_time_location {
+    order: 1;
+    justify-content: center;
+    padding-top: 14px;
+  }
+  .date_time_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: unset;
+    text-align: center;
+  }
+  .game_date,
+  .game_time {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .game_time::before {
+    content: " \00B7 ";
+    font-weight: 400;
+  }
+
+  /* 2. Venue — restore and center (hidden by the 980px rule) */
+  .arena {
+    display: block !important;
+    order: 2;
+    text-align: center;
+    margin: 6px 0 10px;
+    max-width: unset;
+    font-size: 13px;
+    margin-right: 0;
+  }
+
+  /* 3. Opponent logo + name — stack vertically, centered */
+  .op_logo_name {
+    order: 3;
+    flex-direction: column;
+    align-items: center;
+    min-width: unset;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .op_logo {
+    height: 90px;
+    width: auto;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  .op_name_nickname {
+    text-align: center;
+    min-width: unset;
+  }
+  .op_name {
+    display: block !important;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .op_nickname {
+    display: none !important;
+  }
+
+  /* 4. Results (past games) — centered */
+  .results {
+    order: 4;
+    margin-left: 0;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .results_wrap {
+    text-align: center;
+    min-width: unset;
+  }
+
+  /* 5. Ticket button + chevron row — ticket grows, chevron stays right */
+  .pill_right_actions {
+    order: 5;
+    width: 100%;
+    margin-left: 0;
+    padding: 0;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .pill_ticket_btn {
+    flex: 1;
+    display: block;
+    text-align: center;
+    padding: 14px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+  }
+
+  /* Chevron stays right-aligned whether or not a ticket button is present */
+  .arrow_wrap {
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-right: 0.75rem;
+  }
+
+  /* Past game summary — order 5, centered */
+  .pill_recap_wrap {
+    order: 5;
+    width: 100%;
+    padding: 0;
+    justify-content: center;
+  }
+  .pill-recap-btn {
+    flex: 1;
+    display: block;
+    background: var(--pp-pill-home_tab_bg);
+    color: var(--pp-pill-home_tab_text) !important;
+    border: none;
+    text-align: center;
+    padding: 14px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
   }
 }

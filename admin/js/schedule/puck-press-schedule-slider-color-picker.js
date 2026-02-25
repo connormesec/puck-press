@@ -14,6 +14,7 @@
             ajaxAction:             'puck_press_update_slider_colors',
             containerSuffix:        '_slider_container',
             calUrlFieldId:          '#pp-slider-cal-url',
+            calUrlShowForTemplates: ['scoreboard'],
             // no fontFieldsContainerId — slider has no font support
         });
     });

@@ -120,6 +120,11 @@ class AccordionTemplate extends PuckPressTemplate
             $ticket_btn_html = '<a class="accordion_ticket_btn" href="' . esc_url($game['promo_ticket_link']) . '" target="_blank" rel="noopener">BUY TICKETS</a>';
         }
 
+        $recap_btn_html = '';
+        if ($is_over && ! empty($game['post_link'])) {
+            $recap_btn_html = '<a class="accordion-recap-btn" href="' . esc_url($game['post_link']) . '" target="_blank" rel="noopener">Summary</a>';
+        }
+
         return '
         <div class="accordion_game_list">
             <div class="accordion_date-time">
@@ -135,6 +140,7 @@ class AccordionTemplate extends PuckPressTemplate
             <div class="accordion_game_detail">
                 <span class="accordion_game_outcome">' . esc_html($result_message) . '</span>
                 ' . $ticket_btn_html . '
+                ' . $recap_btn_html . '
             </div>
             ' . $promotion_section . '
         </div>';

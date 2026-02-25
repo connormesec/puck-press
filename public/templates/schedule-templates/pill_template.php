@@ -162,6 +162,10 @@ class PillTemplate extends PuckPressTemplate
         $accordion = '';
         $right_actions = '';
         $promo_content = '';
+        $recap_html = '';
+        if (! $should_hide_score && ! empty($game['post_link'])) {
+            $recap_html = '<div class="pill_recap_wrap"><a class="pill-recap-btn" href="' . esc_url($game['post_link']) . '" target="_blank" rel="noopener">Summary</a></div>';
+        }
 
         if ($should_hide_score === true) {
             // Future game: hide score; show right-side actions and promo content if present.
@@ -254,6 +258,7 @@ class PillTemplate extends PuckPressTemplate
                             </div>
                         </div>
                         ' . $right_actions . '
+                        ' . $recap_html . '
                     </div>
                     ' . $promo_content;
         return $content;
