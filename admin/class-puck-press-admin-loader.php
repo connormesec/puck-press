@@ -43,6 +43,8 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-schedule-template-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-roster-template-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-slider-template-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-record-template-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/record/class-puck-press-record-wpdb-utils.php';
 
 		// Abstracts
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-card-abstract.php';

@@ -57,6 +57,7 @@
         const hasFont = !!cfg.fontFieldsContainerId;
         const $modal  = $(cfg.modalId);
         const $form   = $(cfg.formId);
+        let isSaving  = false;
 
         const updateCalUrlVisibility = (templateKey) => {
             if (!cfg.calUrlFieldId || !cfg.calUrlShowForTemplates) return;
@@ -91,12 +92,16 @@
 
         $(cfg.closeBtnId).on('click', closeModal);
         $(cfg.cancelBtnId).on('click', closeModal);
-        $modal.on('click', function (e) { if (e.target === this) closeModal(); });
+        $modal.on('click', function (e) { if (e.target === this && !isSaving) closeModal(); });
 
         // ── Save ─────────────────────────────────────────────────────────────
 
         $(cfg.saveBtnId).on('click', () => {
             if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
+            if (isSaving) return;
+
+            isSaving = true;
+            $(cfg.saveBtnId).prop('disabled', true).text('Saving…');
 
             const key    = $(cfg.templateSelectorId).val();
             const colors = getColorSettings();
@@ -122,6 +127,10 @@
                 },
                 error: () => {
                     console.log('AJAX error saving colors');
+                },
+                complete: () => {
+                    isSaving = false;
+                    $(cfg.saveBtnId).prop('disabled', false).text('Save Colors');
                 }
             });
         });
@@ -218,7 +227,7 @@
 
                 if (fontValue) loadGoogleFont(fontValue);
 
-                $select.on('select2:select', function () {
+                $select.on('select2:select change', function () {
                     const fontName = ($(this).val() || '').trim();
                     const cssValue = fontFamilyCss(fontName);
                     document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);

@@ -197,12 +197,14 @@ class Puck_Press
 		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
 		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
 		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_slider_assets');
+		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_record_assets');
 		$this->loader->add_action('init', $plugin_public, 'register_ajax_hooks');
 		$this->loader->add_filter('document_title_parts', $plugin_public, 'filter_player_page_title');
 		// Add our Shortcodes
 		$this->loader->add_shortcode('pp-schedule', $plugin_public, 'schedule_builder_shortcode');
 		$this->loader->add_shortcode('pp-slider', $plugin_public, 'slider_builder_shortcode');
 		$this->loader->add_shortcode('pp-roster', $plugin_public, 'roster_builder_shortcode');
+		$this->loader->add_shortcode('pp-record', $plugin_public, 'record_builder_shortcode');
 	}
 
 	/**

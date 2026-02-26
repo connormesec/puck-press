@@ -250,6 +250,11 @@ class Puck_Press_Admin
 		self::update_template_colors(new Puck_Press_Roster_Template_Manager());
 	}
 
+	public static function pp_ajax_update_record_template_colors()
+	{
+		self::update_template_colors(new Puck_Press_Record_Template_Manager());
+	}
+
 	/**
 	 * Register the stylesheets for the admin area.
 	 *
@@ -308,6 +313,30 @@ class Puck_Press_Admin
 		$current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : null;
 		// Tab-specific scripts
 		switch ($current_tab) {
+			case 'record':
+				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-record-color-picker', plugin_dir_url(__FILE__) . 'js/record/puck-press-record-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
+				// Enqueue saved Google Fonts and CSS vars for record templates in head to avoid FOUT on admin preview.
+				$record_tm = new Puck_Press_Record_Template_Manager();
+				$font_vars_css = ':root {';
+				foreach ( $record_tm->get_all_template_fonts() as $tpl_key => $font_set ) {
+					foreach ( $font_set as $font_key => $font_name ) {
+						if ( ! empty( $font_name ) ) {
+							wp_enqueue_style(
+								"pp-admin-gf-{$tpl_key}-{$font_key}",
+								'https://fonts.googleapis.com/css2?family=' . urlencode( $font_name ) . ':wght@400;600;700;800&display=swap',
+								[], null
+							);
+							$safe = str_replace( [ "'", '"', ';', '}' ], '', $font_name );
+							$font_vars_css .= "--pp-{$tpl_key}-{$font_key}: '{$safe}', sans-serif;";
+						}
+					}
+				}
+				$font_vars_css .= '}';
+				if ( $font_vars_css !== ':root {}' ) {
+					wp_add_inline_style( 'puck-press', $font_vars_css );
+				}
+				break;
 			case 'roster':
 				wp_enqueue_media();
 				$roster_db_utils = new Puck_Press_Roster_Wpdb_Utils();
@@ -375,6 +404,17 @@ class Puck_Press_Admin
 			'selected_template' => $selected_roster_template
 		];
 		wp_localize_script('puck-press-roster-color-picker', 'ppRosterTemplates', $roster_templates);
+
+		$record_template_manager  = new Puck_Press_Record_Template_Manager();
+		$selected_record_template = $record_template_manager->get_current_template_key();
+		$record_templates = [
+			'recordTemplates'   => $record_template_manager->get_all_template_colors(),
+			'colorLabels'       => $record_template_manager->get_all_template_color_labels(),
+			'fontSettings'      => $record_template_manager->get_all_template_fonts(),
+			'fontLabels'        => $record_template_manager->get_all_template_font_labels(),
+			'selected_template' => $selected_record_template,
+		];
+		wp_localize_script('puck-press-record-color-picker', 'ppRecordTemplates', $record_templates);
 
 		wp_localize_script('pp-game-summary-admin', 'ppGameSummary', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -454,5 +494,6 @@ class Puck_Press_Admin
 		add_action('wp_ajax_puck_press_update_schedule_colors', [self::class, 'pp_ajax_update_schedule_template_colors']);
 		add_action('wp_ajax_puck_press_update_slider_colors', [self::class, 'pp_ajax_update_slider_template_colors']);
 		add_action('wp_ajax_puck_press_update_roster_colors', [self::class, 'pp_ajax_update_roster_template_colors']);
+		add_action('wp_ajax_puck_press_update_record_colors', [self::class, 'pp_ajax_update_record_template_colors']);
 	}
 }

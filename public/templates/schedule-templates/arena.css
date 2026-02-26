@@ -1,0 +1,528 @@
+/* Arena Schedule Template */
+
+/* ── Container ───────────────────────────────────────────────────────────── */
+.arena_schedule_container {
+  background: var(--pp-arena-page_bg);
+  font-family: var(--pp-arena-schedule_font, inherit);
+  overflow: hidden;
+  border-radius: 4px;
+}
+/* Override any theme font rules on bare elements */
+.arena_schedule_container * {
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* ── Next-game banner ────────────────────────────────────────────────────── */
+.arena-banner {
+  background: var(--pp-arena-header_bg);
+  color: var(--pp-arena-header_text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 28px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.arena-banner--empty {
+  justify-content: flex-start;
+}
+
+.arena-banner__no-game {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.arena-banner__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arena-banner__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--pp-arena-accent);
+}
+
+.arena-banner__matchup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.arena-banner__vs-at {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.75;
+}
+
+.arena-banner__logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.arena-banner__opp {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.arena-banner__date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pp-arena-accent);
+}
+
+.arena-banner__venue {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* Countdown timer */
+.arena-countdown {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.arena-cd__unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 6px;
+  padding: 10px 18px;
+  width: 68px;
+}
+
+.arena-cd__num {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--pp-arena-header_text);
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-cd__lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.45;
+  margin-top: 5px;
+}
+
+/* ── Season record bar ───────────────────────────────────────────────────── */
+.arena-record-bar {
+  background: var(--pp-arena-row_bg);
+  border-bottom: 3px solid var(--pp-arena-accent);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.arena-record-bar__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 26px;
+}
+
+.arena-record-bar__lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--pp-arena-text_muted);
+}
+
+.arena-record-bar__val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--pp-arena-text);
+  letter-spacing: -0.5px;
+  margin-top: 2px;
+}
+
+.arena-record-bar__div {
+  width: 1px;
+  background: rgba(0, 0, 0, 0.09);
+  margin: 8px 0;
+  flex-shrink: 0;
+}
+
+/* ── Section headings ────────────────────────────────────────────────────── */
+.arena-section-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--pp-arena-text_muted);
+  padding: 12px 28px 10px;
+  background: var(--pp-arena-page_bg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ── Game rows ───────────────────────────────────────────────────────────── */
+.arena-row {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 2fr) minmax(0, 1.2fr) 90px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 28px;
+  background: var(--pp-arena-row_bg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.055);
+  transition: background 0.12s;
+  position: relative;
+}
+
+.arena-row:last-child {
+  border-bottom: none;
+}
+
+.arena-row--alt {
+  background: var(--pp-arena-row_alt_bg);
+}
+
+/* Logo column */
+.arena-row__logo-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+}
+
+.arena-row__logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.arena-row__logo-ph {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pp-arena-page_bg);
+  border: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Opponent column */
+.arena-row__opp-col {
+  min-width: 0;
+}
+
+.arena-row__date {
+  font-size: 11.5px;
+  color: var(--pp-arena-text_muted);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.arena-row__matchup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* vs / at badge */
+.arena-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2px 7px 3px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.arena-badge--vs {
+  background: var(--pp-arena-accent);
+  color: #ffffff;
+}
+
+.arena-badge--at {
+  background: var(--pp-arena-text);
+  color: var(--pp-arena-page_bg);
+}
+
+.arena-row__opp-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--pp-arena-text);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.arena-row__sub {
+  font-size: 11.5px;
+  color: var(--pp-arena-text_muted);
+  font-style: italic;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Venue column */
+.arena-row__venue-col {
+  min-width: 0;
+}
+
+.arena-row__venue {
+  font-size: 12.5px;
+  color: var(--pp-arena-text);
+  font-weight: 500;
+}
+
+.arena-row__venue-note {
+  font-size: 11px;
+  color: var(--pp-arena-text_muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Result / action column */
+.arena-row__result-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.arena-result {
+  font-size: 17px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.arena-result--win {
+  color: var(--pp-arena-win_color);
+}
+.arena-result--loss {
+  color: var(--pp-arena-loss_color);
+}
+.arena-result--tie {
+  color: var(--pp-arena-text_muted);
+}
+
+.arena-row__link {
+  font-size: 11.5px;
+  color: var(--pp-arena-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.arena-row__link:hover {
+  text-decoration: underline;
+}
+
+.arena-ticket-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 6px 16px;
+  background: var(--pp-arena-accent);
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none !important;
+  border-radius: 4px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arena-ticket-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Promo toggle & panel ────────────────────────────────────────────────── */
+.arena-promo-toggle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  background: var(--pp-arena-accent);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+
+.arena-promo-toggle:hover {
+  opacity: 1;
+}
+
+.arena-promo-toggle::after {
+  content: "+";
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.arena-promo-toggle.is-open::after {
+  content: "×";
+  font-size: 16px;
+  bottom: 2px;
+  right: 3px;
+}
+
+.arena-promo-panel {
+  display: none;
+  grid-column: 1 / -1;
+  gap: 16px;
+  padding: 14px 0 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  align-items: flex-start;
+}
+
+.arena-promo-panel.is-open {
+  display: flex;
+}
+
+.arena-promo-panel__img {
+  max-width: 180px;
+  max-height: 130px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.arena-promo-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.arena-promo-panel__header {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pp-arena-text);
+}
+
+.arena-promo-panel__text {
+  font-size: 12.5px;
+  color: var(--pp-arena-text_muted);
+  line-height: 1.55;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.arena-empty {
+  color: var(--pp-arena-text_muted);
+  font-size: 14px;
+  padding: 24px 28px;
+  margin: 0;
+}
+
+/* ── Responsive: tablet (hide venue column) ──────────────────────────────── */
+@media (max-width: 860px) {
+  .arena-row {
+    grid-template-columns: 52px minmax(0, 1fr) 90px;
+  }
+
+  .arena-row__venue-col {
+    display: none;
+  }
+}
+
+/* ── Responsive: mobile ──────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .arena-banner {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .arena-banner__opp {
+    font-size: 21px;
+  }
+
+  .arena-banner__logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .arena-countdown {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .arena-cd__unit {
+    min-width: 0;
+    flex: 1;
+    padding: 8px 6px;
+  }
+
+  .arena-cd__num {
+    font-size: 22px;
+  }
+
+  .arena-section-head {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .arena-row {
+    grid-template-columns: 44px minmax(0, 1fr) 90px;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .arena-row__logo-col {
+    width: 40px;
+    height: 40px;
+  }
+
+  .arena-row__logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .arena-row__opp-name {
+    font-size: 15px;
+  }
+
+  .arena-record-bar__stat {
+    padding: 8px 14px;
+  }
+
+  .arena-record-bar__val {
+    font-size: 15px;
+  }
+
+  .arena-record-bar__div {
+    display: none;
+  }
+}

@@ -80,6 +80,7 @@
 		$('#pp-schedule-preview-wrapper').removeClass('loading');
 		$('#pp-roster-preview-wrapper').removeClass('loading');
 		$('#pp-game-slider-preview-wrapper').removeClass('loading');
+		$('#pp-record-preview-wrapper').removeClass('loading');
 	});
 })(jQuery);
 

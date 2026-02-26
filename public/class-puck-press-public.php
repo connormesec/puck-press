@@ -79,6 +79,20 @@ class Puck_Press_Public {
 		return $output;
 	}
 
+	public function record_builder_shortcode( $atts )
+	{
+		$atts = shortcode_atts( [
+			'show_home_away' => 'true',
+			'show_goals'     => 'true',
+			'show_diff'      => 'true',
+			'title'          => 'Team Record',
+		], $atts );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/record/class-puck-press-record-render-utils.php';
+		$render = new Puck_Press_Record_Render_Utils();
+		return $render->get_current_template_html( $atts );
+	}
+
 	/**
 	 * Injects a player-specific document title when ?player= is active.
 	 * "John Doe – Forward #42" replaces the generic page title.
@@ -218,6 +232,16 @@ class Puck_Press_Public {
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-slider-template-manager.php';
 		new Puck_Press_Slider_Template_Manager();
+	}
+
+	public function enqueue_record_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-record' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-record-template-manager.php';
+		new Puck_Press_Record_Template_Manager();
 	}
 
 	public function enqueue_scripts() {

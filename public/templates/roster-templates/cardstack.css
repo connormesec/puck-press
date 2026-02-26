@@ -42,6 +42,14 @@
   font-size: 3rem;
 }
 
+/* Link wrapper — must be block so the floated .player_item inside it
+   doesn't escape it and so the cursor / hover region is correct. */
+a.pp-player-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
 .player_item {
   float: left;
   display: block;
@@ -53,10 +61,22 @@
   padding: 10px;
   margin-bottom: 10px;
   cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+a.pp-player-link:hover .player_item {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .player_item.no-stats {
   cursor: default;
+  transition: none;
+}
+
+.player_item.no-stats:hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .lower {

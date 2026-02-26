@@ -1,0 +1,147 @@
+/* =========================================================
+   Puck Press — Team Record Card
+   ========================================================= */
+
+.pp-record-card {
+  font-family: var(--pp-record-record_font, inherit);
+  background: var(--pp-record-card_bg, #1a1a2e);
+  border: 2px solid var(--pp-record-border, #0f3460);
+  overflow: hidden;
+  color: var(--pp-record-value_text, #ffffff);
+  box-sizing: border-box;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.pp-record-header {
+  padding: 20px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.pp-record-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--pp-record-header_text, #ffffff);
+  opacity: 0.7;
+}
+
+/* ── Stats body ─────────────────────────────────────────── */
+
+.pp-record-stats {
+  padding: 10px 24px;
+}
+
+/* GP – W – L – OTL row (lives in the header) */
+.pp-record-stat-row--main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pp-record-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+}
+
+.pp-record-stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--pp-record-value_text, #ffffff);
+  line-height: 1;
+}
+
+.pp-record-stat-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pp-record-label_text, #a0a0b0);
+  margin-top: 5px;
+}
+
+.pp-record-stat-divider {
+  font-size: 1.4rem;
+  color: var(--pp-record-label_text, #a0a0b0);
+  padding-bottom: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Goals row (GF / GA / DIFF) ────────────────────────── */
+
+.pp-record-goals-row {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 14px 0;
+  border-top: 1px solid var(--pp-record-border, #0f3460);
+  margin-bottom: 16px;
+}
+
+.pp-record-goal-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pp-record-goal-stat .pp-record-stat-value {
+  font-size: 1.3rem;
+}
+
+.pp-record-diff.positive {
+  color: #22c55e;
+}
+
+.pp-record-diff.negative {
+  color: #ef4444;
+}
+
+/* ── Home / Away splits ─────────────────────────────────── */
+
+.pp-record-split-section {
+  border-top: 1px solid var(--pp-record-border, #0f3460);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-record-split-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 14px;
+  border-radius: 7px;
+  background: var(--pp-record-split_bg, #0f3460);
+}
+
+.pp-record-split-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pp-record-label_text, #a0a0b0);
+  min-width: 38px;
+}
+
+.pp-record-split-record {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pp-record-value_text, #ffffff);
+  min-width: 56px;
+}
+
+.pp-record-split-goals {
+  font-size: 0.72rem;
+  color: var(--pp-record-label_text, #a0a0b0);
+  margin-left: auto;
+}
