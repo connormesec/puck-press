@@ -49,18 +49,17 @@
 
 /* ── Table Wrapper (horizontal scroll on mobile) ─────── */
 .pp-stats-table-wrapper {
-  overflow-x: auto;
+  min-width: 0; /* ensure wrapper doesn't grow to match table */
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--pp-standard-border, #e8eaed);
   border-top: none;
   border-radius: 0 0 4px 4px;
-  contain: layout style;
 }
 
 /* ── Table ───────────────────────────────────────────── */
 .pp-stats-table {
-  width: 100%;
-  table-layout: fixed;
+  min-width: 100%; /* expand if needed, but don't force wrapper wider */
+  width: auto;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
@@ -98,7 +97,6 @@
 .pp-stats-table tbody tr:nth-child(even) {
   background: var(--pp-standard-row_even_bg, #ffffff);
 }
-
 
 .pp-stats-table td {
   color: var(--pp-standard-text, #202124);
