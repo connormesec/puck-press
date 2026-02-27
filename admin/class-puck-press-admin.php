@@ -255,6 +255,40 @@ class Puck_Press_Admin
 		self::update_template_colors(new Puck_Press_Record_Template_Manager());
 	}
 
+	public static function pp_ajax_update_stats_template_colors()
+	{
+		self::update_template_colors(new Puck_Press_Stats_Template_Manager());
+	}
+
+	public static function pp_ajax_save_stats_column_settings()
+	{
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error(['message' => 'Insufficient permissions.']);
+		}
+
+		check_ajax_referer('pp_stats_columns_nonce', 'nonce');
+
+		$allowed = [
+			'show_pim', 'show_ppg', 'show_shg', 'show_gwg', 'show_pts_per_game', 'show_sh_pct',
+			'show_goalie_otl', 'show_goalie_gaa', 'show_goalie_svpct', 'show_goalie_sa', 'show_goalie_saves',
+		];
+
+		$settings = [];
+		foreach ($allowed as $key) {
+			$settings[$key] = !empty($_POST[$key]) ? 1 : 0;
+		}
+
+		update_option('pp_stats_column_settings', $settings);
+
+		$preview_card = new Puck_Press_Stats_Admin_Preview_Card();
+		$preview_card->init();
+
+		wp_send_json_success([
+			'message'      => 'Column settings saved.',
+			'preview_html' => $preview_card->get_current_template_html(),
+		]);
+	}
+
 	/**
 	 * Register the stylesheets for the admin area.
 	 *
@@ -337,6 +371,30 @@ class Puck_Press_Admin
 					wp_add_inline_style( 'puck-press', $font_vars_css );
 				}
 				break;
+			case 'stats':
+				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-stats-color-picker', plugin_dir_url(__FILE__) . 'js/stats/puck-press-stats-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
+				// Enqueue saved Google Fonts and CSS vars for stats templates in head to avoid FOUT on admin preview.
+				$stats_tm = new Puck_Press_Stats_Template_Manager();
+				$stats_font_vars_css = ':root {';
+				foreach ( $stats_tm->get_all_template_fonts() as $tpl_key => $font_set ) {
+					foreach ( $font_set as $font_key => $font_name ) {
+						if ( ! empty( $font_name ) ) {
+							wp_enqueue_style(
+								"pp-admin-gf-{$tpl_key}-{$font_key}",
+								'https://fonts.googleapis.com/css2?family=' . urlencode( $font_name ) . ':wght@400;600;700;800&display=swap',
+								[], null
+							);
+							$safe = str_replace( [ "'", '"', ';', '}' ], '', $font_name );
+							$stats_font_vars_css .= "--pp-{$tpl_key}-{$font_key}: '{$safe}', sans-serif;";
+						}
+					}
+				}
+				$stats_font_vars_css .= '}';
+				if ( $stats_font_vars_css !== ':root {}' ) {
+					wp_add_inline_style( 'puck-press', $stats_font_vars_css );
+				}
+				break;
 			case 'roster':
 				wp_enqueue_media();
 				$roster_db_utils = new Puck_Press_Roster_Wpdb_Utils();
@@ -415,6 +473,18 @@ class Puck_Press_Admin
 			'selected_template' => $selected_record_template,
 		];
 		wp_localize_script('puck-press-record-color-picker', 'ppRecordTemplates', $record_templates);
+
+		$stats_template_manager  = new Puck_Press_Stats_Template_Manager();
+		$selected_stats_template = $stats_template_manager->get_current_template_key();
+		$stats_templates_data = [
+			'statsTemplates'   => $stats_template_manager->get_all_template_colors(),
+			'colorLabels'      => $stats_template_manager->get_all_template_color_labels(),
+			'fontSettings'     => $stats_template_manager->get_all_template_fonts(),
+			'fontLabels'       => $stats_template_manager->get_all_template_font_labels(),
+			'selected_template' => $selected_stats_template,
+			'columns_nonce'    => wp_create_nonce( 'pp_stats_columns_nonce' ),
+		];
+		wp_localize_script( 'puck-press-stats-color-picker', 'ppStatsTemplates', $stats_templates_data );
 
 		wp_localize_script('pp-game-summary-admin', 'ppGameSummary', [
             'ajax_url' => admin_url('admin-ajax.php'),
@@ -495,5 +565,7 @@ class Puck_Press_Admin
 		add_action('wp_ajax_puck_press_update_slider_colors', [self::class, 'pp_ajax_update_slider_template_colors']);
 		add_action('wp_ajax_puck_press_update_roster_colors', [self::class, 'pp_ajax_update_roster_template_colors']);
 		add_action('wp_ajax_puck_press_update_record_colors', [self::class, 'pp_ajax_update_record_template_colors']);
+		add_action('wp_ajax_puck_press_update_stats_colors', [self::class, 'pp_ajax_update_stats_template_colors']);
+		add_action('wp_ajax_pp_save_stats_column_settings', [self::class, 'pp_ajax_save_stats_column_settings']);
 	}
 }

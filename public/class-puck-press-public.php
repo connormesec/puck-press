@@ -79,6 +79,13 @@ class Puck_Press_Public {
 		return $output;
 	}
 
+	public function stats_builder_shortcode()
+	{
+		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
+		$render = new Puck_Press_Stats_Render_Utils();
+		return $render->get_current_template_html();
+	}
+
 	public function record_builder_shortcode( $atts )
 	{
 		$atts = shortcode_atts( [
@@ -242,6 +249,16 @@ class Puck_Press_Public {
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-record-template-manager.php';
 		new Puck_Press_Record_Template_Manager();
+	}
+
+	public function enqueue_stats_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-stats' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-stats-template-manager.php';
+		new Puck_Press_Stats_Template_Manager();
 	}
 
 	public function enqueue_scripts() {

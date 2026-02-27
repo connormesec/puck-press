@@ -1,0 +1,237 @@
+/* =============================================================
+   Standard Stats Table Template
+   CSS variables injected into :root by get_inline_css():
+     --pp-standard-page_bg, --pp-standard-section_header_bg,
+     --pp-standard-section_header_text, --pp-standard-table_header_bg,
+     --pp-standard-table_header_text, --pp-standard-row_odd_bg,
+     --pp-standard-row_even_bg, --pp-standard-text,
+     --pp-standard-text_muted, --pp-standard-border, --pp-standard-accent
+   ============================================================= */
+
+.standard_stats_container {
+  background: var(--pp-standard-page_bg, #ffffff);
+  font-family: var(--pp-standard-stats_font, inherit);
+  max-width: 100%;
+  padding: 8px 0 24px;
+  box-sizing: border-box;
+}
+
+/* Prevent theme font rules from leaking in */
+.standard_stats_container * {
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pp-stats-heading {
+  color: var(--pp-standard-section_header_text, #1a1a2e);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+/* ── Section (Skaters / Goalies) ─────────────────────── */
+.pp-stats-section {
+  margin-bottom: 32px;
+}
+
+.pp-stats-section-title {
+  background: var(--pp-standard-section_header_bg, #f0f4f5);
+  color: var(--pp-standard-section_header_text, #1a1a2e);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 0;
+  padding: 10px 16px;
+  border-radius: 4px 4px 0 0;
+}
+
+/* ── Table Wrapper (horizontal scroll on mobile) ─────── */
+.pp-stats-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--pp-standard-border, #e8eaed);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  contain: layout style;
+}
+
+/* ── Table ───────────────────────────────────────────── */
+.pp-stats-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.pp-stats-table thead tr {
+  background: var(--pp-standard-table_header_bg, #1565c0);
+}
+
+.pp-stats-table th {
+  color: var(--pp-standard-table_header_text, #ffffff);
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+
+.pp-stats-table th.pp-stats-col-player {
+  width: 30%;
+  text-align: left;
+  padding-left: 12px;
+}
+
+.pp-stats-table th.pp-stats-col-rank {
+  width: 36px;
+}
+
+.pp-stats-table tbody tr:nth-child(odd) {
+  background: var(--pp-standard-row_odd_bg, #f8f9fa);
+}
+
+.pp-stats-table tbody tr:nth-child(even) {
+  background: var(--pp-standard-row_even_bg, #ffffff);
+}
+
+
+.pp-stats-table td {
+  color: var(--pp-standard-text, #202124);
+  border-bottom: 1px solid var(--pp-standard-border, #e8eaed);
+  text-align: center;
+  padding: 8px 8px !important;
+  vertical-align: middle;
+}
+
+/* ── Rank cell ───────────────────────────────────────── */
+.pp-stats-rank-cell {
+  color: var(--pp-standard-text_muted, #5f6368) !important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  width: 36px;
+  text-align: center;
+}
+
+/* ── Player cell ─────────────────────────────────────── */
+.pp-stats-player-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left !important;
+  padding-left: 12px !important;
+  overflow: hidden;
+}
+
+.pp-stats-headshot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* ── Player name link ────────────────────────────────── */
+.pp-stats-player-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--pp-standard-accent, #1565c0);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pp-stats-player-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Pos cell ────────────────────────────────────────── */
+.pp-stats-pos {
+  color: var(--pp-standard-text_muted, #5f6368);
+  font-size: 0.8rem;
+}
+
+/* ── Points — slightly bolder ────────────────────────── */
+.pp-stats-pts {
+  font-weight: 700;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.pp-stats-empty {
+  color: var(--pp-standard-text_muted, #5f6368);
+  font-size: 0.9rem;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid var(--pp-standard-border, #e8eaed);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  margin: 0;
+}
+
+/* ── Column header tooltips ──────────────────────────── */
+.pp-stats-table th[data-tip] {
+  position: relative;
+  cursor: help;
+}
+
+.pp-stats-table th[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26, 26, 46, 0.92);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+
+.pp-stats-table th[data-tip]:hover::after {
+  opacity: 1;
+}
+
+/* ── Responsive: hide optional columns on small screens ─ */
+@media (max-width: 600px) {
+  .pp-stats-col-opt {
+    display: none;
+  }
+
+  .pp-stats-headshot {
+    display: none;
+  }
+
+  .pp-stats-player-cell {
+    gap: 0;
+    padding-left: 8px !important;
+  }
+
+  .pp-stats-table th,
+  .pp-stats-table td {
+    padding: 6px 4px;
+  }
+
+  .pp-stats-table th.pp-stats-col-player {
+    padding-left: 8px;
+  }
+
+  .pp-stats-table td.pp-stats-player-cell {
+    padding-left: 8px !important;
+  }
+}

@@ -21,7 +21,6 @@ class Puck_Press_Roster_Admin_Display
     private $roster_data_sources;
     private $roster_edits_table;
     private $roster_preview_card;
-    private $roster_stats_card;
     private $last_run;
 
     public function __construct()
@@ -42,11 +41,6 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
             'id' => 'roster-preview'
         ]);
         $this->roster_preview_card->init();
-        $this->roster_stats_card = new Puck_Press_Roster_Admin_Stats_Table_Card([
-            'title' => 'Player Stats',
-            'subtitle' => 'Stats imported from the configured stats URL',
-            'id' => 'roster-stats-table'
-        ]);
         $this->last_run = get_option('puck_press_cron_last_run', 'Never');
     }
 
@@ -118,8 +112,6 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
 <?php echo $this->roster_edits_table->render() ?>
 
                 <?php echo $this->roster_preview_card->render() ?>
-
-                <?php echo $this->roster_stats_card->render() ?>
 
             </main>
             <?php

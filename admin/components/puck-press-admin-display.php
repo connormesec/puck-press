@@ -11,6 +11,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : $default_tab;
         <a href="?page=puck-press" class="nav-tab <?php if ($tab === null) : ?>nav-tab-active<?php endif; ?>">Schedule</a>
         <a href="?page=puck-press&tab=roster" class="nav-tab <?php if ($tab === 'roster') : ?>nav-tab-active<?php endif; ?>">Roster</a>
         <a href="?page=puck-press&tab=record" class="nav-tab <?php if ($tab === 'record') : ?>nav-tab-active<?php endif; ?>">Record</a>
+        <a href="?page=puck-press&tab=stats" class="nav-tab <?php if ($tab === 'stats') : ?>nav-tab-active<?php endif; ?>">Stats</a>
         <a href="?page=puck-press&tab=cron" class="nav-tab <?php if ($tab === 'cron') : ?>nav-tab-active<?php endif; ?>">Cron</a>
         <a href="?page=puck-press&tab=game-summary" class="nav-tab <?php if ($tab === 'game-summary') : ?>nav-tab-active<?php endif; ?>">Post Game Summary</a>
         <a href="?page=puck-press&tab=insta-post" class="nav-tab <?php if ($tab === 'insta-post') : ?>nav-tab-active<?php endif; ?>">Insta Post</a>
@@ -27,6 +28,11 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : $default_tab;
                 include plugin_dir_path(dirname(__FILE__)) . 'components/record/record-admin-display.php';
                 $record_admin_display = new Puck_Press_Record_Admin_Display();
                 echo $record_admin_display->render();
+                break;
+            case 'stats':
+                include plugin_dir_path(dirname(__FILE__)) . 'components/stats/stats-admin-display.php';
+                $stats_admin_display = new Puck_Press_Stats_Admin_Display();
+                echo $stats_admin_display->render();
                 break;
             case 'cron':
                 include plugin_dir_path(dirname(__FILE__)) . 'components/cron/cron-admin-display.php';

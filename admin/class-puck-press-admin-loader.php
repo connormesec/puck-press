@@ -45,6 +45,8 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-slider-template-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-record-template-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/record/class-puck-press-record-wpdb-utils.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-stats-template-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/stats/class-puck-press-stats-wpdb-utils.php';
 
 		// Abstracts
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-card-abstract.php';
@@ -61,9 +63,11 @@ class Puck_Press_Admin_Loader {
 
 		// Roster Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-data-sources-card.php';
-require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-preview-card.php';
-		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-stats-table-card.php';
+
+		// Stats Module
+		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stats-admin-preview-card.php';
 
 		// Game Summary Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/game-summary-post/game-summary-display-post.php';
