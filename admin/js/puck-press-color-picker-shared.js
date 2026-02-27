@@ -26,6 +26,8 @@
         'Ubuntu',
     ];
 
+    window.ppGoogleFonts = GOOGLE_FONTS;
+
     const loadGoogleFont = (fontName) => {
         const id = `pp-admin-gf-${fontName.replace(/\s+/g, '-').toLowerCase()}`;
         if (document.getElementById(id)) return;
@@ -35,6 +37,8 @@
         link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700;800&display=swap`;
         document.head.appendChild(link);
     };
+
+    window.ppLoadGoogleFont = loadGoogleFont;
 
     const fontFamilyCss = (fontName) =>
         fontName ? `'${fontName}', sans-serif` : 'inherit';

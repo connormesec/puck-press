@@ -101,7 +101,41 @@ class Puck_Press_Public {
 	}
 
 	/**
-	 * Injects a player-specific document title when ?player= is active.
+	 * When the pp_player query var is set, load the plugin's player detail template
+	 * instead of the active WordPress theme template.
+	 *
+	 * @param string $template Default template path.
+	 * @return string
+	 */
+	public function maybe_load_player_template( string $template ): string
+	{
+		if ( ! get_query_var( 'pp_player' ) ) return $template;
+		return plugin_dir_path( __FILE__ ) . '../public/templates/player-page.php';
+	}
+
+	/**
+	 * Enqueue the active roster template's CSS vars (inline style) on pages that
+	 * need them: the [pp-roster] shortcode page AND the /player/ detail page.
+	 */
+	public function enqueue_roster_assets(): void
+	{
+		global $post;
+		$is_roster_page = is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'pp-roster' );
+		$is_player_page = (bool) get_query_var( 'pp_player' );
+		if ( ! $is_roster_page && ! $is_player_page ) return;
+
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-roster-template-manager.php';
+		new Puck_Press_Roster_Template_Manager();
+
+		if ( $is_player_page ) {
+			require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-player-detail-colors.php';
+			wp_add_inline_style( $this->plugin_name, Puck_Press_Player_Detail_Colors::get_inline_css() );
+		}
+	}
+
+	/**
+	 * Injects a player-specific document title when /player/{slug} is active.
 	 * "John Doe – Forward #42" replaces the generic page title.
 	 *
 	 * @param array $title_parts WordPress title parts array.
@@ -109,7 +143,7 @@ class Puck_Press_Public {
 	 */
 	public function filter_player_page_title( array $title_parts ): array
 	{
-		$player_slug = sanitize_text_field( $_GET['player'] ?? '' );
+		$player_slug = sanitize_text_field( get_query_var( 'pp_player' ) );
 		if ( empty( $player_slug ) ) return $title_parts;
 
 		global $wpdb;
@@ -145,57 +179,8 @@ class Puck_Press_Public {
 
 	public function register_ajax_hooks()
 	{
-		add_action( 'wp_ajax_pp_get_player_detail',        [ $this, 'ajax_get_player_detail' ] );
-		add_action( 'wp_ajax_nopriv_pp_get_player_detail', [ $this, 'ajax_get_player_detail' ] );
-	}
-
-	public function ajax_get_player_detail()
-	{
-		check_ajax_referer( 'pp_player_detail_nonce', 'nonce' );
-
-		$player_slug = sanitize_text_field( $_POST['player_id'] ?? '' );
-		if ( empty( $player_slug ) ) {
-			wp_send_json_error( [ 'message' => 'Invalid player ID.' ] );
-			return;
-		}
-
-		global $wpdb;
-
-		$all_players = $wpdb->get_results(
-			"SELECT * FROM {$wpdb->prefix}pp_roster_for_display",
-			ARRAY_A
-		);
-		$player = null;
-		foreach ( $all_players as $row ) {
-			if ( sanitize_title( $row['name'] ) === $player_slug ) {
-				$player = $row;
-				break;
-			}
-		}
-
-		if ( ! $player ) {
-			wp_send_json_error( [ 'message' => 'Player not found.' ] );
-			return;
-		}
-
-		// Query the appropriate stats table based on whether the player is a goalie.
-		$is_goalie  = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
-		$stats_table = $is_goalie
-			? "{$wpdb->prefix}pp_roster_goalie_stats"
-			: "{$wpdb->prefix}pp_roster_stats";
-
-		$stats = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT * FROM {$stats_table} WHERE player_id = %s LIMIT 1",
-				$player['player_id']
-			),
-			ARRAY_A
-		);
-
-		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-player-detail.php';
-		$html = Puck_Press_Roster_Player_Detail::render( $player, $stats ?? [] );
-
-		wp_send_json_success( [ 'html' => $html ] );
+		// Player detail is now handled by native WP routing (/player/{slug}).
+		// No AJAX hooks needed.
 	}
 
 

@@ -21,7 +21,9 @@ class Puck_Press_Record_Wpdb_Utils
             "SELECT target_score, opponent_score, home_or_away, game_status
                FROM {$table}
               WHERE target_score IS NOT NULL
-                AND opponent_score IS NOT NULL",
+                AND opponent_score IS NOT NULL
+                AND game_status IS NOT NULL
+                AND game_status NOT IN ('', 'null')",
             ARRAY_A
         );
 
@@ -36,7 +38,15 @@ class Puck_Press_Record_Wpdb_Utils
             $os        = (int) $game['opponent_score'];
             $is_home   = ($game['home_or_away'] === 'home');
             $status    = strtoupper(trim($game['game_status'] ?? ''));
-            $is_ot_so  = ($status === 'FINAL OT' || $status === 'FINAL SO');
+            if (empty($status) || $status === 'NULL') {
+                continue; // skip unplayed games that slipped through
+            }
+            // Split status on whitespace, slashes, hyphens, and underscores,
+            // then check for an exact "OT" or "SO" token.
+            // Handles: "FINAL OT", "FINAL SO", "FINAL/OT", "FINAL/SO",
+            // and USPHL-style strings like "W 3-2 OT", "L 2-2 SO".
+            $status_tokens = preg_split('/[\s\/\-_]+/', $status);
+            $is_ot_so      = in_array('OT', $status_tokens, true) || in_array('SO', $status_tokens, true);
 
             // Overall goals
             $stats['gf'] += $ts;
@@ -65,9 +75,25 @@ class Puck_Press_Record_Wpdb_Utils
                     $is_home ? $stats['home_losses']++ : $stats['away_losses']++;
                 }
             } else {
-                // Regulation tie (rare in modern hockey, but supported)
-                $stats['ties']++;
-                $is_home ? $stats['home_ties']++ : $stats['away_ties']++;
+                // Equal scores (ts === os).
+                if ($is_ot_so) {
+                    // OT/SO games can't end in a true tie. Some sources (e.g. USPHL)
+                    // store SO games at the tied regulation score without adding the
+                    // shootout goal. Detect win vs. OTL from the status prefix
+                    // ("W 2-2 SO" = win, "L 2-2 SO" = OTL).
+                    if (preg_match('/^W\b/i', $status)) {
+                        $stats['wins']++;
+                        $is_home ? $stats['home_wins']++ : $stats['away_wins']++;
+                    } else {
+                        // "L 2-2 SO", "FINAL SO" with no score difference, etc. → OTL.
+                        $stats['otl']++;
+                        $is_home ? $stats['home_otl']++ : $stats['away_otl']++;
+                    }
+                } else {
+                    // Regulation tie (rare in modern hockey, but supported)
+                    $stats['ties']++;
+                    $is_home ? $stats['home_ties']++ : $stats['away_ties']++;
+                }
             }
         }
 

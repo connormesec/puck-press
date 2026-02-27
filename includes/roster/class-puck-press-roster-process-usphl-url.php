@@ -139,16 +139,22 @@ class Puck_Press_Roster_Process_Usphl_Url
         ];
     }
 
-    /** Params for /get_skaters and /get_goalies (no stat_class or season_id). */
+    /** Params for /get_skaters and /get_goalies. */
     private function build_stats_params(): array
     {
-        return [
+        $params = [
             'auth_key'       => Puck_Press_Tts_Api::TTS_AUTH_KEY,
             'auth_timestamp' => (string) time(),
             'body_md5'       => Puck_Press_Tts_Api::TTS_BODY_MD5,
             'team_id'        => $this->team_id,
             'league_id'      => Puck_Press_Tts_Api::TTS_LEAGUE_ID,
         ];
+
+        if ( ! empty( $this->season_id ) ) {
+            $params['season_id'] = $this->season_id;
+        }
+
+        return $params;
     }
 
     // =========================================================================

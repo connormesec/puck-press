@@ -33,10 +33,10 @@ class Puck_Press_Roster_Process_Acha_Stats
      */
     public $raw_goalie_stats_data = [];
 
-    public function __construct( $raw_stats_url )
+    public function __construct( $raw_stats_url, bool $force_goalie = false )
     {
         $this->raw_stats_url = $raw_stats_url;
-        $is_goalie_url       = $this->is_goalie_url( $raw_stats_url );
+        $is_goalie_url       = $force_goalie || $this->is_goalie_url( $raw_stats_url );
         $json_data           = $this->fetch_stats_data( $is_goalie_url );
 
         if ( $is_goalie_url ) {

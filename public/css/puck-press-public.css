@@ -4,319 +4,447 @@
  */
 
 /* =============================================================
-   Player card anchor wrapper (SEO progressive enhancement)
-   Wraps clickable cards in <a href="?player=X"> for crawlability.
-   JS intercepts clicks; this just prevents anchor styling side-effects.
+   Player card anchor wrapper — prevents anchor styling side-effects
    ============================================================= */
 .pp-player-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 /* =============================================================
-   Player Detail View (shared across roster templates)
+   Player Detail Page  (/player/{slug})
    ============================================================= */
 
-/* ---- Player detail root — font cascades to all children ---- */
+/* ---- Root — font cascades to all children ---- */
 .pp-player-detail {
-    font-family: var(--pp-pd-font-family, inherit);
+  font-family: var(--pp-pd-font-family, inherit);
+  color: var(--pp-pd-text, #1a1a2e);
+  background: var(--pp-pd-body-bg, #f2f2f2);
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+  isolation: isolate;
 }
 
-/* ---- Loading / error states ---- */
-.pp-player-loading,
-.pp-player-error {
-    padding: 60px 20px;
-    text-align: center;
-    font-size: 1.1rem;
-    color: #555;
+/* ---- Action photo: 16:9 aspect ratio via padding-bottom trick ---- */
+.pp-player-header-bg {
+  padding-bottom: 56.25%;
+  background-size: cover;
+  background-position: center center;
+  position: relative;
+  z-index: 1;
 }
 
-.pp-loading-spinner {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    border: 3px solid #ccc;
-    border-top-color: var(--pp-pd-accent, #2a8fa8);
-    border-radius: 50%;
-    animation: pp-spin 0.7s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
+/* ---- Header details: transparent, sits below photo in flow ---- */
+/*
+   Headshot and name bar use negative top margins to overlap UP into the photo.
+   No background here — the component's bg-color shows through naturally.
+*/
+.pp-player-header-details {
+  padding-bottom: 16px;
+  position: relative;
+  z-index: 2;
 }
 
-@keyframes pp-spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ---- Hero banner ---- */
-.pp-player-hero {
-    position: relative;
-    width: 100%;
-    height: 320px;
-    background-size: cover;
-    background-position: top center;
-    overflow: hidden;
-}
-
-.pp-player-hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.25) 0%,
-        rgba(0, 0, 0, 0.65) 100%
-    );
-}
-
-/* ---- Headshot inset (bottom-left) ---- */
+/* ---- Headshot: floats left, margin-top:-8rem pulls it 8rem into the photo ---- */
 .pp-player-headshot-wrap {
-    position: absolute;
-    bottom: 0;
-    left: 20px;
-    width: 130px;
-    height: 173px; /* ~3:4 ratio */
-    overflow: hidden;
-    border: 3px solid #fff;
-    background: #d8d8d8;
-    z-index: 2;
+  position: relative;
+  z-index: 2;
+  float: left;
+  margin: -8rem 0 0 16px;
+  max-width: 25%;
+  min-width: 100px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .pp-player-headshot {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top center;
-    display: block;
+  display: block;
+  width: 100%;
+  aspect-ratio: 270 / 372;
+  object-fit: cover;
+  object-position: top center;
 }
 
-/* ---- Player name / number (bottom of hero) ---- */
-.pp-player-identity {
-    position: absolute;
-    bottom: 16px;
-    left: 170px;
-    right: 16px;
-    z-index: 2;
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    flex-wrap: wrap;
+/* ---- Name bar: margin-top:-6rem, fills to the right of the floated headshot ---- */
+.pp-player-heading-bar {
+  position: relative;
+  z-index: 1;
+  margin: -6rem 0 0 0;
+  min-height: 6rem;
+  background: transparent;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  font-size: 2rem;
+  overflow: hidden;
 }
 
+/* Semi-transparent background via pseudo-element so text stays fully opaque */
+.pp-player-heading-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--pp-pd-accent, #009da5);
+  opacity: 0.75;
+  z-index: 0;
+}
+
+.pp-player-heading-bar > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Jersey number badge (dark bg on the left of the bar) ---- */
 .pp-player-number {
-    font-size: 2.8rem;
-    font-weight: 900;
-    color: #fff;
-    line-height: 1;
-    opacity: 0.9;
+  background: var(--pp-pd-number-bg, #000000);
+  color: var(--pp-pd-number-text, #ffffff);
+  padding: 0 20px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  font-size: 2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
 }
 
+/* ---- First + last name inside the bar ---- */
 .pp-player-name {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    line-height: 1.1;
+  margin: 0 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
 }
 
-.pp-player-pos-badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #fff;
-    background: var(--pp-pd-accent, #2a8fa8);
-    padding: 3px 8px;
-    border-radius: 3px;
-    white-space: nowrap;
+.pp-player-first-name,
+.pp-player-last-name {
+  font-size: clamp(1.1rem, 3vw, 2rem);
+  font-weight: 700;
+  display: inline;
+}
+
+.pp-player-last-name {
+  margin-left: 8px;
+}
+
+/* ---- Fields grid: 2-col to the right of the headshot float ---- */
+.pp-player-fields {
+  list-style: none;
+  margin: 0;
+  padding: 8px 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.pp-field-item {
+  flex: 0 0 50%;
+  padding: 5px 12px 5px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.pp-field-item:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.pp-field-label {
+  display: block;
+  font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 1px;
+  line-height: 1.2;
+}
+
+.pp-field-value {
+  display: block;
+  font-size: clamp(0.8rem, 1.8vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pp-pd-text, #1a1a2e);
+}
+
+.pp-clear {
+  clear: both;
 }
 
 /* ---- Body area ---- */
 .pp-player-body {
-    background: var(--pp-pd-body-bg, #f0f0f0);
-    padding: 16px 20px 32px;
+  background: var(--pp-pd-body-bg, #f2f2f2);
+  padding: 16px 20px 40px;
 }
 
 /* ---- Back link ---- */
 .pp-player-back-btn {
-    display: inline-block;
-    margin-bottom: 16px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-decoration: none;
-    color: var(--pp-pd-accent, #2a8fa8);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--pp-pd-accent, #009da5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .pp-player-back-btn:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* ---- Tab bar ---- */
 .pp-player-tabs-bar {
-    display: flex;
-    gap: 4px;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 20px;
+  display: flex;
+  gap: 2px;
+  border-bottom: 4px solid var(--pp-pd-accent, #009da5);
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 0 4px;
+  border-radius: 4px 4px 0 0;
 }
 
 .pp-player-tab {
-    background: none;
-    border: none;
-    padding: 10px 18px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    color: #666;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    transition: color 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 11px 18px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  color: var(--pp-pd-text, #1a1a2e);
+  border-radius: 4px 4px 0 0;
+  margin-bottom: -4px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  white-space: nowrap;
+}
+
+.pp-player-tab svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .pp-player-tab:hover {
-    color: var(--pp-pd-accent, #2a8fa8);
+  color: var(--pp-pd-accent, #009da5);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .pp-player-tab.pp-tab-active {
-    color: var(--pp-pd-accent, #2a8fa8);
-    border-bottom-color: var(--pp-pd-accent, #2a8fa8);
+  color: #fff;
+  background: var(--pp-pd-accent, #009da5);
 }
 
 /* ---- Tab panels ---- */
 .pp-player-tab-panel {
-    display: none;
+  display: none;
 }
 
 .pp-player-tab-panel.pp-panel-active {
-    display: block;
+  display: block;
 }
 
-/* ---- Bio grid ---- */
-.pp-bio-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    overflow: hidden;
+/* ---- Stat highlight cards (top of bio tab) ---- */
+.pp-stat-highlights {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
-.pp-bio-row {
-    display: flex;
-    flex-direction: column;
-    padding: 10px 14px;
-    border-bottom: 1px solid #f0f0f0;
+.pp-stat-highlight-card {
+  flex: 1 1 80px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
 }
 
-.pp-bio-row:nth-last-child(-n+2) {
-    border-bottom: none;
+.pp-stat-highlight-value {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--pp-pd-accent, #009da5);
+  letter-spacing: -0.03em;
 }
 
-.pp-bio-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--pp-pd-accent, #2a8fa8);
-    margin-bottom: 3px;
+.pp-stat-highlight-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pp-pd-text, #1a1a2e);
+  opacity: 0.55;
 }
 
-.pp-bio-value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1a1a1a;
+/* ---- Bio fields list (in bio tab — accent label, dark value on white card) ---- */
+.pp-bio-fields {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
-@media (max-width: 600px) {
-    .pp-bio-grid {
-        grid-template-columns: 1fr;
-    }
-    .pp-bio-row:last-child {
-        border-bottom: none;
-    }
+.pp-bio-field-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pp-bio-field-item:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.pp-bio-field-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pp-pd-accent, #009da5);
+  margin-bottom: 3px;
+}
+
+.pp-bio-field-value {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--pp-pd-text, #1a1a2e);
 }
 
 /* ---- Stats ---- */
 .pp-stats-wrap {
-    background: #fff;
-    border: 1px solid #e5e5e5;
-    border-radius: 4px;
-    padding: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
 }
 
 .pp-stats-heading {
-    font-size: 1rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--pp-pd-accent, #2a8fa8);
-    margin: 0 0 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #eee;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pp-pd-accent, #009da5);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
 }
 
 .pp-stats-table-wrap {
-    overflow-x: auto;
+  overflow-x: auto;
 }
 
 .pp-player-stats-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
 }
 
 .pp-player-stats-table th {
-    padding: 8px 12px;
-    text-align: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #666;
-    border-bottom: 2px solid #e5e5e5;
-    white-space: nowrap;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pp-pd-text, #1a1a2e);
+  opacity: 0.55;
+  border-bottom: 2px solid #e0e0e0;
+  white-space: nowrap;
 }
 
 .pp-player-stats-table td {
-    padding: 10px 12px;
-    text-align: center;
-    color: #1a1a1a;
-    font-weight: 600;
-    border-bottom: 1px solid #f0f0f0;
+  padding: 10px 12px;
+  text-align: center;
+  color: var(--pp-pd-text, #1a1a2e);
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 /* ---- No-data / placeholder text ---- */
 .pp-no-stats,
 .pp-coming-soon {
-    color: #888;
-    font-size: 0.9rem;
-    padding: 20px 0;
+  color: var(--pp-pd-text, #1a1a2e);
+  opacity: 0.5;
+  font-size: 0.9rem;
+  padding: 20px 0;
 }
 
-/* ---- Responsive adjustments ---- */
-@media (max-width: 600px) {
-    .pp-player-hero {
-        height: 260px;
-    }
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .pp-player-headshot-wrap {
+    max-width: 36%;
+    min-width: 80px;
+    margin-left: 12px;
+    margin-top: -6rem;
+  }
 
-    .pp-player-headshot-wrap {
-        width: 90px;
-        height: 120px;
-    }
+  .pp-player-heading-bar {
+    margin-top: -4rem;
+    min-height: 4rem;
+    font-size: 1.5rem;
+  }
 
-    .pp-player-identity {
-        left: 120px;
-        bottom: 12px;
-        gap: 8px;
-    }
+  .pp-player-number {
+    font-size: 1.5rem;
+    padding: 0 12px;
+  }
 
-    .pp-player-number {
-        font-size: 2rem;
-    }
+  .pp-player-last-name {
+    margin-left: 6px;
+  }
 
-    .pp-player-name {
-        font-size: 1.3rem;
-    }
+  .pp-field-item {
+    flex: 0 0 100%;
+  }
+
+  .pp-field-item:nth-last-child(-n + 2) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  }
+
+  .pp-field-item:last-child {
+    border-bottom: none;
+  }
+
+  .pp-bio-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .pp-bio-field-item:nth-last-child(-n + 2) {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .pp-bio-field-item:last-child {
+    border-bottom: none;
+  }
+
+  .pp-player-tab {
+    padding: 10px 12px;
+    font-size: 0.7rem;
+  }
+
+  .pp-player-tab svg {
+    display: none;
+  }
 }

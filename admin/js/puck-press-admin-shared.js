@@ -34,7 +34,6 @@ function refreshGamesTable(successCallback, errorCallback) {
             success: (response) => {
                 if (response.success) {
                     // Replace the table with the refreshed game table from the response
-                    console.log(response.data);
                     (jQuery)('#pp-roster-preview').html(response.data.refreshed_roster_preview_html);
                     if (response.data.refreshed_edits_table_html) {
                         (jQuery)('#pp-roster-edits-table').replaceWith(response.data.refreshed_edits_table_html);
@@ -47,8 +46,14 @@ function refreshGamesTable(successCallback, errorCallback) {
                     }
                     (jQuery)(`.${ppRosterTemplates.selected_template}_roster_container`).show();
 
-                    console.log('Roster table refreshed successfully.');
-                    console.log('Response:', response);
+                    // Log import results to the browser console
+                    const results = response.data.raw_roster_table_results || {};
+                    const messages = (results.messages || []).filter(m => typeof m === 'string');
+                    const errors   = results.errors || [];
+                    console.group('Puck Press — Roster Refresh Log');
+                    messages.forEach(m => console.log(m));
+                    errors.forEach(e => console.warn(`ERROR [${e.source || ''}]: ${e.message || JSON.stringify(e)}`));
+                    console.groupEnd();
 
                     // Call the success callback if provided
                     if (typeof successCallback === 'function') {

@@ -90,8 +90,10 @@ class Puck_Press_Roster_Source_Importer
                     }
 
                     // Import goalie stats if a goalie stats URL is configured
-                    if ( ! empty( $source->goalie_stats_url ) ) {
-                        $acha_goalie_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->goalie_stats_url );
+                    if ( empty( $source->goalie_stats_url ) ) {
+                        $this->results['messages'][] = "Goalie stats skipped for source: {$source->name} — no Goalie Stats URL configured.";
+                    } else {
+                        $acha_goalie_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->goalie_stats_url, true );
                         if ( is_array( $acha_goalie_stats->raw_goalie_stats_data ) && ! isset( $acha_goalie_stats->raw_goalie_stats_data['error'] ) && ! empty( $acha_goalie_stats->raw_goalie_stats_data ) ) {
                             foreach ( $acha_goalie_stats->raw_goalie_stats_data as &$stat_row ) {
                                 $stat_row['source'] = $source->name;

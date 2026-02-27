@@ -124,7 +124,8 @@ class PillTemplate extends PuckPressTemplate
     private function createEachGame($game, bool $should_hide_score)
     {
         $game_result_message = '';
-        if ($game['game_status'] == 'Final') {
+        $game_status_normalized = str_replace('/', ' ', $game['game_status'] ?? '');
+        if ($game_status_normalized == 'Final') {
             if ($game['target_score'] < $game['opponent_score']) {
                 $game_result_message = 'L';
             } elseif ($game['target_score'] > $game['opponent_score']) {
@@ -132,7 +133,7 @@ class PillTemplate extends PuckPressTemplate
             } else {
                 $game_result_message = 'T';
             }
-        } elseif ($game['game_status'] == 'Final OT') {
+        } elseif ($game_status_normalized == 'Final OT') {
             if ($game['target_score'] < $game['opponent_score']) {
                 $game_result_message = 'OTL';
             } elseif ($game['target_score'] > $game['opponent_score']) {
@@ -140,7 +141,7 @@ class PillTemplate extends PuckPressTemplate
             } else {
                 $game_result_message = 'OT';
             }
-        } elseif ($game['game_status'] == 'Final SO') {
+        } elseif ($game_status_normalized == 'Final SO') {
             if ($game['target_score'] < $game['opponent_score']) {
                 $game_result_message = 'SOL';
             } elseif ($game['target_score'] > $game['opponent_score']) {

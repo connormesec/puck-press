@@ -34,15 +34,6 @@ class PhotoGridTemplate extends PuckPressTemplate
         return [ 'jquery', 'pp-player-detail' ];
     }
 
-    public static function get_player_detail_css_vars(): array
-    {
-        $colors = static::get_template_colors();
-        return [
-            '--pp-pd-accent'  => $colors['accent_color'] ?? '#2a8fa8',
-            '--pp-pd-body-bg' => $colors['page_bg']      ?? '#f0f0f0',
-        ];
-    }
-
     public static function get_color_labels(): array
     {
         return [
@@ -96,10 +87,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         );
         $this->players_with_stats = array_flip( $ids ?: [] );
 
-        $output = '<div class="photogrid_roster_container"'
-            . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
-            . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
-            . '>';
+        $output = '<div class="photogrid_roster_container">';
 
         // Players with no recognized position
         $skaters = $this->getPlayersWithoutPositions($players);
@@ -158,7 +146,7 @@ class PhotoGridTemplate extends PuckPressTemplate
         $id_attr     = $has_stats ? ' id="' . esc_attr( $slug ) . '"' : '';
         $extra_class = $has_stats ? '' : ' no-stats';
 
-        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( add_query_arg( 'player', $slug ) ) . '">' : '';
+        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' : '';
         $link_close = $has_stats ? '</a>' : '';
 
         // Build the "#76 | Forward" meta line

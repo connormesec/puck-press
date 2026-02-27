@@ -811,3 +811,134 @@ input[type="file"]#pp-schedule-fileInput {
 .pp-dynamic-source-group-customPlayer {
   display: none;
 }
+
+/* =================================================================
+   Player Page Tab — two-column editor
+   ================================================================= */
+.pp-player-page-editor {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
+/* ── Left: controls panel ── */
+.pp-player-page-controls {
+    flex: 0 0 280px;
+    background: #fff;
+    border: 1px solid var(--pp-border-color, #e1e5eb);
+    border-radius: 8px;
+    padding: 20px;
+    position: sticky;
+    top: 32px;
+}
+
+.pp-player-page-section {
+    margin-bottom: 20px;
+}
+
+.pp-player-page-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--pp-text-muted, #6c757d);
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pp-pd-color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pp-pd-color-label {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--pp-text-color, #212529);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pp-pd-color-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.pp-pd-swatch {
+    width: 32px;
+    height: 28px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px;
+    cursor: pointer;
+    background: none;
+}
+
+.pp-pd-hex {
+    width: 74px;
+    font-size: 0.78rem;
+    font-family: monospace;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+.pp-pd-font-input {
+    width: 100%;
+    font-size: 0.82rem;
+}
+
+.pp-player-page-controls-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.pp-save-msg {
+    font-size: 0.8rem;
+}
+
+.pp-save-msg--ok  { color: #15803d; }
+.pp-save-msg--err { color: #b91c1c; }
+
+/* ── Right: preview panel ── */
+.pp-player-page-preview {
+    flex: 1;
+    min-width: 0;
+}
+
+.pp-player-page-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--pp-text-muted, #6c757d);
+}
+
+.pp-player-page-player-select {
+    font-size: 0.82rem;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    flex: 1;
+    max-width: 320px;
+}
+
+.pp-player-page-iframe {
+    height: 1000px;
+    width: 100%;
+    border: 1px solid var(--pp-border-color, #e1e5eb);
+    border-radius: 6px;
+    background: #fff;
+    display: block;
+}

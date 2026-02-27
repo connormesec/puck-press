@@ -33,6 +33,10 @@ class Puck_Press_Activator {
 		require_once plugin_dir_path(__FILE__) . 'class-puck-press-cron.php';
     	$cron = new Puck_Press_Cron();
     	$cron->schedule_cron();
+
+		require_once plugin_dir_path(__FILE__) . 'class-puck-press-rewrite-manager.php';
+		Puck_Press_Rewrite_Manager::add_rules();
+		flush_rewrite_rules();
 	}
 
 }

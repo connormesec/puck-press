@@ -260,6 +260,19 @@ class Puck_Press_Admin
 		self::update_template_colors(new Puck_Press_Stats_Template_Manager());
 	}
 
+	public static function pp_ajax_update_player_detail_colors(): void
+	{
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => 'Insufficient permissions.' ] );
+			return;
+		}
+		$colors = isset( $_POST['colors'] ) && is_array( $_POST['colors'] ) ? $_POST['colors'] : [];
+		$fonts  = isset( $_POST['fonts'] )  && is_array( $_POST['fonts'] )  ? $_POST['fonts']  : [];
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-player-detail-colors.php';
+		Puck_Press_Player_Detail_Colors::save( $colors, $fonts );
+		wp_send_json_success( [ 'message' => 'Player page colors updated.' ] );
+	}
+
 	public static function pp_ajax_save_stats_column_settings()
 	{
 		if (!current_user_can('manage_options')) {
@@ -406,6 +419,10 @@ class Puck_Press_Admin
 			wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
 				break;
+			case 'player-page':
+				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-player-page-admin', plugin_dir_url(__FILE__) . 'js/player-page/puck-press-player-page-admin.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), filemtime(plugin_dir_path(__FILE__) . 'js/player-page/puck-press-player-page-admin.js'), true);
+				break;
 			case 'game-summary':
 				wp_enqueue_script('pp-game-summary-admin', plugin_dir_url(__FILE__) . 'js/game-summary/puck-press-game-summary-admin.js', array('jquery'), '1.0', true);
 				break;
@@ -462,6 +479,25 @@ class Puck_Press_Admin
 			'selected_template' => $selected_roster_template
 		];
 		wp_localize_script('puck-press-roster-color-picker', 'ppRosterTemplates', $roster_templates);
+
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-player-detail-colors.php';
+		global $wpdb;
+		$pp_players_raw = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}pp_roster_for_display ORDER BY name ASC", ARRAY_A );
+		$pp_players_list = [];
+		foreach ( $pp_players_raw as $pp_p ) {
+			$pp_players_list[] = [
+				'name' => $pp_p['name'],
+				'url'  => home_url( '/player/' . sanitize_title( $pp_p['name'] ) ),
+			];
+		}
+		wp_localize_script( 'puck-press-player-page-admin', 'ppPlayerPageAdmin', [
+			'colors'      => Puck_Press_Player_Detail_Colors::get_colors(),
+			'colorLabels' => Puck_Press_Player_Detail_Colors::get_color_labels(),
+			'font'        => Puck_Press_Player_Detail_Colors::get_fonts()['player-font'] ?? '',
+			'fontLabel'   => 'Player Page Font',
+			'players'     => $pp_players_list,
+			'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+		] );
 
 		$record_template_manager  = new Puck_Press_Record_Template_Manager();
 		$selected_record_template = $record_template_manager->get_current_template_key();
@@ -567,5 +603,6 @@ class Puck_Press_Admin
 		add_action('wp_ajax_puck_press_update_record_colors', [self::class, 'pp_ajax_update_record_template_colors']);
 		add_action('wp_ajax_puck_press_update_stats_colors', [self::class, 'pp_ajax_update_stats_template_colors']);
 		add_action('wp_ajax_pp_save_stats_column_settings', [self::class, 'pp_ajax_save_stats_column_settings']);
+		add_action('wp_ajax_puck_press_update_player_detail_colors', [self::class, 'pp_ajax_update_player_detail_colors']);
 	}
 }

@@ -36,15 +36,6 @@ class CardStackTemplate extends PuckPressTemplate
         return [ 'jquery', 'pp-player-detail' ];
     }
 
-    public static function get_player_detail_css_vars(): array
-    {
-        $colors = static::get_template_colors();
-        return [
-            '--pp-pd-accent'  => $colors['header_text']  ?? '#215530',
-            '--pp-pd-body-bg' => $colors['container_bg'] ?? '#ffffff',
-        ];
-    }
-
     public static function get_color_labels(): array
     {
         return [
@@ -111,10 +102,7 @@ class CardStackTemplate extends PuckPressTemplate
         );
         $players_with_stats = array_flip( $player_ids_with_stats ?: [] );
 
-        $content = '<div class="cardstack_roster_container clearfix"'
-            . ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
-            . ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
-            . '>';
+        $content = '<div class="cardstack_roster_container clearfix">';
 
         // Skaters (players without assigned positions) - shown first
         $skaters = $this->getPlayersWithoutPositions($players);
@@ -212,7 +200,7 @@ class CardStackTemplate extends PuckPressTemplate
         $id_attr     = $has_stats ? ' id="' . esc_attr( $slug ) . '"' : '';
         $extra_class = $has_stats ? '' : ' no-stats';
 
-        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( add_query_arg( 'player', $slug ) ) . '">' : '';
+        $link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' : '';
         $link_close = $has_stats ? '</a>' : '';
 
         $card = <<<HTML

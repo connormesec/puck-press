@@ -15,6 +15,7 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : $default_tab;
         <a href="?page=puck-press&tab=cron" class="nav-tab <?php if ($tab === 'cron') : ?>nav-tab-active<?php endif; ?>">Cron</a>
         <a href="?page=puck-press&tab=game-summary" class="nav-tab <?php if ($tab === 'game-summary') : ?>nav-tab-active<?php endif; ?>">Post Game Summary</a>
         <a href="?page=puck-press&tab=insta-post" class="nav-tab <?php if ($tab === 'insta-post') : ?>nav-tab-active<?php endif; ?>">Insta Post</a>
+        <a href="?page=puck-press&tab=player-page" class="nav-tab <?php if ($tab === 'player-page') : ?>nav-tab-active<?php endif; ?>">Player Page</a>
     </nav>
 
     <div class="tab-content">
@@ -48,6 +49,11 @@ $tab = isset($_GET['tab']) ? $_GET['tab'] : $default_tab;
                 include_once plugin_dir_path(dirname(__FILE__)) . 'components/insta-post-importer/instagram-post-admin-display.php';
                 $insta_post_display = new Puck_Press_Admin_Instagram_Post_Importer_Display();
                 echo $insta_post_display->render();
+                break;
+            case 'player-page':
+                include plugin_dir_path(dirname(__FILE__)) . 'components/player-page/player-page-admin-display.php';
+                $player_page_display = new Puck_Press_Player_Page_Admin_Display();
+                echo $player_page_display->render();
                 break;
             default:
                 include plugin_dir_path(dirname(__FILE__)) . 'components/schedule/schedule-admin-display.php';
