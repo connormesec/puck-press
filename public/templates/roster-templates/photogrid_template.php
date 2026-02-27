@@ -79,7 +79,7 @@ class PhotoGridTemplate extends PuckPressTemplate
     /**
      * Renders the photo grid roster
      */
-    public function render(array $players): string
+    public function render_with_options(array $players, array $options): string
     {
         global $wpdb;
         $ids = $wpdb->get_col(

@@ -65,7 +65,7 @@ class ScoreboardTemplate extends PuckPressTemplate
 
     // -------------------------------------------------------------------------
 
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
         $split      = $this->split_games_by_time($games);
         $next_index = count($split['past_games']); // position of first future game in full sorted set

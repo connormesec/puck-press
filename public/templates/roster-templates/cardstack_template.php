@@ -86,7 +86,7 @@ class CardStackTemplate extends PuckPressTemplate
     /**
      * Returns the template output
      */
-    public function render(array $players): string
+    public function render_with_options(array $players, array $options): string
     {
         $output = $this->buildCardStack($players);
         // Include the template file and capture output

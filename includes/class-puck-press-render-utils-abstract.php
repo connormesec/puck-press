@@ -28,20 +28,20 @@ abstract class Puck_Press_Render_Utils_Abstract
     }
 
     // Return HTML string for a specific template
-    public function get_template_html(string $template_name): string
+    public function get_template_html(string $template_name, array $options = []): string
     {
         foreach ($this->templates as $template) {
             if ($template->get_key() === $template_name) {
-                return $template->render($this->games);
+                return $template->render_with_options($this->games, $options);
             }
         }
         return '<p>Template not found: ' . esc_html($template_name) . '</p>';
     }
 
     // Return JSON-LD + HTML for the active template
-    public function get_current_template_html(): string
+    public function get_current_template_html(array $options = []): string
     {
-        return $this->build_schema() . $this->get_template_html($this->selected_template_key);
+        return $this->build_schema() . $this->get_template_html($this->selected_template_key, $options);
     }
 
     // Echo all templates

@@ -70,7 +70,7 @@ class ArenaTemplate extends PuckPressTemplate
         return ['schedule_font' => 'Schedule Font'];
     }
 
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
         $inline_css = self::get_inline_css();
         $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';

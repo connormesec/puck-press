@@ -59,15 +59,12 @@ class AccordionTemplate extends PuckPressTemplate
     /**
      * Returns the template output
      */
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
-        $output = $this->buildAccordionSchedule($games);
-        // Include the template file and capture output
-
-        return $output;
+        return $this->buildAccordionSchedule($games, $options['is_archive'] ?? false);
     }
 
-    public function buildAccordionSchedule(array $games)
+    public function buildAccordionSchedule(array $games, bool $is_archive = false)
     {
         $grouped_games = self::group_games_by_month($games, false);
 
@@ -78,7 +75,7 @@ class AccordionTemplate extends PuckPressTemplate
 
             $month_date = new DateTime('last day of ' . $key);
 
-            if ($month_date >= $now) {
+            if ($is_archive || $month_date >= $now) {
                 $showActive = ' active';
             }
             $content .= '<div class="accordion_month_container">

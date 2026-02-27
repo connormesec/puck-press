@@ -4,16 +4,25 @@ require_once plugin_dir_path(__FILE__) . '../class-puck-press-render-utils-abstr
 
 class Puck_Press_Schedule_Render_Utils extends Puck_Press_Render_Utils_Abstract
 {
-    public function __construct()
+    public function __construct( string $archive_key = '' )
     {
         $this->load_dependencies();
 
         $this->template_manager = new Puck_Press_Schedule_Template_Manager();
         $this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
 
-        $this->games     = $this->wpdb_utils->get_all_table_data('pp_game_schedule_for_display', 'ARRAY_A');
-        $this->templates = $this->template_manager->get_all_templates();
+        if ( $archive_key !== '' ) {
+            global $wpdb;
+            $archive_table = $wpdb->prefix . 'pp_schedule_archive_games';
+            $this->games   = $wpdb->get_results(
+                $wpdb->prepare( "SELECT * FROM $archive_table WHERE archive_key = %s", $archive_key ),
+                ARRAY_A
+            );
+        } else {
+            $this->games = $this->wpdb_utils->get_all_table_data( 'pp_game_schedule_for_display', 'ARRAY_A' );
+        }
 
+        $this->templates             = $this->template_manager->get_all_templates();
         $this->selected_template_key = $this->template_manager->get_current_template_key();
     }
 

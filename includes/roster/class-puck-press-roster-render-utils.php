@@ -26,9 +26,9 @@ class Puck_Press_Roster_Render_Utils extends Puck_Press_Render_Utils_Abstract
         require_once plugin_dir_path(__FILE__) . 'class-puck-press-roster-player-detail.php';
     }
 
-    public function get_current_template_html(): string
+    public function get_current_template_html(array $options = []): string
     {
-        return $this->build_schema() . $this->get_template_html( $this->selected_template_key );
+        return $this->build_schema() . $this->get_template_html( $this->selected_template_key, $options );
     }
 
     public static function build_player_schema( array $player ): string

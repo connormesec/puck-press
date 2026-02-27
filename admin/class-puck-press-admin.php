@@ -440,6 +440,7 @@ class Puck_Press_Admin
 			wp_enqueue_script('puck-press-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-color-picker.js', array('jquery', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-slider-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array('jquery', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-preview', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-preview.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-schedule-archive', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-archive.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				break;
 		}
 	}
@@ -591,6 +592,11 @@ class Puck_Press_Admin
 		$games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
 		add_action('wp_ajax_pp_add_manual_game',    [$games_table_card, 'ajax_add_manual_game_callback']);
 		add_action('wp_ajax_pp_delete_manual_game', [$games_table_card, 'ajax_delete_manual_game_callback']);
+
+		$archive_card = new Puck_Press_Schedule_Admin_Archive_Card();
+		add_action('wp_ajax_pp_get_archive_game_count',  [$archive_card, 'ajax_get_game_count']);
+		add_action('wp_ajax_pp_create_schedule_archive', [$archive_card, 'ajax_create_archive']);
+		add_action('wp_ajax_pp_delete_schedule_archive', [$archive_card, 'ajax_delete_archive']);
 
 		// Register the AJAX action for refreshing all sources
 		add_action('wp_ajax_pp_refresh_all_sources', [$this, 'ajax_refresh_all_sources_callback']);

@@ -56,7 +56,7 @@ class GameSliderTemplate extends PuckPressTemplate
     /**
      * Returns the template output
      */
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
         $output = $this->buildSlider($games);
         // Include the template file and capture output

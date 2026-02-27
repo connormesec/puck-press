@@ -25,6 +25,7 @@ class Puck_Press_Admin_Loader {
         // Utilities
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-wpdb-utils.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-archive-wpdb-utils.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
         
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-tts-api.php';
@@ -59,6 +60,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-games-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-preview-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-slider-preview-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/class-puck-press-schedule-admin-archive-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/schedule/schedule-add-game-modal.php';
 
 		// Roster Module

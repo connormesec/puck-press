@@ -58,17 +58,33 @@ class PillTemplate extends PuckPressTemplate
     /**
      * Returns the template output
      */
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
-        $output = '<div class="pill_schedule_container">';
-        $output .= $this->buildPillSchedule($games);
-        $output .= '</div>';
-
-        return $output;
+        $inline_css = self::get_inline_css();
+        $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+        $html  = $css_block . '<div class="pill_schedule_container">';
+        $html .= $this->buildPillSchedule($games, $options['is_archive'] ?? false);
+        $html .= '</div>';
+        return $html;
     }
 
-    public function buildPillSchedule(array $games)
+    public function buildPillSchedule(array $games, bool $is_archive = false)
     {
+        if ($is_archive) {
+            $all_grouped = self::group_games_by_month($games, false);
+            $content = '';
+            foreach (array_reverse(array_keys($all_grouped)) as $month_year) {
+                $month_label = self::extract_month($month_year);
+                $content .= '<div class="month_container">';
+                $content .= '<h2 class="game_month_title">' . $month_label . '</h2>';
+                foreach (array_reverse($all_grouped[$month_year]) as $game) {
+                    $content .= $this->createEachGame($game, false);
+                }
+                $content .= '</div>';
+            }
+            return $content;
+        }
+
         $games_split = $this->split_games_by_time($games);
 
         $past_future_games = (object)[

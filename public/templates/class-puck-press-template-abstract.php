@@ -26,9 +26,18 @@ abstract class PuckPressTemplate
     abstract public static function forceResetColors(): bool;
 
     /**
-     * Returns the HTML/CSS/JS template output
+     * Returns the HTML/CSS/JS template output.
+     *
+     * Implement this instead of render(). Check $options['is_archive'] ?? false
+     * and adapt your template accordingly — at minimum, all months/sections
+     * should be visible when true.
      */
-    abstract public function render(array $values): string;
+    abstract public function render_with_options(array $games, array $options): string;
+
+    public function render(array $games): string
+    {
+        return $this->render_with_options($games, []);
+    }
 
     /**
      * Returns the relative subdirectory for this template (e.g., 'schedule-templates' or 'roster-templates')

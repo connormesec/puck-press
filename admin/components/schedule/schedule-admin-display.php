@@ -23,6 +23,7 @@ class Puck_Press_Schedule_Admin_Display
     private $pp_sched_edits;
     private $game_template_preview;
     private $game_slider_preview;
+    private $archive_card;
     private $last_run;
 
     public function __construct()
@@ -52,8 +53,14 @@ class Puck_Press_Schedule_Admin_Display
             'subtitle' => 'Preview how the game slider will appear on the public website',
             'id' => 'game-slider-preview'
         ]);
+        $this->archive_card = new Puck_Press_Schedule_Admin_Archive_Card([
+            'title'    => 'Season Archives',
+            'subtitle' => 'Snapshots of past season game data',
+            'id'       => 'schedule-archives',
+        ]);
         $this->game_template_preview->init();
         $this->game_slider_preview->init();
+        $this->archive_card->init();
         $this->last_run = get_option('puck_press_cron_last_run', 'Never');
     }
 
@@ -113,6 +120,8 @@ class Puck_Press_Schedule_Admin_Display
                                 <div class="pp-dropdown-item danger">Reset Everything</div>
                                 <div class="pp-dropdown-header">Edits</div>
                                 <div class="pp-dropdown-item danger" id="pp-reset-all-edits">Reset All Edits</div>
+                                <div class="pp-dropdown-header">Archives</div>
+                                <div class="pp-dropdown-item" id="pp-archive-season-btn">Archive Season</div>
                             </div>
                         </div>
                     </div>
@@ -128,11 +137,16 @@ class Puck_Press_Schedule_Admin_Display
 
                 <?php echo $this->pp_sched_admin->render(); ?>
 
+                <?php echo $this->archive_card->render(); ?>
+
             </main>
             <?php
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-add-source-modal.php';
             $source_modal = new Puck_Press_Schedule_Add_Source_Modal('pp-add-source-modal');
             echo $source_modal->render();
+            include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-archive-modal.php';
+            $archive_modal = new Puck_Press_Schedule_Archive_Modal('pp-archive-modal');
+            echo $archive_modal->render();
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-color-palette-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/slider-color-palette-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-edit-game-modal.php';

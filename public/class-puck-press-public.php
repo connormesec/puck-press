@@ -54,12 +54,15 @@ class Puck_Press_Public {
 
 	}
 
-	public function schedule_builder_shortcode()
+	public function schedule_builder_shortcode( $atts )
 	{
+		$atts        = shortcode_atts( [ 'archive' => '' ], $atts );
+		$archive_key = sanitize_title( $atts['archive'] );
+
 		require_once plugin_dir_path( __FILE__ ) . '../includes/schedule/class-puck-press-schedule-render-utils.php';
-		$render_schedule = new Puck_Press_Schedule_Render_Utils;
-		$output = $render_schedule->get_current_template_html();
-		return $output;
+		$render_schedule = new Puck_Press_Schedule_Render_Utils( $archive_key );
+		$options         = $archive_key !== '' ? ['is_archive' => true] : [];
+		return $render_schedule->get_current_template_html( $options );
 	}
 
 	public function slider_builder_shortcode()

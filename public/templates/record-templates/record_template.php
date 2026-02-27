@@ -58,7 +58,7 @@ class RecordTemplate extends PuckPressTemplate
         return ['record_font' => 'Card Font'];
     }
 
-    public function render(array $values): string
+    public function render_with_options(array $values, array $options): string
     {
         $wins   = (int) ($values['wins']   ?? 0);
         $losses = (int) ($values['losses'] ?? 0);

@@ -47,50 +47,58 @@ class SlateTemplate extends PuckPressTemplate
         return ['schedule_font' => 'Schedule Font'];
     }
 
-    public function render(array $games): string
+    public function render_with_options(array $games, array $options): string
     {
         $inline_css = self::get_inline_css();
         $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-        return $css_block . $this->buildSlateSchedule($games);
+        return $css_block . $this->buildSlateSchedule($games, $options['is_archive'] ?? false);
     }
 
-    private function buildSlateSchedule(array $games): string
+    private function buildSlateSchedule(array $games, bool $is_archive = false): string
     {
-        $games_split    = $this->split_games_by_time($games);
-        $upcoming_by_month = self::group_games_by_month($games_split['future_games'], false);
-        $past_by_month     = array_reverse(self::group_games_by_month($games_split['past_games'], false));
+        $html = '<div class="slate_schedule_container">';
 
-        $html  = '<div class="slate_schedule_container">';
-
-        // Tab buttons
-        $html .= '<div class="slate-tabs">';
-        $html .= '<button class="slate-tab-btn slate-tab-active" data-slate-tab="slate-upcoming">Upcoming</button>';
-        $html .= '<button class="slate-tab-btn" data-slate-tab="slate-results">Results</button>';
-        $html .= '</div>';
-
-        // Upcoming panel
-        $html .= '<div class="slate-panel" id="slate-upcoming">';
-        if (empty($upcoming_by_month)) {
-            $html .= '<p class="slate-no-games">No upcoming games scheduled.</p>';
-        } else {
-            foreach ($upcoming_by_month as $month_year => $month_games) {
-                $html .= $this->renderMonthSection($month_year, $month_games, false);
-            }
-        }
-        $html .= '</div>';
-
-        // Results panel
-        $html .= '<div class="slate-panel" id="slate-results" style="display:none;">';
-        if (empty($past_by_month)) {
-            $html .= '<p class="slate-no-games">No results yet.</p>';
-        } else {
-            foreach ($past_by_month as $month_year => $month_games) {
+        if ($is_archive) {
+            $all_grouped = self::group_games_by_month($games, false);
+            $reversed    = array_reverse($all_grouped, true);
+            foreach ($reversed as $month_year => $month_games) {
                 $html .= $this->renderMonthSection($month_year, array_reverse($month_games), true);
             }
-        }
-        $html .= '</div>';
+        } else {
+            $games_split       = $this->split_games_by_time($games);
+            $upcoming_by_month = self::group_games_by_month($games_split['future_games'], false);
+            $past_by_month     = array_reverse(self::group_games_by_month($games_split['past_games'], false));
 
-        $html .= '</div>'; // .slate-schedule-container
+            // Tab buttons
+            $html .= '<div class="slate-tabs">';
+            $html .= '<button class="slate-tab-btn slate-tab-active" data-slate-tab="slate-upcoming">Upcoming</button>';
+            $html .= '<button class="slate-tab-btn" data-slate-tab="slate-results">Results</button>';
+            $html .= '</div>';
+
+            // Upcoming panel
+            $html .= '<div class="slate-panel" id="slate-upcoming">';
+            if (empty($upcoming_by_month)) {
+                $html .= '<p class="slate-no-games">No upcoming games scheduled.</p>';
+            } else {
+                foreach ($upcoming_by_month as $month_year => $month_games) {
+                    $html .= $this->renderMonthSection($month_year, $month_games, false);
+                }
+            }
+            $html .= '</div>';
+
+            // Results panel
+            $html .= '<div class="slate-panel" id="slate-results" style="display:none;">';
+            if (empty($past_by_month)) {
+                $html .= '<p class="slate-no-games">No results yet.</p>';
+            } else {
+                foreach ($past_by_month as $month_year => $month_games) {
+                    $html .= $this->renderMonthSection($month_year, array_reverse($month_games), true);
+                }
+            }
+            $html .= '</div>';
+        }
+
+        $html .= '</div>'; // .slate_schedule_container
 
         return $html;
     }
