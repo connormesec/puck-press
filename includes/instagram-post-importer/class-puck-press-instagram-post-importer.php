@@ -13,7 +13,7 @@ class Puck_Press_Instagram_Post_Importer
             $messages[] = 'Instagram import feature is disabled.';
             return $messages;
         }
-        $existing_post_slugs = $this->get_instagram_post_slugs(-1);
+        $existing_post_slugs = $this->get_existing_insta_ids(-1);
         $fetch_result = $this->fetch_instagram_posts($existing_post_slugs);
 
         if (!$fetch_result['success']) {
@@ -22,20 +22,21 @@ class Puck_Press_Instagram_Post_Importer
         }
 
         foreach ($fetch_result['data'] as $post_data) {
-            $title = isset($post_data['post_title']) ? $post_data['post_title'] : 'Instagram Post';
-            $content = isset($post_data['post_body']) ? $post_data['post_body'] : '';
+            $title     = isset($post_data['post_title']) ? $post_data['post_title'] : 'Instagram Post';
+            $content   = isset($post_data['post_body']) ? $post_data['post_body'] : '';
             $b64_image = isset($post_data['image_buffer']) ? $post_data['image_buffer'] : '';
-            $image_name = 'insta-' . $post_data['slug'] . '.jpg';
+            $insta_id  = isset($post_data['insta_id']) ? $post_data['insta_id'] : '';
+            $image_name = 'insta-' . $insta_id . '.jpg';
             $slug = isset($post_data['slug']) ? $post_data['slug'] : '';
-            
-            // Double check to make sure slug doesn't already exist | also accounts for -1, -2, etc. suffixes
-            if (in_array($slug, $existing_post_slugs, true) || preg_grep('/^' . preg_quote($slug, '/') . '-/', $existing_post_slugs)) {
-                $messages[] = 'Post with slug ' . $slug . ' already exists.';
+
+            // Double check to make sure Instagram post ID hasn't already been imported
+            if (in_array($insta_id, $existing_post_slugs, true) || preg_grep('/^' . preg_quote($insta_id, '/') . '-/', $existing_post_slugs)) {
+                $messages[] = 'Post with Instagram ID ' . $insta_id . ' already exists.';
                 continue;
             }
 
             // Create the post
-            $post_id = $this->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name);
+            $post_id = $this->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id);
 
             if (is_wp_error($post_id)) {
                 $messages[] = 'Failed to create post for slug ' . $slug . ': ' . $post_id->get_error_message();
@@ -112,15 +113,13 @@ class Puck_Press_Instagram_Post_Importer
         $formatted_posts = array();
         if (!empty($data['new_posts']) && is_array($data['new_posts'])) {
             foreach ($data['new_posts'] as $post) {
-                // Ensure all required fields exist and are not empty
-                if (empty($post['postSlug']) || empty($post['postTitle']) || empty($post['imgSrc']) || empty($post['featuredImageBuffer'])) {
-                    $formatted_posts[] = array(
-                        'error' => 'Missing required fields in post data',
-                    );
-                    continue; // skip this post
+                // Ensure all required content fields exist
+                if (empty($post['postTitle']) || empty($post['imgSrc']) || empty($post['featuredImageBuffer'])) {
+                    continue; // skip silently — unusable post data
                 }
                 $formatted_posts[] = array(
-                    'slug'         => $post['postSlug'],
+                    'insta_id'     => !empty($post['post_id']) ? $post['post_id'] : ($post['postSlug'] ?? ''),
+                    'slug'         => $this->title_to_slug($post['postTitle']),
                     'post_title'   => $post['postTitle'],
                     'post_body'    => $post['postText'] ?? '',
                     'image_url'    => $post['imgSrc'],
@@ -147,7 +146,7 @@ class Puck_Press_Instagram_Post_Importer
      *
      * @return int|WP_Error Post ID on success, WP_Error on failure.
      */
-    public function create_instagram_post($title, $content, $status = 'publish', $slug = '', $b64_image = '', $image_name = 'instagram-image.png')
+    public function create_instagram_post($title, $content, $status = 'publish', $slug = '', $b64_image = '', $image_name = 'instagram-image.png', $insta_id = '')
     {
         // ✅ Ensure "Instagram" tag exists
         $tag_id = term_exists('Instagram', 'post_tag');
@@ -168,16 +167,17 @@ class Puck_Press_Instagram_Post_Importer
             'post_content' => $content,
             'post_status'  => $status,
             'post_author'  => get_current_user_id(),
+            'post_type'    => 'pp_insta_post',
         );
 
         // Sanitize slug if provided
         if (!empty($slug)) {
             $slug = sanitize_title($slug);
 
-            // Check if a post with this slug already exists
-            $existing_post = get_page_by_path($slug, OBJECT, 'post');
-            if ($existing_post) {
-                return new WP_Error('post_exists', 'A post with this slug already exists.');
+            // If a post with this slug already exists, append the Instagram ID as a disambiguator
+            $existing_post = get_page_by_path($slug, OBJECT, 'pp_insta_post');
+            if ($existing_post && !empty($insta_id)) {
+                $slug = $slug . '-' . sanitize_title($insta_id);
             }
             $postarr['post_name'] = $slug;
         }
@@ -185,6 +185,11 @@ class Puck_Press_Instagram_Post_Importer
         $post_id = wp_insert_post($postarr, true); // true = return WP_Error on fail
         if (is_wp_error($post_id)) {
             return $post_id;
+        }
+
+        // ✅ Store Instagram post ID as meta for future duplicate detection
+        if (!empty($insta_id)) {
+            update_post_meta($post_id, '_insta_post_id', sanitize_text_field($insta_id));
         }
 
         // ✅ Assign the "Instagram" tag
@@ -256,10 +261,11 @@ class Puck_Press_Instagram_Post_Importer
     function get_instagram_post_slugs($limit = -1)
     {
         $args = array(
-            'tag_slug__in'    => array('instagram'), // filter by tag slug
+            'post_type'       => 'post',              // only old-style posts; CPT posts use _insta_post_id meta
+            'tag_slug__in'    => array('instagram'),  // filter by tag slug
             'posts_per_page'  => $limit,
             'post_status'     => 'publish',
-            'fields'          => 'ids', // retrieve just post IDs for better performance
+            'fields'          => 'ids',
         );
 
         $query = new WP_Query($args);
@@ -278,6 +284,44 @@ class Puck_Press_Instagram_Post_Importer
         return $slugs;
     }
 
+
+    /**
+     * Generate an SEO-friendly WordPress slug from a post title.
+     * Truncates at a word boundary to a maximum of 60 characters.
+     */
+    private function title_to_slug(string $title): string
+    {
+        $slug = sanitize_title($title);
+        if (strlen($slug) > 60) {
+            $slug = substr($slug, 0, 60);
+            $slug = rtrim($slug, '-');
+        }
+        return $slug ?: 'instagram-post';
+    }
+
+    /**
+     * Return all known Instagram post IDs (for duplicate detection).
+     *
+     * Combines two sources for backward compatibility:
+     *   - _insta_post_id meta (new posts after CPT migration)
+     *   - WordPress post slugs of Instagram-tagged posts (old posts where slug = Instagram ID)
+     *
+     * @param int $limit Passed to get_instagram_post_slugs(). Use -1 for all.
+     * @return string[]
+     */
+    public function get_existing_insta_ids($limit = -1): array
+    {
+        global $wpdb;
+        $meta_ids = $wpdb->get_col(
+            "SELECT DISTINCT pm.meta_value
+             FROM {$wpdb->postmeta} pm
+             INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+             WHERE pm.meta_key = '_insta_post_id'
+               AND p.post_status != 'trash'"
+        ) ?: [];
+        $old_slugs = $this->get_instagram_post_slugs($limit);
+        return array_values(array_unique(array_merge($meta_ids, $old_slugs)));
+    }
 
     /**
      * Convert a base64 image buffer into an HTML <img> tag with automatic MIME type detection.

@@ -55,6 +55,22 @@ $stats = $wpdb->get_row(
     ARRAY_A
 ) ?? [];
 
+// ── Look up archived stats (previous seasons) ─────────────────────────────────
+require_once PLUGIN_DIR_PATH . 'includes/roster/class-puck-press-roster-archive-wpdb-utils.php';
+$roster_archive_db = new Puck_Press_Roster_Archive_Wpdb_Utils();
+$archived_stats    = $is_goalie
+    ? $roster_archive_db->get_player_goalie_archives( $player['player_id'] )
+    : $roster_archive_db->get_player_skater_archives( $player['player_id'] );
+
+$all_stats_rows = [];
+if ( ! empty( $stats ) ) {
+    $stats['season'] = 'Current';
+    $all_stats_rows[] = $stats;
+}
+foreach ( $archived_stats as $archived_row ) {
+    $all_stats_rows[] = $archived_row;
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 get_header();
 
@@ -63,6 +79,6 @@ echo Puck_Press_Roster_Render_Utils::build_player_schema( $player );
 
 // Player detail HTML (CSS vars already injected by enqueue_roster_assets() via
 // wp_add_inline_style before wp_head fired).
-echo Puck_Press_Roster_Player_Detail::render( $player, $stats );
+echo Puck_Press_Roster_Player_Detail::render( $player, $all_stats_rows );
 
 get_footer();

@@ -27,11 +27,14 @@ class Puck_Press_Roster_Player_Detail
     /**
      * Renders the player detail HTML.
      *
-     * @param array $player Row from pp_roster_for_display (ARRAY_A).
-     * @param array $stats  Row from pp_roster_stats or pp_roster_goalie_stats (ARRAY_A), or empty array if none.
+     * @param array $player     Row from pp_roster_for_display (ARRAY_A).
+     * @param array $stats_rows Array of stat rows — each row is ARRAY_A from
+     *                          pp_roster_stats / pp_roster_goalie_stats (with
+     *                          a 'season' key added) or from the archive tables.
+     *                          Empty array when the player has no stats.
      * @return string HTML string.
      */
-    public static function render(array $player, array $stats): string
+    public static function render( array $player, array $stats_rows ): string
     {
         $fallback   = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
         $full_name  = $player['name'] ?? '';
@@ -96,99 +99,10 @@ class Puck_Press_Roster_Player_Detail
         }
 
         // ── Stats tab content ──────────────────────────────────────────────────
-        if ( ! empty( $stats ) ) {
-            // Highlight cards
-            if ( $is_goalie ) {
-                $highlight_stats = [
-                    [ $stats['wins']                  ?? '-', 'Wins' ],
-                    [ $stats['save_percentage']       ?? '-', 'Save Pct.' ],
-                    [ $stats['goals_against_average'] ?? '-', 'GAA' ],
-                    [ $stats['games_played']          ?? '-', 'Games Played' ],
-                ];
-            } else {
-                $highlight_stats = [
-                    [ $stats['goals']        ?? '-', 'Goals' ],
-                    [ $stats['assists']      ?? '-', 'Assists' ],
-                    [ $stats['points']       ?? '-', 'Points' ],
-                    [ $stats['games_played'] ?? '-', 'Games Played' ],
-                ];
-            }
-            $highlights_html = '<div class="pp-stat-highlights">';
-            foreach ( $highlight_stats as [ $val, $label ] ) {
-                $highlights_html .= '<div class="pp-stat-highlight-card">'
-                    . '<span class="pp-stat-highlight-value">' . esc_html( $val ) . '</span>'
-                    . '<span class="pp-stat-highlight-label">' . esc_html( $label ) . '</span>'
-                    . '</div>';
-            }
-            $highlights_html .= '</div>';
-
-            if ( $is_goalie ) {
-                $gp  = esc_html( $stats['games_played']          ?? '-' );
-                $w   = esc_html( $stats['wins']                  ?? '-' );
-                $l   = esc_html( $stats['losses']                ?? '-' );
-                $otl = esc_html( $stats['overtime_losses']       ?? '-' );
-                $sol = esc_html( $stats['shootout_losses']       ?? '-' );
-                $sow = esc_html( $stats['shootout_wins']         ?? '-' );
-                $sa  = esc_html( $stats['shots_against']         ?? '-' );
-                $sv  = esc_html( $stats['saves']                 ?? '-' );
-                $svp = esc_html( $stats['save_percentage']       ?? '-' );
-                $gaa = esc_html( $stats['goals_against_average'] ?? '-' );
-                $ga  = esc_html( $stats['goals_against']         ?? '-' );
-                $g   = esc_html( $stats['goals']                 ?? '-' );
-                $a   = esc_html( $stats['assists']               ?? '-' );
-                $pim = esc_html( $stats['penalty_minutes']       ?? '-' );
-
-                $stats_html = $highlights_html . '
-                <div class="pp-stats-wrap">
-                    <h3 class="pp-stats-heading">Season Statistics</h3>
-                    <div class="pp-stats-table-wrap">
-                        <table class="pp-player-stats-table">
-                            <thead><tr>
-                                <th>GP</th><th>W</th><th>L</th><th>OTL</th><th>SOL</th>
-                                <th>SOW</th><th>SA</th><th>SV</th><th>SV%</th><th>GAA</th>
-                                <th>GA</th><th>G</th><th>A</th><th>PIM</th>
-                            </tr></thead>
-                            <tbody><tr>
-                                <td>' . $gp  . '</td><td>' . $w   . '</td><td>' . $l   . '</td>
-                                <td>' . $otl . '</td><td>' . $sol . '</td><td>' . $sow . '</td>
-                                <td>' . $sa  . '</td><td>' . $sv  . '</td><td>' . $svp . '</td>
-                                <td>' . $gaa . '</td><td>' . $ga  . '</td><td>' . $g   . '</td>
-                                <td>' . $a   . '</td><td>' . $pim . '</td>
-                            </tr></tbody>
-                        </table>
-                    </div>
-                </div>';
-            } else {
-                $gp  = esc_html( $stats['games_played']        ?? '-' );
-                $g   = esc_html( $stats['goals']               ?? '-' );
-                $a   = esc_html( $stats['assists']             ?? '-' );
-                $pts = esc_html( $stats['points']              ?? '-' );
-                $ppg = esc_html( $stats['points_per_game']     ?? '-' );
-                $pp  = esc_html( $stats['power_play_goals']    ?? '-' );
-                $shg = esc_html( $stats['short_handed_goals']  ?? '-' );
-                $gw  = esc_html( $stats['game_winning_goals']  ?? '-' );
-                $pim = esc_html( $stats['penalty_minutes']     ?? '-' );
-                $pct = esc_html( $stats['shooting_percentage'] ?? '-' );
-
-                $stats_html = $highlights_html . '
-                <div class="pp-stats-wrap">
-                    <h3 class="pp-stats-heading">Season Statistics</h3>
-                    <div class="pp-stats-table-wrap">
-                        <table class="pp-player-stats-table">
-                            <thead><tr>
-                                <th>GP</th><th>G</th><th>A</th><th>PTS</th><th>Pt/G</th>
-                                <th>PPG</th><th>SHG</th><th>GWG</th><th>PIM</th><th>SH%</th>
-                            </tr></thead>
-                            <tbody><tr>
-                                <td>' . $gp  . '</td><td>' . $g   . '</td><td>' . $a   . '</td>
-                                <td>' . $pts . '</td><td>' . $ppg . '</td><td>' . $pp  . '</td>
-                                <td>' . $shg . '</td><td>' . $gw  . '</td><td>' . $pim . '</td>
-                                <td>' . $pct . '</td>
-                            </tr></tbody>
-                        </table>
-                    </div>
-                </div>';
-            }
+        if ( ! empty( $stats_rows ) ) {
+            $stats_html = $is_goalie
+                ? self::build_goalie_stats_html( $stats_rows )
+                : self::build_skater_stats_html( $stats_rows );
         } else {
             $stats_html = '<p class="pp-no-stats">No stats available for this player.</p>';
         }
@@ -255,5 +169,197 @@ class Puck_Press_Roster_Player_Detail
     </div>
 
 </div>';
+    }
+
+    // ── Career aggregation ────────────────────────────────────────────────────
+
+    private static function compute_career_skater( array $rows ): array
+    {
+        $gp = $g = $a = $pts = $ppg = $shg = $gwg = $pim = 0;
+        foreach ( $rows as $r ) {
+            $gp  += (int) ( $r['games_played']        ?? 0 );
+            $g   += (int) ( $r['goals']               ?? 0 );
+            $a   += (int) ( $r['assists']              ?? 0 );
+            $pts += (int) ( $r['points']               ?? 0 );
+            $ppg += (int) ( $r['power_play_goals']     ?? 0 );
+            $shg += (int) ( $r['short_handed_goals']   ?? 0 );
+            $gwg += (int) ( $r['game_winning_goals']   ?? 0 );
+            $pim += (int) ( $r['penalty_minutes']      ?? 0 );
+        }
+        $ptg = $gp > 0 ? round( $pts / $gp, 2 ) : 0;
+        return compact( 'gp', 'g', 'a', 'pts', 'ptg', 'ppg', 'shg', 'gwg', 'pim' );
+    }
+
+    private static function compute_career_goalie( array $rows ): array
+    {
+        $gp = $w = $l = $otl = $sol = $sow = $sa = $sv = $ga = $g = $a = $pim = 0;
+        foreach ( $rows as $r ) {
+            $gp  += (int) ( $r['games_played']      ?? 0 );
+            $w   += (int) ( $r['wins']               ?? 0 );
+            $l   += (int) ( $r['losses']             ?? 0 );
+            $otl += (int) ( $r['overtime_losses']    ?? 0 );
+            $sol += (int) ( $r['shootout_losses']    ?? 0 );
+            $sow += (int) ( $r['shootout_wins']      ?? 0 );
+            $sa  += (int) ( $r['shots_against']      ?? 0 );
+            $sv  += (int) ( $r['saves']              ?? 0 );
+            $ga  += (int) ( $r['goals_against']      ?? 0 );
+            $g   += (int) ( $r['goals']              ?? 0 );
+            $a   += (int) ( $r['assists']            ?? 0 );
+            $pim += (int) ( $r['penalty_minutes']    ?? 0 );
+        }
+        $svp = $sa > 0 ? round( $sv / $sa, 3 ) : 0;
+        $gaa = $gp > 0 ? round( ( $ga / $gp ) * 60, 2 ) : 0;
+        return compact( 'gp', 'w', 'l', 'otl', 'sol', 'sow', 'sa', 'sv', 'svp', 'gaa', 'ga', 'g', 'a', 'pim' );
+    }
+
+    // ── Stats tab builders ────────────────────────────────────────────────────
+
+    private static function build_skater_stats_html( array $rows ): string
+    {
+        $career = self::compute_career_skater( $rows );
+
+        // Highlight cards — career totals
+        $highlights_html = '<div class="pp-stat-highlights">';
+        foreach ( [
+            [ $career['g'],   'Career Goals'      ],
+            [ $career['a'],   'Career Assists'     ],
+            [ $career['pts'], 'Career Points'      ],
+            [ $career['gp'],  'Career Games Played'],
+        ] as [ $val, $label ] ) {
+            $highlights_html .= '<div class="pp-stat-highlight-card">'
+                . '<span class="pp-stat-highlight-value">' . esc_html( $val ) . '</span>'
+                . '<span class="pp-stat-highlight-label">' . esc_html( $label ) . '</span>'
+                . '</div>';
+        }
+        $highlights_html .= '</div>';
+
+        // Per-season rows
+        $body_rows = '';
+        foreach ( $rows as $r ) {
+            $body_rows .= '<tr>'
+                . '<td>' . esc_html( $r['season']              ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['games_played']        ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['goals']               ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['assists']             ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['points']              ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['points_per_game']     ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['power_play_goals']    ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['short_handed_goals']  ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['game_winning_goals']  ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['penalty_minutes']     ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['shooting_percentage'] ?? '-' ) . '</td>'
+                . '</tr>';
+        }
+
+        // Career totals row (only shown when there are multiple seasons)
+        $career_row = '';
+        if ( count( $rows ) > 1 ) {
+            $career_row = '<tr class="pp-career-row">'
+                . '<td><strong>Career</strong></td>'
+                . '<td>' . esc_html( $career['gp']  ) . '</td>'
+                . '<td>' . esc_html( $career['g']   ) . '</td>'
+                . '<td>' . esc_html( $career['a']   ) . '</td>'
+                . '<td>' . esc_html( $career['pts'] ) . '</td>'
+                . '<td>' . esc_html( $career['ptg'] ) . '</td>'
+                . '<td>' . esc_html( $career['ppg'] ) . '</td>'
+                . '<td>' . esc_html( $career['shg'] ) . '</td>'
+                . '<td>' . esc_html( $career['gwg'] ) . '</td>'
+                . '<td>' . esc_html( $career['pim'] ) . '</td>'
+                . '<td>&mdash;</td>'
+                . '</tr>';
+        }
+
+        return $highlights_html . '
+        <div class="pp-stats-wrap">
+            <h3 class="pp-stats-heading">Statistics</h3>
+            <div class="pp-stats-table-wrap">
+                <table class="pp-player-stats-table">
+                    <thead><tr>
+                        <th>Season</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>Pt/G</th>
+                        <th>PPG</th><th>SHG</th><th>GWG</th><th>PIM</th><th>SH%</th>
+                    </tr></thead>
+                    <tbody>' . $body_rows . $career_row . '</tbody>
+                </table>
+            </div>
+        </div>';
+    }
+
+    private static function build_goalie_stats_html( array $rows ): string
+    {
+        $career = self::compute_career_goalie( $rows );
+
+        // Highlight cards — career totals
+        $highlights_html = '<div class="pp-stat-highlights">';
+        foreach ( [
+            [ $career['w'],   'Career Wins'        ],
+            [ $career['svp'], 'Career Save Pct.'   ],
+            [ $career['gaa'], 'Career GAA'         ],
+            [ $career['gp'],  'Career Games Played'],
+        ] as [ $val, $label ] ) {
+            $highlights_html .= '<div class="pp-stat-highlight-card">'
+                . '<span class="pp-stat-highlight-value">' . esc_html( $val ) . '</span>'
+                . '<span class="pp-stat-highlight-label">' . esc_html( $label ) . '</span>'
+                . '</div>';
+        }
+        $highlights_html .= '</div>';
+
+        // Per-season rows
+        $body_rows = '';
+        foreach ( $rows as $r ) {
+            $body_rows .= '<tr>'
+                . '<td>' . esc_html( $r['season']              ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['games_played']        ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['wins']                ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['losses']              ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['overtime_losses']     ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['shootout_losses']     ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['shootout_wins']       ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['shots_against']       ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['saves']               ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['save_percentage']     ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['goals_against_average'] ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['goals_against']       ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['goals']               ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['assists']             ?? '-' ) . '</td>'
+                . '<td>' . esc_html( $r['penalty_minutes']     ?? '-' ) . '</td>'
+                . '</tr>';
+        }
+
+        // Career totals row (only shown when there are multiple seasons)
+        $career_row = '';
+        if ( count( $rows ) > 1 ) {
+            $career_row = '<tr class="pp-career-row">'
+                . '<td><strong>Career</strong></td>'
+                . '<td>' . esc_html( $career['gp']  ) . '</td>'
+                . '<td>' . esc_html( $career['w']   ) . '</td>'
+                . '<td>' . esc_html( $career['l']   ) . '</td>'
+                . '<td>' . esc_html( $career['otl'] ) . '</td>'
+                . '<td>' . esc_html( $career['sol'] ) . '</td>'
+                . '<td>' . esc_html( $career['sow'] ) . '</td>'
+                . '<td>' . esc_html( $career['sa']  ) . '</td>'
+                . '<td>' . esc_html( $career['sv']  ) . '</td>'
+                . '<td>' . esc_html( $career['svp'] ) . '</td>'
+                . '<td>' . esc_html( $career['gaa'] ) . '</td>'
+                . '<td>' . esc_html( $career['ga']  ) . '</td>'
+                . '<td>' . esc_html( $career['g']   ) . '</td>'
+                . '<td>' . esc_html( $career['a']   ) . '</td>'
+                . '<td>' . esc_html( $career['pim'] ) . '</td>'
+                . '</tr>';
+        }
+
+        return $highlights_html . '
+        <div class="pp-stats-wrap">
+            <h3 class="pp-stats-heading">Statistics</h3>
+            <div class="pp-stats-table-wrap">
+                <table class="pp-player-stats-table">
+                    <thead><tr>
+                        <th>Season</th><th>GP</th><th>W</th><th>L</th><th>OTL</th><th>SOL</th>
+                        <th>SOW</th><th>SA</th><th>SV</th><th>SV%</th><th>GAA</th>
+                        <th>GA</th><th>G</th><th>A</th><th>PIM</th>
+                    </tr></thead>
+                    <tbody>' . $body_rows . $career_row . '</tbody>
+                </table>
+            </div>
+        </div>';
     }
 }

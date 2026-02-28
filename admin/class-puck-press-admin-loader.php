@@ -67,6 +67,9 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-data-sources-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-preview-card.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-archive-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-archive-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/roster/roster-archive-modal.php';
 
 		// Stats Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stats-admin-preview-card.php';

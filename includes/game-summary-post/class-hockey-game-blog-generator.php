@@ -110,12 +110,12 @@ class Class_Hockey_Game_Blog_Generator
             'messages' => [
                 [
                     'role' => 'system',
-                    'content' => 'You are a sports writer for a hockey blog. All output must follow the exact format:
-[TITLE]
-Post body text here.
+                    'content' => 'You are a sports writer for a hockey blog. Your response must start with the article title inside square brackets, followed immediately by the article body. Example of correct output:
 
-Do not add extra words in the brackets. Do not use parentheses. Do not add "Title:".
-Keep the title short, engaging, and in brackets exactly like [Title Here].'
+[Bears Dominate in 5-2 Win Over the Wolves]
+The Bears put on a dominant performance Friday night, outshooting the Wolves 38-21 en route to a convincing 5-2 victory...
+
+Replace the bracketed title with your actual title. The very first character of your response must be [. Do not include any text before the opening bracket.'
                 ],
                 [
                     'role' => 'user',

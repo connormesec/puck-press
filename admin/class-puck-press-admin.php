@@ -69,6 +69,33 @@ class Puck_Press_Admin
 			'dashicons-admin-generic',
 			80
 		);
+
+		add_submenu_page(
+			'puck-press',
+			__('Puck Press Settings', 'puck-press'),
+			__('Settings', 'puck-press'),
+			'manage_options',
+			'puck-press',
+			[$this, 'display_admin_page']
+		);
+
+		add_submenu_page(
+			'puck-press',
+			__('Instagram Posts', 'puck-press'),
+			__('Instagram Posts', 'puck-press'),
+			'manage_options',
+			'edit.php?post_type=pp_insta_post',
+			''
+		);
+
+		add_submenu_page(
+			'puck-press',
+			__('Game Recaps', 'puck-press'),
+			__('Game Recaps', 'puck-press'),
+			'manage_options',
+			'edit.php?post_type=pp_game_summary',
+			''
+		);
 	}
 
 	// Display Admin Page
@@ -418,6 +445,7 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
 			wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
+				wp_enqueue_script('puck-press-roster-archive', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-archive.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				break;
 			case 'player-page':
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
@@ -597,6 +625,11 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_get_archive_game_count',  [$archive_card, 'ajax_get_game_count']);
 		add_action('wp_ajax_pp_create_schedule_archive', [$archive_card, 'ajax_create_archive']);
 		add_action('wp_ajax_pp_delete_schedule_archive', [$archive_card, 'ajax_delete_archive']);
+
+		$roster_archive_card = new Puck_Press_Roster_Admin_Archive_Card();
+		add_action('wp_ajax_pp_get_roster_stats_count',  [$roster_archive_card, 'ajax_get_stats_count']);
+		add_action('wp_ajax_pp_create_roster_archive',   [$roster_archive_card, 'ajax_create_roster_archive']);
+		add_action('wp_ajax_pp_delete_roster_archive',   [$roster_archive_card, 'ajax_delete_roster_archive']);
 
 		// Register the AJAX action for refreshing all sources
 		add_action('wp_ajax_pp_refresh_all_sources', [$this, 'ajax_refresh_all_sources_callback']);

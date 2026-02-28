@@ -21,6 +21,7 @@ class Puck_Press_Roster_Admin_Display
     private $roster_data_sources;
     private $roster_edits_table;
     private $roster_preview_card;
+    private $roster_archive_card;
     private $last_run;
 
     public function __construct()
@@ -30,7 +31,7 @@ class Puck_Press_Roster_Admin_Display
             'subtitle' => 'Manage external data sources for the roster',
             'id' => 'data-sources-table'
         ]);
-$this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
+        $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
             'title' => 'Roster Edits',
             'subtitle' => 'Manage your roster edits',
             'id' => 'roster-edits-table'
@@ -40,7 +41,13 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
             'subtitle' => 'Preview your roster before publishing',
             'id' => 'roster-preview'
         ]);
+        $this->roster_archive_card = new Puck_Press_Roster_Admin_Archive_Card([
+            'title'    => 'Roster Archives',
+            'subtitle' => 'Snapshots of past season stats',
+            'id'       => 'roster-archives',
+        ]);
         $this->roster_preview_card->init();
+        $this->roster_archive_card->init();
         $this->last_run = get_option('puck_press_cron_last_run', 'Never');
     }
 
@@ -100,6 +107,8 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
                                 <div class="pp-dropdown-item danger">Reset Everything</div>
                                 <div class="pp-dropdown-header">Edits</div>
                                 <div class="pp-dropdown-item danger" id="pp-reset-all-roster-edits">Reset All Edits</div>
+                                <div class="pp-dropdown-header">Archives</div>
+                                <div class="pp-dropdown-item" id="pp-archive-roster-btn">Archive Roster</div>
                             </div>
                         </div>
                     </div>
@@ -109,9 +118,11 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
 
                 <?php echo $this->roster_data_sources->render() ?>
 
-<?php echo $this->roster_edits_table->render() ?>
+                <?php echo $this->roster_edits_table->render() ?>
 
                 <?php echo $this->roster_preview_card->render() ?>
+
+                <?php echo $this->roster_archive_card->render() ?>
 
             </main>
             <?php
@@ -121,6 +132,8 @@ $this->roster_edits_table = new Puck_Press_Roster_Admin_Edits_Table_Card([
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-edit-player-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-add-player-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-color-palette-modal.php';
+            $archive_modal = new Puck_Press_Roster_Archive_Modal('pp-roster-archive-modal');
+            echo $archive_modal->render();
             ?>
 
         </div>

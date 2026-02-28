@@ -133,7 +133,7 @@ class Puck_Press_Game_Post_Creator
 
         // Build a map of _game_id meta value => post_id for all published posts
         $posts_with_meta = get_posts([
-            'post_type'      => 'post',
+            'post_type'      => array('post', 'pp_game_summary'),
             'post_status'    => 'publish',
             'posts_per_page' => -1,
             'meta_key'       => '_game_id',
@@ -174,7 +174,7 @@ class Puck_Press_Game_Post_Creator
             // Try 3: post_name = game_id_slug (old posts that may have no meta)
             if (!$matched_id) {
                 $fallback = get_posts([
-                    'post_type'      => 'post',
+                    'post_type'      => array('post', 'pp_game_summary'),
                     'post_status'    => 'publish',
                     'name'           => $game_id_slug,
                     'posts_per_page' => 1,
@@ -229,7 +229,7 @@ class Puck_Press_Game_Post_Creator
     private function game_post_exists($game_id)
     {
         $posts = get_posts([
-            'post_type'      => 'post',
+            'post_type'      => array('post', 'pp_game_summary'),
             'meta_key'       => '_game_id',
             'meta_value'     => sanitize_title($game_id),
             'post_status'    => 'publish',
@@ -246,7 +246,7 @@ class Puck_Press_Game_Post_Creator
      * 1. Upsert into pp_game_schedule_mods (persists through any rebuild)
      * 2. Directly update pp_game_schedule_for_display (shows immediately)
      */
-    private function save_post_link_for_game($game_id, $permalink)
+    public function save_post_link_for_game($game_id, $permalink)
     {
         global $wpdb;
 
@@ -310,6 +310,7 @@ class Puck_Press_Game_Post_Creator
             'post_status'  => 'publish',
             'post_author'  => 1,
             'post_name'    => $slug,
+            'post_type'    => 'pp_game_summary',
         );
 
         $post_id = wp_insert_post($post_data);

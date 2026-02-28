@@ -194,7 +194,11 @@ class Puck_Press_Admin_Game_Summary_Post_Display
                     if (empty($data['blog_data']) || empty($data['image'])) {
                         throw new Exception('Missing blog text or image for post creation.');
                     } else {
-                        $data['post_link'] = $post_creator->testCreatePost($game_id, $data['blog_data']['body'], $data['blog_data']['title'], $data['image']);
+                        $permalink = $post_creator->testCreatePost($game_id, $data['blog_data']['body'], $data['blog_data']['title'], $data['image']);
+                        if (!is_wp_error($permalink)) {
+                            $post_creator->save_post_link_for_game($game_id, $permalink);
+                        }
+                        $data['post_link'] = $permalink;
                     }
                 } catch (Throwable $e) {
                     $data['errors'][] = 'Post creation failed: ' . $e->getMessage();

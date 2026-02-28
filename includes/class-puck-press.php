@@ -83,7 +83,7 @@ class Puck_Press
 		}
 		$this->define_public_hooks();
 		add_action('init', [$this, 'define_cron_hooks']);
-		
+		add_action('init', [$this, 'register_post_types']);
 	}
 
 	/**
@@ -138,6 +138,9 @@ class Puck_Press
 		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-puck-press-rewrite-manager.php';
 		Puck_Press_Rewrite_Manager::init();
 
+		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-puck-press-yoast-sitemap.php';
+		Puck_Press_Yoast_Sitemap::init();
+
 		$this->loader = new Puck_Press_Loader();
 	}
 
@@ -176,6 +179,34 @@ class Puck_Press
 		$this->loader->add_action('admin_init', $plugin_admin, 'register_ajax_hooks');
 
 
+	}
+
+	public function register_post_types() {
+		register_post_type('pp_insta_post', array(
+			'labels'       => array(
+				'name'          => 'Instagram Posts',
+				'singular_name' => 'Instagram Post',
+			),
+			'public'        => true,
+			'has_archive'   => true,
+			'rewrite'       => array('slug' => 'instagram', 'with_front' => false),
+			'supports'      => array('title', 'editor', 'thumbnail', 'custom-fields'),
+			'show_in_menu'  => false,
+			'show_in_rest'  => true,
+		));
+
+		register_post_type('pp_game_summary', array(
+			'labels'       => array(
+				'name'          => 'Game Recaps',
+				'singular_name' => 'Game Recap',
+			),
+			'public'        => true,
+			'has_archive'   => true,
+			'rewrite'       => array('slug' => 'game-recap', 'with_front' => false),
+			'supports'      => array('title', 'editor', 'thumbnail', 'custom-fields'),
+			'show_in_menu'  => false,
+			'show_in_rest'  => true,
+		));
 	}
 
 	public function define_cron_hooks() {

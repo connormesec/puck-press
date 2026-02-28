@@ -151,8 +151,8 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display
 
         // Call your importer logic
         $importer = new Puck_Press_Instagram_Post_Importer();
-        $existing_post_slugs = $importer->get_instagram_post_slugs(-1);
-        $fetch_result = $importer->fetch_instagram_posts($existing_post_slugs);
+        $existing_insta_ids = $importer->get_existing_insta_ids(-1);
+        $fetch_result = $importer->fetch_instagram_posts($existing_insta_ids);
 
         if (!$fetch_result['success']) {
             wp_send_json_error($fetch_result['message']);
@@ -163,23 +163,24 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display
         $failed_imports = [];
 
         foreach ($fetch_result['data'] as $post_data) {
-            $title = isset($post_data['post_title']) ? $post_data['post_title'] : 'Instagram Post';
-            $content = isset($post_data['post_body']) ? $post_data['post_body'] : '';
+            $title     = isset($post_data['post_title']) ? $post_data['post_title'] : 'Instagram Post';
+            $content   = isset($post_data['post_body']) ? $post_data['post_body'] : '';
             $b64_image = isset($post_data['image_buffer']) ? $post_data['image_buffer'] : '';
-            $image_name = 'insta-' . $post_data['slug'] . '.jpg';
+            $insta_id  = isset($post_data['insta_id']) ? $post_data['insta_id'] : '';
+            $image_name = 'insta-' . $insta_id . '.jpg';
             $slug = isset($post_data['slug']) ? $post_data['slug'] : '';
 
-            // Double check to make sure slug doesn't already exist | also accounts for -1, -2, etc. suffixes
-            if (in_array($slug, $existing_post_slugs, true) || preg_grep('/^' . preg_quote($slug, '/') . '-/', $existing_post_slugs)) {
+            // Double check to make sure Instagram post ID hasn't already been imported
+            if (in_array($insta_id, $existing_insta_ids, true) || preg_grep('/^' . preg_quote($insta_id, '/') . '-/', $existing_insta_ids)) {
                 $failed_imports[] = [
                     'post_data' => $post_data,
-                    'error' => 'Post with slug ' . $slug . ' already exists.',
+                    'error' => 'Post with Instagram ID ' . $insta_id . ' already exists.',
                 ];
                 continue;
             }
 
             // Create the post
-            $post_id = $importer->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name);
+            $post_id = $importer->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id);
 
             if (is_wp_error($post_id)) {
                 $failed_imports[] = [
