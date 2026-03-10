@@ -134,7 +134,7 @@ class PhotoGridTemplate extends PuckPressTemplate
 
     private function createCard(array $player): string
     {
-        $fallback   = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
+        $fallback   = self::HEADSHOT_FALLBACK;
         $img        = !empty($player['headshot_link']) ? esc_url($player['headshot_link']) : $fallback;
         $name       = esc_html($player['name'] ?? '');
         $number     = !empty($player['number']) ? '#' . esc_html($player['number']) : '';

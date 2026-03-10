@@ -977,3 +977,220 @@ input[type="file"]#pp-schedule-fileInput {
   background: #fff;
   display: block;
 }
+
+/* ============================================================
+   Bulk Edit Modal (shared by schedule and roster)
+   ============================================================ */
+
+.pp-bulk-edit-modal__inner {
+  width: 720px;
+  max-width: 95vw;
+}
+
+/* Field selector row */
+.pp-bulk-edit-field-row {
+  margin-bottom: 1rem;
+}
+
+.pp-bulk-edit-field-inputs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.pp-bulk-edit-field-inputs select {
+  flex: 0 0 auto;
+  min-width: 160px;
+}
+
+.pp-bulk-edit-value-input {
+  flex: 1 1 auto;
+}
+
+.pp-bulk-edit-clear-hint {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted, #6b7280);
+  margin: 0.25rem 0 0;
+}
+
+/* Filter bar */
+.pp-bulk-edit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--pp-surface-2, #f9fafb);
+  border: 1px solid var(--pp-border-color, #e1e5eb);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.pp-bulk-edit-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 140px;
+}
+
+.pp-bulk-edit-radios {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding-top: 0.3rem;
+}
+
+.pp-bulk-edit-radios label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* Select All / Deselect All bar */
+.pp-bulk-edit-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+}
+
+.pp-bulk-edit-select-bar button {
+  background: none;
+  border: none;
+  color: var(--pp-accent-color, #009DA5);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+}
+
+.pp-bulk-edit-select-bar button:hover {
+  opacity: 0.75;
+}
+
+.pp-bulk-edit-sep {
+  color: var(--pp-text-muted, #6b7280);
+}
+
+.pp-bulk-edit-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--pp-surface-2, #f3f4f6);
+  border-radius: 12px;
+  padding: 0.15rem 0.65rem;
+}
+
+/* Scrollable item list */
+.pp-bulk-edit-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--pp-border-color, #e1e5eb);
+  border-radius: 6px;
+}
+
+.pp-bulk-edit-row {
+  border-bottom: 1px solid var(--pp-border-color, #e1e5eb);
+}
+
+.pp-bulk-edit-row:last-child {
+  border-bottom: none;
+}
+
+.pp-bulk-edit-row.is-hidden {
+  display: none;
+}
+
+.pp-bulk-edit-row__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pp-bulk-edit-row__label:hover {
+  background: var(--pp-surface-2, #f9fafb);
+}
+
+.pp-bulk-edit-cb {
+  flex-shrink: 0;
+}
+
+/* H/A badge (schedule) */
+.pp-bulk-ha-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--pp-surface-2, #e5e7eb);
+  color: var(--pp-text-muted, #374151);
+  flex-shrink: 0;
+}
+
+.pp-bulk-ha-badge--home {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pp-bulk-ha-badge--away {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Position badge (roster) */
+.pp-bulk-pos-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--pp-surface-2, #e5e7eb);
+  color: var(--pp-text-muted, #374151);
+  min-width: 1.8rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pp-bulk-edit-row__date {
+  color: var(--pp-text-muted, #6b7280);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.pp-bulk-edit-row__opponent,
+.pp-bulk-edit-row__name {
+  font-weight: 500;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-bulk-edit-row__venue {
+  color: var(--pp-text-muted, #6b7280);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Error message */
+.pp-bulk-edit-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}

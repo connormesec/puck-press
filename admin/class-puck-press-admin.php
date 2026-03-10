@@ -446,6 +446,7 @@ class Puck_Press_Admin
 			wp_enqueue_script('puck-press-roster-color-picker', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-preview', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-preview.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-roster-archive', plugin_dir_url(__FILE__) . 'js/roster/puck-press-roster-archive.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-bulk-edit-roster', plugin_dir_url(__FILE__) . 'js/roster/puck-press-bulk-edit-roster.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				break;
 			case 'player-page':
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
@@ -469,6 +470,7 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-slider-color-picker', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array('jquery', 'puck-press-color-picker-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-preview', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-preview.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-archive', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-archive.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-bulk-edit-schedule', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-bulk-edit-schedule.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				break;
 		}
 	}
@@ -560,6 +562,14 @@ class Puck_Press_Admin
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('pp_insta_post_nonce'),
 		]);
+
+		wp_localize_script('puck-press-bulk-edit-schedule', 'ppBulkSchedule', [
+			'nonce' => wp_create_nonce('pp_bulk_schedule_nonce'),
+		]);
+
+		wp_localize_script('puck-press-bulk-edit-roster', 'ppBulkRoster', [
+			'nonce' => wp_create_nonce('pp_bulk_roster_nonce'),
+		]);
 	}
 
 	/**
@@ -592,6 +602,7 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_get_game_data', [$data_edits_card, 'ajax_get_game_data_callback']);
 		add_action('wp_ajax_pp_revert_game_field', [$data_edits_card, 'ajax_revert_game_field_callback']);
 		add_action('wp_ajax_pp_reset_all_game_edits', [$data_edits_card, 'ajax_reset_all_edits_callback']);
+		add_action('wp_ajax_pp_bulk_update_schedule_field', [$data_edits_card, 'ajax_bulk_update_schedule_field_callback']);
 
 		$roster_sources_card = new Puck_Press_Roster_Admin_Data_Sources_Card();
 		add_action('wp_ajax_pp_add_roster_source', [$roster_sources_card, 'ajax_add_roster_source']);
@@ -607,6 +618,8 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_add_manual_player',    [$roster_edits_card, 'ajax_add_manual_player_callback']);
 		add_action('wp_ajax_pp_delete_manual_player', [$roster_edits_card, 'ajax_delete_manual_player_callback']);
 		add_action('wp_ajax_pp_reset_all_roster_edits', [$roster_edits_card, 'ajax_reset_all_roster_edits_callback']);
+		add_action('wp_ajax_pp_bulk_update_roster_field',  [$roster_edits_card, 'ajax_bulk_update_roster_field_callback']);
+		add_action('wp_ajax_pp_bulk_revert_roster_edits',  [$roster_edits_card, 'ajax_bulk_revert_roster_edits_callback']);
 
 		$game_summary_post_display = new Puck_Press_Admin_Game_Summary_Post_Display();
 		add_action('wp_ajax_pp_test_openai_api', [$game_summary_post_display, 'ajax_test_openai']);

@@ -130,6 +130,7 @@ class Puck_Press_Roster_Admin_Display
             $source_modal = new Puck_Press_Roster_Add_Source_Modal('pp-add-source-modal');
             echo $source_modal->render();
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-edit-player-modal.php';
+            include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-bulk-edit-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-add-player-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'roster/roster-color-palette-modal.php';
             $archive_modal = new Puck_Press_Roster_Archive_Modal('pp-roster-archive-modal');

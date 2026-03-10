@@ -8,7 +8,10 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
 
     public function render_header_button_content()
     {
-        return '<button class="pp-button pp-button-primary" id="pp-add-game-button">+ Add Game</button>';
+        return '
+            <button class="pp-button pp-button-secondary" id="pp-bulk-edit-schedule-btn">Bulk Edit Games</button>
+            <button class="pp-button pp-button-primary" id="pp-add-game-button">+ Add Game</button>
+        ';
     }
 
     public function render_game_schedule_admin_preview()
@@ -133,7 +136,11 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
                         data-id="<?php echo esc_attr($game['game_id']); ?>"
                         data-source-type="<?php echo esc_attr($source_type); ?>"
                         data-mod-id="<?php echo esc_attr($mod_id); ?>"
-                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>">
+                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>"
+                        data-home-or-away="<?php echo esc_attr(strtolower($game['home_or_away'] ?? '')); ?>"
+                        data-venue="<?php echo esc_attr($game['venue'] ?? ''); ?>"
+                        data-timestamp="<?php echo esc_attr(!empty($game['game_timestamp']) ? strtotime($game['game_timestamp']) : '0'); ?>"
+                        data-opponent="<?php echo esc_attr($game['opponent_team_name'] ?? ''); ?>">
                         <td class="pp-td pp-td-compact"><?php echo esc_html($game['game_id']); ?></td>
                         <td class="pp-td pp-td-compact" data-field="game_date"><?php echo esc_html(date('M d, Y', strtotime($game['game_timestamp']))); ?></td>
                         <td class="pp-td pp-td-compact" data-field="game_time"><?php echo esc_html($game['game_time'] ?? ''); ?></td>

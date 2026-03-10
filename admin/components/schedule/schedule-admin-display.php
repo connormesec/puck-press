@@ -150,6 +150,7 @@ class Puck_Press_Schedule_Admin_Display
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-color-palette-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/slider-color-palette-modal.php';
             include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-edit-game-modal.php';
+            include plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-bulk-edit-modal.php';
             require_once plugin_dir_path(dirname(__FILE__)) . 'schedule/schedule-add-game-modal.php';
             $add_game_modal = new Puck_Press_Schedule_Add_Game_Modal('pp-add-game-modal');
             echo $add_game_modal->render();

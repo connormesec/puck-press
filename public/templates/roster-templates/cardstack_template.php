@@ -166,7 +166,7 @@ class CardStackTemplate extends PuckPressTemplate
         $major = null,
         $has_stats = true
     ) {
-        $fallback_headshot = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
+        $fallback_headshot = self::HEADSHOT_FALLBACK;
 
         // Clean up hometown (remove trailing country labels)
         if (!empty($hometown)) {

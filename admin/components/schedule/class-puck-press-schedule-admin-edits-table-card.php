@@ -350,6 +350,93 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
         wp_die();
     }
 
+    public function ajax_bulk_update_schedule_field_callback()
+    {
+        global $wpdb;
+
+        check_ajax_referer('pp_bulk_schedule_nonce', 'nonce');
+
+        $allowed_fields = ['promo_ticket_link', 'venue', 'promo_header', 'promo_text', 'promo_img_url'];
+        $field = sanitize_key($_POST['field'] ?? '');
+        if (!in_array($field, $allowed_fields, true)) {
+            wp_send_json_error(['message' => 'Invalid field.']);
+            wp_die();
+        }
+
+        $url_fields = ['promo_ticket_link', 'promo_img_url'];
+        $raw_value  = stripslashes($_POST['value'] ?? '');
+        $value      = in_array($field, $url_fields, true) ? esc_url_raw($raw_value) : sanitize_text_field($raw_value);
+
+        $game_ids = json_decode(stripslashes($_POST['game_ids'] ?? '[]'), true);
+        if (!is_array($game_ids) || empty($game_ids)) {
+            wp_send_json_error(['message' => 'No games selected.']);
+            wp_die();
+        }
+
+        $table    = $wpdb->prefix . 'pp_game_schedule_mods';
+        $internal = ['external_id', 'game_timestamp', 'game_date_day'];
+        $now      = current_time('mysql');
+
+        foreach ($game_ids as $game_id) {
+            $game_id = sanitize_text_field($game_id);
+
+            // Skip deleted games
+            $has_delete = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $table WHERE external_id = %s AND edit_action = 'delete' LIMIT 1",
+                $game_id
+            ));
+            if ($has_delete) continue;
+
+            $existing = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, edit_data FROM $table WHERE external_id = %s AND edit_action = 'update' LIMIT 1",
+                $game_id
+            ), ARRAY_A);
+
+            if ($existing) {
+                $edit_data = !empty($existing['edit_data']) ? (json_decode($existing['edit_data'], true) ?: []) : [];
+                if ($value !== '') {
+                    $edit_data[$field] = $value;
+                } else {
+                    unset($edit_data[$field]);
+                }
+                $remaining = array_diff_key($edit_data, array_flip($internal));
+                if (empty($remaining)) {
+                    $wpdb->delete($table, ['id' => $existing['id']], ['%d']);
+                } else {
+                    $wpdb->update(
+                        $table,
+                        ['edit_data' => wp_json_encode($edit_data), 'updated_at' => $now],
+                        ['id' => $existing['id']]
+                    );
+                }
+            } elseif ($value !== '') {
+                $wpdb->insert($table, [
+                    'external_id' => $game_id,
+                    'edit_action' => 'update',
+                    'edit_data'   => wp_json_encode(['external_id' => $game_id, $field => $value]),
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ]);
+            }
+        }
+
+        $utils = new Puck_Press_Schedule_Wpdb_Utils();
+        $utils->reset_table('pp_game_schedule_for_display');
+        $importer = new Puck_Press_Schedule_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+
+        $games_table_html        = (new Puck_Press_Schedule_Admin_Games_Table_Card())->render_game_schedule_admin_preview();
+        $schedule_preview_html   = Puck_Press_Schedule_Admin_Preview_Card::create_and_init()->get_all_templates_html();
+        $slider_preview_html     = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init()->get_all_templates_html();
+
+        wp_send_json_success([
+            'games_table_html'      => $games_table_html,
+            'schedule_preview_html' => $schedule_preview_html,
+            'slider_preview_html'   => $slider_preview_html,
+        ]);
+        wp_die();
+    }
+
     function console_log($output, $with_script_tags = true)
     {
         $js_code = 'console.log(' . json_encode($output, JSON_HEX_TAG) . ');';

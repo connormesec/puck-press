@@ -10,7 +10,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
     public function render_header_button_content()
     {
-        return '<button class="pp-button pp-button-primary" id="pp-add-player-button">+ Add Player</button>';
+        return '
+            <button class="pp-button pp-button-secondary" id="pp-bulk-edit-roster-btn">Bulk Edit Players</button>
+            <button class="pp-button pp-button-primary" id="pp-add-player-button">+ Add Player</button>
+        ';
     }
 
     public function render_edits_table()
@@ -94,8 +97,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                     if (!$is_deleted && !$is_manual && !empty($player['override_data'])) {
                         $decoded = json_decode($player['override_data'], true);
                         if (is_array($decoded)) {
-                            $non_empty = array_filter($decoded, function ($v) { return $v !== null && $v !== ''; });
-                            $override_keys = array_values(array_diff(array_keys($non_empty), $skip_keys));
+                                $override_keys = array_values(array_diff(array_keys(array_filter($decoded, fn($v) => $v !== null)), $skip_keys));
                         }
                     }
                     $mod_id = $player['mod_id'] ?? '';
@@ -143,7 +145,9 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                     <tr data-player-id="<?php echo esc_attr($player['player_id']); ?>"
                         data-source-type="<?php echo esc_attr($source_type); ?>"
                         data-mod-id="<?php echo esc_attr($mod_id); ?>"
-                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>">
+                        data-overrides="<?php echo esc_attr(wp_json_encode($override_keys)); ?>"
+                        data-pos="<?php echo esc_attr($player['pos'] ?? ''); ?>"
+                        data-name="<?php echo esc_attr($player['name'] ?? ''); ?>">
                         <td class="pp-td"><?php echo esc_html($player['player_id']); ?></td>
                         <td class="pp-td"><span class="pp-tag <?php echo esc_attr($source_tag_class); ?>"><?php echo esc_html($player['source']); ?></span></td>
                         <td class="pp-td" data-field="number"><?php echo esc_html($player['number']); ?></td>
@@ -459,6 +463,110 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
             wp_send_json_error(['message' => 'Delete failed']);
         }
 
+        wp_die();
+    }
+
+    public function ajax_bulk_update_roster_field_callback()
+    {
+        global $wpdb;
+
+        check_ajax_referer('pp_bulk_roster_nonce', 'nonce');
+
+        $allowed_fields = ['hero_image_url', 'headshot_link'];
+        $field = sanitize_key($_POST['field'] ?? '');
+        if (!in_array($field, $allowed_fields, true)) {
+            wp_send_json_error(['message' => 'Invalid field.']);
+            wp_die();
+        }
+
+        $raw_value  = stripslashes($_POST['value'] ?? '');
+        $value      = esc_url_raw($raw_value);
+
+        $player_ids = json_decode(stripslashes($_POST['player_ids'] ?? '[]'), true);
+        if (!is_array($player_ids) || empty($player_ids)) {
+            wp_send_json_error(['message' => 'No players selected.']);
+            wp_die();
+        }
+
+        $table = $wpdb->prefix . 'pp_roster_mods';
+        $now   = current_time('mysql');
+
+        foreach ($player_ids as $player_id) {
+            $player_id = sanitize_text_field($player_id);
+
+            // Skip deleted players
+            $has_delete = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $table WHERE external_id = %s AND edit_action = 'delete' LIMIT 1",
+                $player_id
+            ));
+            if ($has_delete) continue;
+
+            $existing = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, edit_data FROM $table WHERE external_id = %s AND edit_action = 'update' LIMIT 1",
+                $player_id
+            ), ARRAY_A);
+
+            if ($existing) {
+                $edit_data = !empty($existing['edit_data']) ? (json_decode($existing['edit_data'], true) ?: []) : [];
+                // Always store the value (including empty string) so a blank value
+                // explicitly overrides the raw data rather than reverting to it.
+                $edit_data[$field] = $value;
+                $wpdb->update(
+                    $table,
+                    ['edit_data' => wp_json_encode($edit_data), 'updated_at' => $now],
+                    ['id' => $existing['id']]
+                );
+            } else {
+                $wpdb->insert($table, [
+                    'external_id' => $player_id,
+                    'edit_action' => 'update',
+                    'edit_data'   => wp_json_encode(['external_id' => $player_id, $field => $value]),
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ]);
+            }
+        }
+
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
+
+        $roster_preview_html = Puck_Press_Roster_Admin_Preview_Card::create_and_init()->get_all_templates_html();
+        wp_send_json_success([
+            'roster_table_html'  => $this->render_edits_table(),
+            'roster_preview_html' => $roster_preview_html,
+        ]);
+        wp_die();
+    }
+
+    public function ajax_bulk_revert_roster_edits_callback()
+    {
+        global $wpdb;
+
+        check_ajax_referer('pp_bulk_roster_nonce', 'nonce');
+
+        $player_ids = json_decode(stripslashes($_POST['player_ids'] ?? '[]'), true);
+        if (!is_array($player_ids) || empty($player_ids)) {
+            wp_send_json_error(['message' => 'No players selected.']);
+            wp_die();
+        }
+
+        $table = $wpdb->prefix . 'pp_roster_mods';
+
+        foreach ($player_ids as $player_id) {
+            $player_id = sanitize_text_field($player_id);
+            $wpdb->delete($table, ['external_id' => $player_id, 'edit_action' => 'update'], ['%s', '%s']);
+        }
+
+        $importer = new Puck_Press_Roster_Source_Importer();
+        $importer->apply_edits_and_save_to_display_table();
+        $importer->sanitize_roster_display_table();
+
+        $roster_preview_html = Puck_Press_Roster_Admin_Preview_Card::create_and_init()->get_all_templates_html();
+        wp_send_json_success([
+            'roster_table_html'  => $this->render_edits_table(),
+            'roster_preview_html' => $roster_preview_html,
+        ]);
         wp_die();
     }
 

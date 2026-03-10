@@ -97,6 +97,9 @@
     applyEditHighlights();
     applyTableCellClamping();
 
+    // Allow external scripts (e.g. bulk edit) to trigger afterRefresh after replacing the table
+    $(document).on('pp:schedule-table-replaced', afterRefresh);
+
     // Revert a single cell's field(s) back to raw value
     $(document).on("click", ".pp-revert-btn", function (e) {
       e.stopPropagation();

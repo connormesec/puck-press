@@ -36,7 +36,7 @@ class Puck_Press_Roster_Player_Detail
      */
     public static function render( array $player, array $stats_rows ): string
     {
-        $fallback   = 'https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1490629554738.png';
+        $fallback   = PuckPressTemplate::HEADSHOT_FALLBACK;
         $full_name  = $player['name'] ?? '';
         $name_parts = explode( ' ', $full_name, 2 );
         $first_name = esc_html( $name_parts[0] ?? '' );

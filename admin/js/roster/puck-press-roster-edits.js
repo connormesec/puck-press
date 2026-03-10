@@ -71,6 +71,9 @@
         //============================================================//
         applyEditHighlights();
 
+        // Allow external scripts (e.g. bulk edit) to trigger afterRefresh after replacing the table
+        $(document).on('pp:roster-table-replaced', afterRefresh);
+
         //============================================================//
         //   Edit Player Modal                                         //
         //============================================================//

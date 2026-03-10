@@ -5,6 +5,8 @@
  */
 abstract class PuckPressTemplate
 {
+    const HEADSHOT_FALLBACK = "data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22utf-8%22%3F%3E%3C!--%20License%3A%20MIT.%20Made%20by%20vmware%3A%20https%3A%2F%2Fgithub.com%2Fvmware%2Fclarity-assets%20--%3E%3Csvg%20fill%3D%22%23cdcccc%22%20width%3D%22800px%22%20height%3D%22800px%22%20viewBox%3D%220%200%2036%2036%22%20version%3D%221.1%22%20%20preserveAspectRatio%3D%22xMidYMid%20meet%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%3E%3Ctitle%3Eavatar-solid%3C%2Ftitle%3E%3Cpath%20d%3D%22M30.61%2C24.52a17.16%2C17.16%2C0%2C0%2C0-25.22%2C0%2C1.51%2C1.51%2C0%2C0%2C0-.39%2C1v6A1.5%2C1.5%2C0%2C0%2C0%2C6.5%2C33h23A1.5%2C1.5%2C0%2C0%2C0%2C31%2C31.5v-6A1.51%2C1.51%2C0%2C0%2C0%2C30.61%2C24.52Z%22%20class%3D%22clr-i-solid%20clr-i-solid-path-1%22%3E%3C%2Fpath%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%2210%22%20r%3D%227%22%20class%3D%22clr-i-solid%20clr-i-solid-path-2%22%3E%3C%2Fcircle%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%2236%22%20height%3D%2236%22%20fill-opacity%3D%220%22%2F%3E%3C%2Fsvg%3E";
+
     /**
      * Returns a unique key for the template (used for selection)
      */
@@ -243,7 +245,10 @@ abstract class PuckPressTemplate
 
     public function split_games_by_time(array $games, ?DateTime $now = null): array
     {
-        $now = $now ?? new DateTime(); // Use provided DateTime or default to now
+        if ($now === null) {
+            $fake = defined('PP_FAKE_NOW') ? PP_FAKE_NOW : null;
+            $now  = $fake ? new DateTime($fake) : new DateTime();
+        }
         $past_games = [];
         $future_games = [];
 
