@@ -187,6 +187,11 @@ class Puck_Press_Cron
                 $schedule_ok = true;
             } else {
                 $this->log_error('Puck Press Cron: Schedule import returned no data — preserving existing display table.');
+                foreach ($raw_table_results['errors'] ?? [] as $err) {
+                    $source = is_array($err) ? ($err['source'] ?? 'unknown') : 'unknown';
+                    $msg    = is_array($err) ? ($err['message'] ?? print_r($err, true)) : (string) $err;
+                    $this->log_error("Puck Press Cron: Schedule source '{$source}' error — {$msg}");
+                }
             }
 
             // Roster: reset raw + stats tables, then populate.
@@ -210,6 +215,11 @@ class Puck_Press_Cron
                 $roster_ok = true;
             } else {
                 $this->log_error('Puck Press Cron: Roster import returned no data — preserving existing display table.');
+                foreach ($raw_roster_results['errors'] ?? [] as $err) {
+                    $source = is_array($err) ? ($err['source'] ?? 'unknown') : 'unknown';
+                    $msg    = is_array($err) ? ($err['message'] ?? print_r($err, true)) : (string) $err;
+                    $this->log_error("Puck Press Cron: Roster source '{$source}' error — {$msg}");
+                }
             }
 
             $execution_time = round(microtime(true) - $start_time, 2);

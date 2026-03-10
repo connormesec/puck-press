@@ -49,6 +49,7 @@
 
 /* ── Table Wrapper (horizontal scroll on mobile) ─────── */
 .pp-stats-table-wrapper {
+  overflow-x: auto;
   min-width: 0; /* ensure wrapper doesn't grow to match table */
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--pp-standard-border, #e8eaed);
@@ -145,6 +146,7 @@
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
 }
 
 .pp-stats-player-link:hover {

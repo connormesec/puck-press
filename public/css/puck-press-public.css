@@ -24,12 +24,17 @@
   max-width: 1080px;
   margin-left: auto;
   margin-right: auto;
+  margin-top: 20px;
+  margin-bottom: 20px;
   isolation: isolate;
 }
 
-/* ---- Action photo: 16:9 aspect ratio via padding-bottom trick ---- */
+/* ---- Action photo: fixed 1080x440, scales down on mobile ---- */
 .pp-player-header-bg {
-  padding-bottom: 56.25%;
+  width: 100%;
+  max-width: 1080px;
+  height: 440px;
+  background: linear-gradient(135deg, var(--pp-pd-number-bg, #000000) 0%, color-mix(in srgb, var(--pp-pd-accent, #009da5) 35%, var(--pp-pd-number-bg, #000000)) 55%, var(--pp-pd-accent, #009da5) 100%);
   background-size: cover;
   background-position: center center;
   position: relative;

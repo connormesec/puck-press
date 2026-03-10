@@ -8,7 +8,4 @@
 })(jQuery);
 
 function initializeStandardStats() {
-    if (typeof PpPlayerDetail !== 'undefined') {
-        PpPlayerDetail.init('.standard_stats_container', '.pp-stats-player-link');
-    }
 }

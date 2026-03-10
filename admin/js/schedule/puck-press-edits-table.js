@@ -127,6 +127,9 @@
     const $cancelEditGameBtn = $("#pp-cancel-edit-game");
     const $confirmBtn_editGameModal = $("#pp-confirm-edit-game");
     const $editGameForm = $("#pp-edit-game-form");
+    const $editGameLoading = $("#pp-edit-game-loading");
+    const showGameLoading  = () => $editGameLoading.addClass("is-loading");
+    const hideGameLoading  = () => $editGameLoading.removeClass("is-loading");
     let currentEditingGameId = null;
     // Snapshot of values set by prefillEditForm; used to detect which fields actually changed.
     let originalFormValues = null;
@@ -247,7 +250,7 @@
 
       // Show the modal immediately — this must always run regardless of what follows.
       $editGameModal.css("display", "flex");
-      $(".pp-modal-subtitle").text("Loading...");
+      showGameLoading();
 
       // Reset form after the modal is visible, with null safety.
       if ($editGameForm.length) {
@@ -266,11 +269,9 @@
           if (response.success && response.data && response.data.game) {
             prefillEditForm(response.data.game);
           }
-          $(".pp-modal-subtitle").text(`Game: ${gameId}`);
+          hideGameLoading();
         },
-        error: () => {
-          $(".pp-modal-subtitle").text(`Game: ${gameId}`);
-        },
+        error: () => hideGameLoading(),
       });
     };
 

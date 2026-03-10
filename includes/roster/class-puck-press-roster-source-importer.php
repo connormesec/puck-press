@@ -34,6 +34,7 @@ class Puck_Press_Roster_Source_Importer
     private function load_dependencies()
     {
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-wpdb-utils.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'class-puck-press-tts-api.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-normalizer.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-url.php';
         require_once plugin_dir_path(dirname(__FILE__)) . 'roster/class-puck-press-roster-process-acha-stats.php';

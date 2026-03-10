@@ -165,6 +165,7 @@ class Puck_Press_Schedule_Source_Importer
     private function load_dependencies()
     {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'schedule/class-puck-press-schedule-wpdb-utils.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'class-puck-press-tts-api.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'schedule/class-puck-press-schedule-process-acha-url.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'schedule/class-puck-press-schedule-process-usphl-url.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'schedule/class-puck-press-schedule-process-csv-data.php';

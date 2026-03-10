@@ -86,11 +86,16 @@
         $('#pp-cancel-edit-player').on('click', closeEditPlayerModal);
         enableClickOutsideToClose($editPlayerModal, closeEditPlayerModal);
 
+        const $editPlayerLoading = $('#pp-edit-player-loading');
+        const showEditLoading    = () => $editPlayerLoading.addClass('is-loading');
+        const hideEditLoading    = () => $editPlayerLoading.removeClass('is-loading');
+
         const openEditModalForPlayer = (playerId) => {
             currentEditingPlayerId = playerId;
             originalPlayerValues   = {};
             if ($editPlayerForm.length) { $editPlayerForm[0].reset(); }
             $editPlayerModal.css('display', 'flex');
+            showEditLoading();
 
             $.ajax({
                 url: ajaxurl,
@@ -100,7 +105,9 @@
                     if (response.success && response.data && response.data.player) {
                         prefillEditPlayerForm(response.data.player);
                     }
-                }
+                    hideEditLoading();
+                },
+                error: () => hideEditLoading()
             });
         };
 

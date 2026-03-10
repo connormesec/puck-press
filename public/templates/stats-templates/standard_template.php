@@ -158,7 +158,7 @@ class StandardTemplate extends PuckPressTemplate
             $slug = sanitize_title($name);
             $html .= '<tr>';
             $html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-            $html .= '<td class="pp-stats-player-cell">' . $img . '<button class="pp-stats-player-link" id="' . esc_attr($slug) . '">' . $name . '</button></td>';
+            $html .= '<td class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url(home_url('/player/' . $slug)) . '">' . $name . '</a></td>';
             $html .= '<td class="pp-stats-pos">' . $pos . '</td>';
             $html .= '<td>' . $gp . '</td>';
             $html .= '<td>' . $goals . '</td>';
@@ -246,7 +246,7 @@ class StandardTemplate extends PuckPressTemplate
             $slug = sanitize_title($name);
             $html .= '<tr>';
             $html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-            $html .= '<td class="pp-stats-player-cell">' . $img . '<button class="pp-stats-player-link" id="' . esc_attr($slug) . '">' . $name . '</button></td>';
+            $html .= '<td class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url(home_url('/player/' . $slug)) . '">' . $name . '</a></td>';
             $html .= '<td>' . $gp . '</td>';
             $html .= '<td>' . $wins . '</td>';
             $html .= '<td>' . $losses . '</td>';

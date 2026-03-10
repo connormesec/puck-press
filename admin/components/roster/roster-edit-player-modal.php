@@ -21,6 +21,11 @@ if (!defined('ABSPATH')) {
     <div class="pp-modal">
         <button class="pp-modal-close" id="pp-edit-player-modal-close">✕</button>
 
+        <div id="pp-edit-player-loading" class="pp-modal-loading-overlay">
+            <div class="pp-modal-loading-spinner"></div>
+            <span>Loading player data&hellip;</span>
+        </div>
+
         <div class="pp-modal-header">
             <h3 class="pp-modal-title">Edit Player</h3>
             <p class="pp-modal-subtitle">Change information for the player</p>

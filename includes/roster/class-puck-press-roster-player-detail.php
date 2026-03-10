@@ -47,7 +47,7 @@ class Puck_Press_Roster_Player_Detail
         $pos_code  = strtoupper( $player['pos'] ?? '' );
         $pos_label = self::$position_labels[ $pos_code ] ?? esc_html( $pos_code );
         $headshot  = ! empty( $player['headshot_link'] )  ? esc_url( $player['headshot_link'] )  : $fallback;
-        $hero_bg   = ! empty( $player['hero_image_url'] ) ? esc_url( $player['hero_image_url'] ) : $headshot;
+        $hero_bg   = ! empty( $player['hero_image_url'] ) ? esc_url( $player['hero_image_url'] ) : '';
 
         $ht        = esc_html( $player['ht'] ?? '' );
         $wt        = ! empty( $player['wt'] ) ? esc_html( $player['wt'] ) . ' lbs' : '';
@@ -113,7 +113,7 @@ class Puck_Press_Roster_Player_Detail
 <div class="pp-player-detail">
 
     <!-- ── Action photo: 16:9 aspect ratio ──────────────────────────────────── -->
-    <div class="pp-player-header-bg" style="background-image: url(\'' . $hero_bg . '\');"></div>
+    <div class="pp-player-header-bg"' . ( $hero_bg ? ' style="background-image: url(\'' . $hero_bg . '\');"' : '' ) . '></div>
 
     <!-- ── Header details: headshot + name bar + fields ─────────────────────── -->
     <!--
