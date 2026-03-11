@@ -109,6 +109,8 @@ class Puck_Press_Roster_Admin_Display
                                 <div class="pp-dropdown-item danger" id="pp-reset-all-roster-edits">Reset All Edits</div>
                                 <div class="pp-dropdown-header">Archives</div>
                                 <div class="pp-dropdown-item" id="pp-archive-roster-btn">Archive Roster</div>
+                                <div class="pp-dropdown-header">Database</div>
+                                <div class="pp-dropdown-item" id="pp-fix-databases-btn">Fix Database Tables</div>
                             </div>
                         </div>
                     </div>

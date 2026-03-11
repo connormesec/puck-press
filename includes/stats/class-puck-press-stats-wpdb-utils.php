@@ -43,7 +43,7 @@ class Puck_Press_Stats_Wpdb_Utils
                 d.pos,
                 d.headshot_link,
                 d.player_id,
-                s.rank,
+                s.stat_rank,
                 s.games_played,
                 s.goals,
                 s.assists,
@@ -56,7 +56,7 @@ class Puck_Press_Stats_Wpdb_Utils
                 s.shooting_percentage
             FROM {$roster_table} d
             INNER JOIN {$stats_table} s ON d.player_id = s.player_id
-            ORDER BY COALESCE(s.rank, 9999) ASC, s.points DESC, s.goals DESC",
+            ORDER BY COALESCE(s.stat_rank, 9999) ASC, s.points DESC, s.goals DESC",
             ARRAY_A
         );
 
@@ -80,7 +80,7 @@ class Puck_Press_Stats_Wpdb_Utils
                 d.pos,
                 d.headshot_link,
                 d.player_id,
-                g.rank,
+                g.stat_rank,
                 g.games_played,
                 g.wins,
                 g.losses,
@@ -91,7 +91,7 @@ class Puck_Press_Stats_Wpdb_Utils
                 g.saves
             FROM {$roster_table} d
             INNER JOIN {$goalie_table} g ON d.player_id = g.player_id
-            ORDER BY g.games_played DESC, COALESCE(g.rank, 9999) ASC, g.wins DESC",
+            ORDER BY g.games_played DESC, COALESCE(g.stat_rank, 9999) ASC, g.wins DESC",
             ARRAY_A
         );
 

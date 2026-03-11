@@ -1,0 +1,302 @@
+/* Conference Scoreboard Template */
+
+/* ── Container ────────────────────────────────────────── */
+.conference_schedule_container {
+  background: var(--pp-conference-page_bg);
+  padding: 20px 16px;
+  font-family: var(--pp-conference-schedule_font, inherit);
+}
+.conference_schedule_container * {
+  font-family: inherit;
+}
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.csb-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--pp-conference-divider);
+  margin-bottom: 20px;
+}
+
+.csb-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 16px 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pp-conference-text);
+  cursor: pointer;
+  margin-bottom: -1px;
+  letter-spacing: 0.3px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.csb-tab-btn:hover {
+  color: var(--pp-conference-accent);
+}
+
+.csb-tab-active {
+  color: var(--pp-conference-accent) !important;
+  border-bottom-color: var(--pp-conference-accent) !important;
+}
+
+/* ── Date group ───────────────────────────────────────── */
+.csb-date-group {
+  margin-bottom: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.csb-date-header {
+  background: var(--pp-conference-header_bg);
+  color: var(--pp-conference-header_text);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* ── Base card ────────────────────────────────────────── */
+.csb-card {
+  background: var(--pp-conference-card_bg);
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--pp-conference-divider);
+}
+
+.csb-date-group .csb-card:last-child {
+  border-bottom: none;
+}
+
+.csb-card__left {
+  flex: 1;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.csb-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px 18px;
+  gap: 8px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--pp-conference-divider);
+  min-width: 150px;
+}
+
+/* ── Status label ─────────────────────────────────────── */
+.csb-status {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--pp-conference-text_muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+/* ── Team row (final games) ───────────────────────────── */
+.csb-team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.csb-team-row--loser .csb-team-name,
+.csb-team-row--loser .csb-score {
+  opacity: 0.4;
+}
+
+.csb-team-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Team logo ────────────────────────────────────────── */
+.csb-team-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* ── Team name ────────────────────────────────────────── */
+.csb-team-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pp-conference-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Team record ──────────────────────────────────────── */
+.csb-team-record {
+  font-size: 12px;
+  color: var(--pp-conference-text_muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Score ────────────────────────────────────────────── */
+.csb-score {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--pp-conference-text);
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Winner arrow ─────────────────────────────────────── */
+.csb-winner-arrow {
+  font-size: 10px;
+  color: var(--pp-conference-accent);
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* ── Game time ────────────────────────────────────────── */
+.csb-game-time {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pp-conference-accent);
+  margin-bottom: 8px;
+}
+
+/* ── Matchup row (upcoming games) ────────────────────── */
+.csb-matchup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+/* ── Home badge ───────────────────────────────────────── */
+.csb-home-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--pp-conference-card_bg);
+  background: var(--pp-conference-accent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* ── At divider ───────────────────────────────────────── */
+.csb-at-divider {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pp-conference-text_muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 0 3px 42px;
+}
+
+/* ── Venue ────────────────────────────────────────────── */
+.csb-venue {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--pp-conference-text_muted);
+  margin-top: 7px;
+}
+
+.csb-icon-pin {
+  flex-shrink: 0;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.csb-ticket-btn {
+  display: inline-block;
+  background: var(--pp-conference-text);
+  color: var(--pp-conference-card_bg) !important;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.csb-ticket-btn:hover {
+  opacity: 0.8;
+}
+
+.csb-action-btn {
+  display: inline-block;
+  border: 1.5px solid var(--pp-conference-divider);
+  color: var(--pp-conference-text) !important;
+  background: transparent;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.csb-action-btn:hover {
+  background: var(--pp-conference-divider);
+}
+
+/* ── Empty state ──────────────────────────────────────── */
+.csb-no-games {
+  font-size: 14px;
+  color: var(--pp-conference-text_muted);
+  padding: 20px 0;
+}
+
+/* ── Responsive: 680px ────────────────────────────────── */
+@media screen and (max-width: 680px) {
+  .csb-card__right {
+    min-width: 110px;
+    padding: 14px 12px;
+  }
+
+  .csb-team-record {
+    display: none;
+  }
+
+  .csb-score {
+    font-size: 18px;
+  }
+}
+
+/* ── Responsive: 480px ────────────────────────────────── */
+@media screen and (max-width: 480px) {
+  .csb-card__right {
+    min-width: 80px;
+    padding: 12px 10px;
+  }
+
+  .csb-team-name {
+    font-size: 13px;
+  }
+
+  .csb-ticket-btn,
+  .csb-action-btn {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .csb-home-badge {
+    display: none;
+  }
+}

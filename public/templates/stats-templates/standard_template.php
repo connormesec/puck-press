@@ -140,7 +140,7 @@ class StandardTemplate extends PuckPressTemplate
         );
 
         foreach ($skaters as $i => $s) {
-            $rank    = !empty($s['rank']) ? (int) $s['rank'] : ($i + 1);
+            $rank    = !empty($s['stat_rank']) ? (int) $s['stat_rank'] : ($i + 1);
             $name    = esc_html($s['name'] ?? '');
             $pos     = esc_html($s['pos']  ?? '');
             $gp      = esc_html($s['games_played'] ?? 0);
@@ -230,7 +230,7 @@ class StandardTemplate extends PuckPressTemplate
         );
 
         foreach ($goalies as $i => $g) {
-            $rank   = !empty($g['rank']) ? (int) $g['rank'] : ($i + 1);
+            $rank   = !empty($g['stat_rank']) ? (int) $g['stat_rank'] : ($i + 1);
             $name   = esc_html($g['name']         ?? '');
             $gp     = esc_html($g['games_played'] ?? 0);
             $wins   = esc_html($g['wins']         ?? 0);

@@ -207,6 +207,121 @@ class Puck_Press_Admin
 	}
 
 
+	public function ajax_fix_roster_databases_callback()
+	{
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ] );
+		}
+
+		global $wpdb;
+		$log = [];
+
+		// ── Step 1: Rename reserved-word column `rank` → `stat_rank` ─────────
+		$rank_migration_tables = [
+			$wpdb->prefix . 'pp_roster_stats',
+			$wpdb->prefix . 'pp_roster_goalie_stats',
+			$wpdb->prefix . 'pp_roster_stats_archive',
+			$wpdb->prefix . 'pp_roster_goalie_stats_archive',
+		];
+
+		foreach ( $rank_migration_tables as $table ) {
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+			if ( $table_exists !== $table ) {
+				$log[] = "$table: does not exist yet — will be created by schema sync.";
+				continue;
+			}
+
+			$old_col = $wpdb->get_row( $wpdb->prepare(
+				"SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+				 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'rank'",
+				DB_NAME,
+				$table
+			) );
+
+			if ( $old_col ) {
+				$col_type = $old_col->COLUMN_TYPE;
+				$result   = $wpdb->query( "ALTER TABLE `$table` CHANGE `rank` `stat_rank` {$col_type} DEFAULT NULL" );
+				if ( $result !== false ) {
+					$log[] = "$table: renamed column `rank` → `stat_rank`.";
+				} else {
+					$log[] = "$table: ERROR renaming `rank` — " . $wpdb->last_error;
+				}
+			} else {
+				$new_col = $wpdb->get_var( $wpdb->prepare(
+					"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+					 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = 'stat_rank'",
+					DB_NAME,
+					$table
+				) );
+				if ( $new_col ) {
+					$log[] = "$table: `stat_rank` already correct. No change.";
+				} else {
+					$log[] = "$table: neither `rank` nor `stat_rank` found — schema sync will add it.";
+				}
+			}
+		}
+
+		// ── Step 2: Normalize collation across all roster tables ──────────────
+		// WordPress upgrades can change the default collation (e.g. utf8mb4_general_ci
+		// → utf8mb4_unicode_520_ci). Tables created under different defaults end up
+		// with mismatched collations, breaking JOINs on VARCHAR columns.
+		$charset = $wpdb->charset ?: 'utf8mb4';
+		$collate = $wpdb->collate  ?: 'utf8mb4_unicode_520_ci';
+
+		$all_roster_tables = [
+			$wpdb->prefix . 'pp_roster_data_sources',
+			$wpdb->prefix . 'pp_roster_raw',
+			$wpdb->prefix . 'pp_roster_mods',
+			$wpdb->prefix . 'pp_roster_for_display',
+			$wpdb->prefix . 'pp_roster_stats',
+			$wpdb->prefix . 'pp_roster_goalie_stats',
+			$wpdb->prefix . 'pp_roster_archives',
+			$wpdb->prefix . 'pp_roster_stats_archive',
+			$wpdb->prefix . 'pp_roster_goalie_stats_archive',
+		];
+
+		foreach ( $all_roster_tables as $table ) {
+			$table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+			if ( $table_exists !== $table ) {
+				continue;
+			}
+
+			$current_collation = $wpdb->get_var( $wpdb->prepare(
+				"SELECT TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES
+				 WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+				DB_NAME,
+				$table
+			) );
+
+			if ( $current_collation === $collate ) {
+				$log[] = "$table: collation already $collate. No change.";
+				continue;
+			}
+
+			$result = $wpdb->query( "ALTER TABLE `$table` CONVERT TO CHARACTER SET $charset COLLATE $collate" );
+			if ( $result !== false ) {
+				$log[] = "$table: collation converted from $current_collation to $collate.";
+			} else {
+				$log[] = "$table: ERROR converting collation — " . $wpdb->last_error;
+			}
+		}
+
+		// ── Step 3: Schema sync via dbDelta ───────────────────────────────────
+		$roster_utils  = new Puck_Press_Roster_Wpdb_Utils();
+		$archive_utils = new Puck_Press_Roster_Archive_Wpdb_Utils();
+
+		$roster_utils->create_all_tables();
+		$log[] = 'Schema sync complete: pp_roster_* tables checked via dbDelta.';
+
+		$archive_utils->init_tables();
+		$log[] = 'Schema sync complete: pp_roster_*_archive tables checked via dbDelta.';
+
+		wp_send_json_success( [
+			'message' => 'Database fix complete.',
+			'log'     => $log,
+		] );
+	}
+
 	private static function update_template_colors($template_manager, $extra_updated = false)
 	{
 		// Check permissions
@@ -412,6 +527,7 @@ class Puck_Press_Admin
 				}
 				break;
 			case 'stats':
+				wp_register_script('pp-player-detail', plugin_dir_url(dirname(__FILE__)) . 'public/js/pp-player-detail.js', array('jquery'), $this->version, true);
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-stats-color-picker', plugin_dir_url(__FILE__) . 'js/stats/puck-press-stats-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				// Enqueue saved Google Fonts and CSS vars for stats templates in head to avoid FOUT on admin preview.
@@ -436,6 +552,7 @@ class Puck_Press_Admin
 				}
 				break;
 			case 'roster':
+				wp_register_script('pp-player-detail', plugin_dir_url(dirname(__FILE__)) . 'public/js/pp-player-detail.js', array('jquery'), $this->version, true);
 				wp_enqueue_media();
 				$roster_db_utils = new Puck_Press_Roster_Wpdb_Utils();
 				$roster_db_utils->maybe_create_or_update_table('pp_roster_for_display');
@@ -647,6 +764,7 @@ class Puck_Press_Admin
 		// Register the AJAX action for refreshing all sources
 		add_action('wp_ajax_pp_refresh_all_sources', [$this, 'ajax_refresh_all_sources_callback']);
 		add_action('wp_ajax_pp_refresh_all_roster_sources', [$this, 'ajax_refresh_all_roster_sources_callback']);
+		add_action('wp_ajax_pp_fix_roster_databases', [$this, 'ajax_fix_roster_databases_callback']);
 
 		// Register the AJAX action for saving colors in color picker
 		add_action('wp_ajax_puck_press_update_schedule_colors', [self::class, 'pp_ajax_update_schedule_template_colors']);

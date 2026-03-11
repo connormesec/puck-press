@@ -122,14 +122,14 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                         <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
                         <td class="pp-td" data-field="headshot_link">
                             <?php if (!empty($player['headshot_link'])): ?>
-                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot">
+                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot" onerror="this.style.display='none'">
                             <?php else: ?>
                                 <span style="color:#999">&mdash;</span>
                             <?php endif; ?>
                         </td>
                         <td class="pp-td">
                             <?php if (!empty($player['hero_image_url'])): ?>
-                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero">
+                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero" onerror="this.style.display='none'">
                             <?php else: ?>
                                 <span style="color:#999">&mdash;</span>
                             <?php endif; ?>
@@ -162,14 +162,14 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
                         <td class="pp-td" data-field="major"><?php echo esc_html($player['major']); ?></td>
                         <td class="pp-td" data-field="headshot_link">
                             <?php if (!empty($player['headshot_link'])): ?>
-                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot">
+                                <img src="<?php echo esc_url($player['headshot_link']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="headshot" onerror="this.style.display='none'">
                             <?php else: ?>
                                 <span style="color:#999">&mdash;</span>
                             <?php endif; ?>
                         </td>
                         <td class="pp-td" data-field="hero_image_url">
                             <?php if (!empty($player['hero_image_url'])): ?>
-                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero">
+                                <img src="<?php echo esc_url($player['hero_image_url']); ?>" style="max-width:60px;height:auto;border-radius:2px;" alt="hero" onerror="this.style.display='none'">
                             <?php else: ?>
                                 <span style="color:#999">&mdash;</span>
                             <?php endif; ?>

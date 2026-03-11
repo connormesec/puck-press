@@ -86,9 +86,11 @@ abstract class Puck_Press_Wpdb_Utils_Base
         global $wpdb;
         $full_table_name = $this->get_full_table_name($table_name);
 
-        $wpdb->query("DROP TABLE IF EXISTS $full_table_name");
-
-        $this->create_table($table_name);
+        if ($this->table_exists($full_table_name)) {
+            $wpdb->query("TRUNCATE TABLE $full_table_name");
+        } else {
+            $this->create_table($table_name);
+        }
     }
 
     public function get_all_table_data($table_name, $data_struct = 'OBJECT')
@@ -281,7 +283,7 @@ abstract class Puck_Press_Wpdb_Utils_Base
 
             $filtered_row = array_intersect_key($row, array_flip($valid_columns));
 
-            $inserted = $wpdb->insert(
+            $inserted = $wpdb->replace(
                 $full_table_name,
                 $filtered_row,
                 $this->get_format_array_for_insert($filtered_row)

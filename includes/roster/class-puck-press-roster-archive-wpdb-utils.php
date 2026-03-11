@@ -43,7 +43,7 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
 			shootout_winning_goals SMALLINT DEFAULT NULL,
 			penalty_minutes SMALLINT DEFAULT NULL,
 			shooting_percentage DECIMAL(5,2) DEFAULT NULL,
-			rank SMALLINT DEFAULT NULL,
+			stat_rank SMALLINT DEFAULT NULL,
 			PRIMARY KEY (id),
 			KEY archive_key (archive_key),
 			KEY player_id (player_id)
@@ -68,7 +68,7 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
 			goals SMALLINT DEFAULT NULL,
 			assists SMALLINT DEFAULT NULL,
 			penalty_minutes SMALLINT DEFAULT NULL,
-			rank SMALLINT DEFAULT NULL,
+			stat_rank SMALLINT DEFAULT NULL,
 			PRIMARY KEY (id),
 			KEY archive_key (archive_key),
 			KEY player_id (player_id)

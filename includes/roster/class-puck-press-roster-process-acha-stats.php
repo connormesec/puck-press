@@ -155,7 +155,7 @@ class Puck_Press_Roster_Process_Acha_Stats
                     'shootout_winning_goals' => isset( $row['shootout_winning_goals'] ) ? intval( $row['shootout_winning_goals'] ) : null,
                     'penalty_minutes'        => $pm,
                     'shooting_percentage'    => isset( $row['shooting_percentage'] )    ? floatval( $row['shooting_percentage'] )  : null,
-                    'rank'                   => isset( $row['rank'] )                   ? intval( $row['rank'] )                   : null,
+                    'stat_rank'              => isset( $row['rank'] )                   ? intval( $row['rank'] )                   : null,
                 ];
             }
         }
@@ -196,7 +196,7 @@ class Puck_Press_Roster_Process_Acha_Stats
                     'assists'              => isset( $row['assists'] )              ? intval( $row['assists'] )              : null,
                     'penalty_minutes'      => isset( $row['penalty_minutes'] ) && $row['penalty_minutes'] !== ''
                                                 ? intval( $row['penalty_minutes'] ) : null,
-                    'rank'                 => isset( $row['rank'] )                 ? intval( $row['rank'] )                 : null,
+                    'stat_rank'            => isset( $row['rank'] )                 ? intval( $row['rank'] )                 : null,
                 ];
             }
         }

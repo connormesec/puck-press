@@ -25,7 +25,7 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         $active_games = $wpdb->get_results(
             "SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
              FROM $display_table f
-             LEFT JOIN $mods_table m ON f.game_id = m.external_id AND m.edit_action = 'update'",
+             LEFT JOIN $mods_table m ON f.game_id COLLATE utf8mb4_unicode_ci = m.external_id COLLATE utf8mb4_unicode_ci AND m.edit_action = 'update'",
             ARRAY_A
         ) ?: [];
 
@@ -33,7 +33,7 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         $deleted_games = $wpdb->get_results(
             "SELECT r.*, dm.id AS delete_mod_id
              FROM $raw_table r
-             INNER JOIN $mods_table dm ON r.game_id = dm.external_id AND dm.edit_action = 'delete'",
+             INNER JOIN $mods_table dm ON r.game_id COLLATE utf8mb4_unicode_ci = dm.external_id COLLATE utf8mb4_unicode_ci AND dm.edit_action = 'delete'",
             ARRAY_A
         ) ?: [];
 

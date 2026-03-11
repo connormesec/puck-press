@@ -455,5 +455,36 @@ https://www.pathwaysvermont.org/wp-content/uploads/2017/03/avatar-placeholder-e1
             });
         });
 
+        $('#pp-fix-databases-btn').on('click', function () {
+            $('#pp-advancedDropdown').css('display', 'none');
+
+            if ( !confirm('This will repair all roster database tables without deleting any data. Proceed?') ) {
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.text('Fixing...').prop('disabled', true);
+
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: { action: 'pp_fix_roster_databases' },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Fix complete:\n\n' + response.data.log.join('\n'));
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'));
+                        $btn.text('Fix Database Tables').prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    alert('AJAX error. Check the debug log.');
+                    $btn.text('Fix Database Tables').prop('disabled', false);
+                }
+            });
+        });
+
     });
+
 })(jQuery);
