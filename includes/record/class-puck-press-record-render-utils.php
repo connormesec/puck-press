@@ -1,58 +1,58 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-class Puck_Press_Record_Render_Utils
-{
-    private $template_manager;
-    private $wpdb_utils;
-    private int $schedule_id;
+class Puck_Press_Record_Render_Utils {
 
-    public function __construct(int $schedule_id = 1)
-    {
-        $this->load_dependencies();
-        $this->template_manager = new Puck_Press_Record_Template_Manager($schedule_id);
-        $this->wpdb_utils       = new Puck_Press_Record_Wpdb_Utils();
-        $this->schedule_id      = $schedule_id;
-    }
+	private $template_manager;
+	private $wpdb_utils;
+	private int $schedule_id;
 
-    private function load_dependencies(): void
-    {
-        require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-template-manager-abstract.php';
-        require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-record-template-manager.php';
-        require_once plugin_dir_path(__FILE__) . 'class-puck-press-record-wpdb-utils.php';
-    }
+	public function __construct( int $schedule_id = 1 ) {
+		$this->load_dependencies();
+		$this->template_manager = new Puck_Press_Record_Template_Manager( $schedule_id );
+		$this->wpdb_utils       = new Puck_Press_Record_Wpdb_Utils();
+		$this->schedule_id      = $schedule_id;
+	}
 
-    /**
-     * Render the currently-active record template, merging shortcode attributes.
-     *
-     * Supported $atts keys (all optional, defaults shown):
-     *   show_home_away  'true'  — Show home/away split rows
-     *   show_goals      'true'  — Show GF / GA statistics
-     *   show_diff       'true'  — Show goal differential
-     *   title           'Team Record'
-     *
-     * @param array $atts Shortcode attributes (string values from shortcode_atts).
-     * @return string HTML output.
-     */
-    public function get_current_template_html(array $atts = []): string
-    {
-        $stats = $this->wpdb_utils->get_record_stats($this->schedule_id);
+	private function load_dependencies(): void {
+		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-record-template-manager.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-record-wpdb-utils.php';
+	}
 
-        $data = array_merge($stats, [
-            'show_home_away' => isset($atts['show_home_away']) ? $atts['show_home_away'] : 'true',
-            'show_goals'     => isset($atts['show_goals'])     ? $atts['show_goals']     : 'true',
-            'show_diff'      => isset($atts['show_diff'])      ? $atts['show_diff']      : 'true',
-            'title'          => isset($atts['title'])          ? $atts['title']          : 'Team Record',
-        ]);
+	/**
+	 * Render the currently-active record template, merging shortcode attributes.
+	 *
+	 * Supported $atts keys (all optional, defaults shown):
+	 *   show_home_away  'true'  — Show home/away split rows
+	 *   show_goals      'true'  — Show GF / GA statistics
+	 *   show_diff       'true'  — Show goal differential
+	 *   title           'Team Record'
+	 *
+	 * @param array $atts Shortcode attributes (string values from shortcode_atts).
+	 * @return string HTML output.
+	 */
+	public function get_current_template_html( array $atts = array() ): string {
+		$stats = $this->wpdb_utils->get_record_stats( $this->schedule_id );
 
-        $template = $this->template_manager->get_current_template();
-        if (!$template) {
-            return '';
-        }
+		$data = array_merge(
+			$stats,
+			array(
+				'show_home_away' => isset( $atts['show_home_away'] ) ? $atts['show_home_away'] : 'true',
+				'show_goals'     => isset( $atts['show_goals'] ) ? $atts['show_goals'] : 'true',
+				'show_diff'      => isset( $atts['show_diff'] ) ? $atts['show_diff'] : 'true',
+				'title'          => isset( $atts['title'] ) ? $atts['title'] : 'Team Record',
+			)
+		);
 
-        return $template->render($data);
-    }
+		$template = $this->template_manager->get_current_template();
+		if ( ! $template ) {
+			return '';
+		}
+
+		return $template->render( $data );
+	}
 }

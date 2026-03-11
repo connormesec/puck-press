@@ -8,303 +8,298 @@
  *
  * @package Puck_Press
  */
-abstract class Puck_Press_Wpdb_Utils_Base
-{
-    protected $table_schemas = [];
+abstract class Puck_Press_Wpdb_Utils_Base {
 
-    public function maybe_create_or_update_table($table_name)
-    {
-        global $wpdb;
-        $full_table_name = $this->get_full_table_name($table_name);
+	protected $table_schemas = array();
 
-        $exists = $wpdb->get_var($wpdb->prepare(
-            "SHOW TABLES LIKE %s",
-            $full_table_name
-        ));
+	public function maybe_create_or_update_table( $table_name ) {
+		global $wpdb;
+		$full_table_name = $this->get_full_table_name( $table_name );
 
-        if ($exists !== $full_table_name) {
-            $this->create_table($table_name);
-            return;
-        }
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$full_table_name
+			)
+		);
 
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		if ( $exists !== $full_table_name ) {
+			$this->create_table( $table_name );
+			return;
+		}
 
-        $charset_collate  = $wpdb->get_charset_collate();
-        $table_definition = $this->table_schemas[$table_name];
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        // Build full CREATE TABLE SQL for dbDelta
-        $sql = "
+		$charset_collate  = $wpdb->get_charset_collate();
+		$table_definition = $this->table_schemas[ $table_name ];
+
+		// Build full CREATE TABLE SQL for dbDelta
+		$sql = "
 		CREATE TABLE $full_table_name (
 			$table_definition
 		) $charset_collate;
 	";
 
-        dbDelta($sql);
-    }
+		dbDelta( $sql );
+	}
 
-    public function get_table_schema($table_name)
-    {
-        return $this->table_schemas[$table_name] ?? null;
-    }
+	public function get_table_schema( $table_name ) {
+		return $this->table_schemas[ $table_name ] ?? null;
+	}
 
-    public function get_full_table_name($table_name)
-    {
-        global $wpdb;
-        return $wpdb->prefix . $table_name;
-    }
+	public function get_full_table_name( $table_name ) {
+		global $wpdb;
+		return $wpdb->prefix . $table_name;
+	}
 
-    public function table_exists($full_table_name)
-    {
-        global $wpdb;
-        return $wpdb->get_var("SHOW TABLES LIKE '{$full_table_name}'") === $full_table_name;
-    }
+	public function table_exists( $full_table_name ) {
+		global $wpdb;
+		return $wpdb->get_var( "SHOW TABLES LIKE '{$full_table_name}'" ) === $full_table_name;
+	}
 
-    public function create_table($table_name)
-    {
-        global $wpdb;
-        $charset_collate = $wpdb->get_charset_collate();
-        $full_table_name = $this->get_full_table_name($table_name);
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	public function create_table( $table_name ) {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+		$full_table_name = $this->get_full_table_name( $table_name );
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-        if (!$this->table_exists($full_table_name)) {
-            $sql = "CREATE TABLE $full_table_name (
+		if ( ! $this->table_exists( $full_table_name ) ) {
+			$sql = "CREATE TABLE $full_table_name (
                 {$this->table_schemas[$table_name]}
             ) $charset_collate;";
-            dbDelta($sql);
-        }
-    }
+			dbDelta( $sql );
+		}
+	}
 
-    public function create_all_tables()
-    {
-        foreach (array_keys($this->table_schemas) as $table_name) {
-            $this->create_table($table_name);
-        }
-    }
+	public function create_all_tables() {
+		foreach ( array_keys( $this->table_schemas ) as $table_name ) {
+			$this->create_table( $table_name );
+		}
+	}
 
-    public function reset_table($table_name)
-    {
-        global $wpdb;
-        $full_table_name = $this->get_full_table_name($table_name);
+	public function reset_table( $table_name ) {
+		global $wpdb;
+		$full_table_name = $this->get_full_table_name( $table_name );
 
-        if ($this->table_exists($full_table_name)) {
-            $wpdb->query("TRUNCATE TABLE $full_table_name");
-        } else {
-            $this->create_table($table_name);
-        }
-    }
+		if ( $this->table_exists( $full_table_name ) ) {
+			$wpdb->query( "TRUNCATE TABLE $full_table_name" );
+		} else {
+			$this->create_table( $table_name );
+		}
+	}
 
-    public function get_all_table_data($table_name, $data_struct = 'OBJECT')
-    {
-        global $wpdb;
-        $full_table_name = $this->get_full_table_name($table_name);
+	public function get_all_table_data( $table_name, $data_struct = 'OBJECT' ) {
+		global $wpdb;
+		$full_table_name = $this->get_full_table_name( $table_name );
 
-        if ($data_struct === 'OBJECT') {
-            return $wpdb->get_results("SELECT * FROM $full_table_name", OBJECT);
-        } elseif ($data_struct === 'ARRAY_A') {
-            return $wpdb->get_results("SELECT * FROM $full_table_name", ARRAY_A);
-        } elseif ($data_struct === 'ARRAY_N') {
-            return $wpdb->get_results("SELECT * FROM $full_table_name", ARRAY_N);
-        }
+		if ( $data_struct === 'OBJECT' ) {
+			return $wpdb->get_results( "SELECT * FROM $full_table_name", OBJECT );
+		} elseif ( $data_struct === 'ARRAY_A' ) {
+			return $wpdb->get_results( "SELECT * FROM $full_table_name", ARRAY_A );
+		} elseif ( $data_struct === 'ARRAY_N' ) {
+			return $wpdb->get_results( "SELECT * FROM $full_table_name", ARRAY_N );
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    public function insert_or_replace_row($table_name, $data)
-    {
-        global $wpdb;
+	public function insert_or_replace_row( $table_name, $data ) {
+		global $wpdb;
 
-        $full_table = $this->get_full_table_name($table_name);
-        $columns = $this->get_columns_from_schema($table_name);
+		$full_table = $this->get_full_table_name( $table_name );
+		$columns    = $this->get_columns_from_schema( $table_name );
 
-        $filtered_data = array_filter($data, function ($key) use ($columns) {
-            return in_array($key, $columns);
-        }, ARRAY_FILTER_USE_KEY);
+		$filtered_data = array_filter(
+			$data,
+			function ( $key ) use ( $columns ) {
+				return in_array( $key, $columns );
+			},
+			ARRAY_FILTER_USE_KEY
+		);
 
-        if (empty($filtered_data)) {
-            return new WP_Error('no_valid_data', 'No valid data provided for insert or replace.');
-        }
+		if ( empty( $filtered_data ) ) {
+			return new WP_Error( 'no_valid_data', 'No valid data provided for insert or replace.' );
+		}
 
-        $format = $this->get_wpdb_format_from_schema($this->table_schemas[$table_name], array_keys($filtered_data));
+		$format = $this->get_wpdb_format_from_schema( $this->table_schemas[ $table_name ], array_keys( $filtered_data ) );
 
-        // For null values, switch %d/%f → %s so wpdb writes SQL NULL instead of
-        // coercing via intval/floatval (which would turn null into 0).
-        $data_values = array_values($filtered_data);
-        foreach ($format as $i => $fmt) {
-            if ($fmt !== '%s' && $data_values[$i] === null) {
-                $format[$i] = '%s';
-            }
-        }
+		// For null values, switch %d/%f → %s so wpdb writes SQL NULL instead of
+		// coercing via intval/floatval (which would turn null into 0).
+		$data_values = array_values( $filtered_data );
+		foreach ( $format as $i => $fmt ) {
+			if ( $fmt !== '%s' && $data_values[ $i ] === null ) {
+				$format[ $i ] = '%s';
+			}
+		}
 
-        $result = $wpdb->replace($full_table, $filtered_data, $format);
+		$result = $wpdb->replace( $full_table, $filtered_data, $format );
 
-        if ($result === false) {
-            return new WP_Error('db_replace_error', 'Database replace failed.', $wpdb->last_error);
-        }
+		if ( $result === false ) {
+			return new WP_Error( 'db_replace_error', 'Database replace failed.', $wpdb->last_error );
+		}
 
-        return $wpdb->insert_id;
-    }
+		return $wpdb->insert_id;
+	}
 
-    protected function get_columns_from_schema($short_table_name)
-    {
-        if (!isset($this->table_schemas[$short_table_name])) {
-            return [];
-        }
+	protected function get_columns_from_schema( $short_table_name ) {
+		if ( ! isset( $this->table_schemas[ $short_table_name ] ) ) {
+			return array();
+		}
 
-        global $wpdb;
+		global $wpdb;
 
-        $table_name = $wpdb->prefix . $short_table_name;
+		$table_name = $wpdb->prefix . $short_table_name;
 
-        $cols = $wpdb->get_col("DESC " . $table_name, 0);
-        if (empty($cols)) {
-            return [];
-        }
+		$cols = $wpdb->get_col( 'DESC ' . $table_name, 0 );
+		if ( empty( $cols ) ) {
+			return array();
+		}
 
-        return $cols;
-    }
+		return $cols;
+	}
 
-    protected function get_wpdb_format_from_schema($schema_string, $columns)
-    {
-        $formats = [];
+	protected function get_wpdb_format_from_schema( $schema_string, $columns ) {
+		$formats = array();
 
-        foreach ($columns as $column) {
-            if (preg_match('/\b' . preg_quote($column, '/') . '\b\s+([A-Z]+)(?:\s*\([^)]+\))?/i', $schema_string, $matches)) {
-                $type = strtoupper($matches[1]);
+		foreach ( $columns as $column ) {
+			if ( preg_match( '/\b' . preg_quote( $column, '/' ) . '\b\s+([A-Z]+)(?:\s*\([^)]+\))?/i', $schema_string, $matches ) ) {
+				$type = strtoupper( $matches[1] );
 
-                switch ($type) {
-                    case 'INT':
-                    case 'BIGINT':
-                    case 'TINYINT':
-                    case 'SMALLINT':
-                    case 'MEDIUMINT':
-                        $formats[] = '%d';
-                        break;
-                    case 'FLOAT':
-                    case 'DOUBLE':
-                    case 'DECIMAL':
-                        $formats[] = '%f';
-                        break;
-                    default:
-                        $formats[] = '%s';
-                }
-            } else {
-                $formats[] = '%s';
-            }
-        }
+				switch ( $type ) {
+					case 'INT':
+					case 'BIGINT':
+					case 'TINYINT':
+					case 'SMALLINT':
+					case 'MEDIUMINT':
+						$formats[] = '%d';
+						break;
+					case 'FLOAT':
+					case 'DOUBLE':
+					case 'DECIMAL':
+						$formats[] = '%f';
+						break;
+					default:
+						$formats[] = '%s';
+				}
+			} else {
+				$formats[] = '%s';
+			}
+		}
 
-        return $formats;
-    }
+		return $formats;
+	}
 
-    protected function get_required_fields_from_schema($short_table_name)
-    {
-        if (!isset($this->table_schemas[$short_table_name])) {
-            return [];
-        }
+	protected function get_required_fields_from_schema( $short_table_name ) {
+		if ( ! isset( $this->table_schemas[ $short_table_name ] ) ) {
+			return array();
+		}
 
-        $schema = $this->table_schemas[$short_table_name];
-        $required_fields = [];
-        $lines = explode("\n", $schema);
+		$schema          = $this->table_schemas[ $short_table_name ];
+		$required_fields = array();
+		$lines           = explode( "\n", $schema );
 
-        foreach ($lines as $line) {
-            $line = trim($line);
+		foreach ( $lines as $line ) {
+			$line = trim( $line );
 
-            if (preg_match('/^(\w+)\s+[\w\(\)]+.*NOT NULL/i', $line, $matches)) {
-                $column = $matches[1];
+			if ( preg_match( '/^(\w+)\s+[\w\(\)]+.*NOT NULL/i', $line, $matches ) ) {
+				$column = $matches[1];
 
-                if (stripos($line, 'AUTO_INCREMENT') !== false) continue;
-                if (stripos($line, 'DEFAULT') !== false) continue;
+				if ( stripos( $line, 'AUTO_INCREMENT' ) !== false ) {
+					continue;
+				}
+				if ( stripos( $line, 'DEFAULT' ) !== false ) {
+					continue;
+				}
 
-                $required_fields[] = $column;
-            }
-        }
+				$required_fields[] = $column;
+			}
+		}
 
-        return $required_fields;
-    }
+		return $required_fields;
+	}
 
-    protected function get_column_names_from_schema($table_name)
-    {
-        if (!isset($this->table_schemas[$table_name])) {
-            return [];
-        }
+	protected function get_column_names_from_schema( $table_name ) {
+		if ( ! isset( $this->table_schemas[ $table_name ] ) ) {
+			return array();
+		}
 
-        $schema = $this->table_schemas[$table_name];
-        preg_match_all('/^\s*(\w+)\s+/m', $schema, $matches);
-        return $matches[1] ?? [];
-    }
+		$schema = $this->table_schemas[ $table_name ];
+		preg_match_all( '/^\s*(\w+)\s+/m', $schema, $matches );
+		return $matches[1] ?? array();
+	}
 
-    protected function get_format_array_for_insert($data)
-    {
-        $formats = [];
+	protected function get_format_array_for_insert( $data ) {
+		$formats = array();
 
-        foreach ($data as $value) {
-            if (is_int($value)) {
-                $formats[] = '%d';
-            } elseif (is_float($value)) {
-                $formats[] = '%f';
-            } else {
-                $formats[] = '%s';
-            }
-        }
+		foreach ( $data as $value ) {
+			if ( is_int( $value ) ) {
+				$formats[] = '%d';
+			} elseif ( is_float( $value ) ) {
+				$formats[] = '%f';
+			} else {
+				$formats[] = '%s';
+			}
+		}
 
-        return $formats;
-    }
+		return $formats;
+	}
 
-    protected function insert_multiple_rows($table_name, array $rows, $rows_key, callable $is_field_missing)
-    {
-        global $wpdb;
+	protected function insert_multiple_rows( $table_name, array $rows, $rows_key, callable $is_field_missing ) {
+		global $wpdb;
 
-        if (empty($rows) || !is_array($rows)) {
-            return new WP_Error('no_data', 'No rows provided.');
-        }
+		if ( empty( $rows ) || ! is_array( $rows ) ) {
+			return new WP_Error( 'no_data', 'No rows provided.' );
+		}
 
-        $full_table_name    = $this->get_full_table_name($table_name);
-        $required_fields    = $this->get_required_fields_from_schema($table_name);
-        $valid_columns      = $this->get_column_names_from_schema($table_name);
-        $inserted_ids       = [];
-        $insert_errors      = [];
-        $missing_fields_all = [];
+		$full_table_name    = $this->get_full_table_name( $table_name );
+		$required_fields    = $this->get_required_fields_from_schema( $table_name );
+		$valid_columns      = $this->get_column_names_from_schema( $table_name );
+		$inserted_ids       = array();
+		$insert_errors      = array();
+		$missing_fields_all = array();
 
-        foreach ($rows as $index => $row) {
-            $missing_fields = [];
+		foreach ( $rows as $index => $row ) {
+			$missing_fields = array();
 
-            foreach ($required_fields as $field) {
-                if ($is_field_missing($row, $field)) {
-                    $missing_fields[] = $field;
-                }
-            }
+			foreach ( $required_fields as $field ) {
+				if ( $is_field_missing( $row, $field ) ) {
+					$missing_fields[] = $field;
+				}
+			}
 
-            if (!empty($missing_fields)) {
-                $missing_fields_all = array_merge($missing_fields_all, $missing_fields);
-                continue;
-            }
+			if ( ! empty( $missing_fields ) ) {
+				$missing_fields_all = array_merge( $missing_fields_all, $missing_fields );
+				continue;
+			}
 
-            if (empty($row['created_at'])) {
-                $row['created_at'] = current_time('mysql');
-            }
+			if ( empty( $row['created_at'] ) ) {
+				$row['created_at'] = current_time( 'mysql' );
+			}
 
-            $filtered_row = array_intersect_key($row, array_flip($valid_columns));
+			$filtered_row = array_intersect_key( $row, array_flip( $valid_columns ) );
 
-            $inserted = $wpdb->replace(
-                $full_table_name,
-                $filtered_row,
-                $this->get_format_array_for_insert($filtered_row)
-            );
+			$inserted = $wpdb->replace(
+				$full_table_name,
+				$filtered_row,
+				$this->get_format_array_for_insert( $filtered_row )
+			);
 
-            if ($inserted !== false) {
-                $inserted_ids[] = $wpdb->insert_id;
-            } else {
-                $insert_errors[] = [
-                    'row_index' => $index,
-                    'row_data'  => $filtered_row,
-                    'db_error'  => $wpdb->last_error,
-                ];
-            }
-        }
+			if ( $inserted !== false ) {
+				$inserted_ids[] = $wpdb->insert_id;
+			} else {
+				$insert_errors[] = array(
+					'row_index' => $index,
+					'row_data'  => $filtered_row,
+					'db_error'  => $wpdb->last_error,
+				);
+			}
+		}
 
-        return [
-            'inserted_ids'   => $inserted_ids,
-            'missing_fields' => array_values(array_unique($missing_fields_all)),
-            'insert_errors'  => $insert_errors,
-            $rows_key        => $rows,
-        ];
-    }
+		return array(
+			'inserted_ids'   => $inserted_ids,
+			'missing_fields' => array_values( array_unique( $missing_fields_all ) ),
+			'insert_errors'  => $insert_errors,
+			$rows_key        => $rows,
+		);
+	}
 }

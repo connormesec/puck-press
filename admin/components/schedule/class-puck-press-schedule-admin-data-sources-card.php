@@ -1,295 +1,293 @@
 <?php
-class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Abstract
-{
-    private $table_name = 'pp_schedule_data_sources';
-    private $schedule_db_utils;
-    private int $schedule_id;
+class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Abstract {
 
-    public function __construct(array $args = [], int $schedule_id = 1)
-    {
-        parent::__construct($args);
-        $this->schedule_id = $schedule_id;
-    }
+	private $table_name = 'pp_schedule_data_sources';
+	private $schedule_db_utils;
+	private int $schedule_id;
 
-    /**
-     * Initialize any heavy things like DB setup.
-     */
-    public function init(): void
-    {
-        $this->schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils();
-        $this->schedule_db_utils->maybe_create_or_update_table($this->table_name);
-        $this->schedule_db_utils->maybe_create_or_update_table('pp_game_schedule_for_display');
-        $this->schedule_db_utils->maybe_create_or_update_table('pp_game_schedule_raw');
-    }
+	public function __construct( array $args = array(), int $schedule_id = 1 ) {
+		parent::__construct( $args );
+		$this->schedule_id = $schedule_id;
+	}
 
-    public function render_content()
-    {
-        $this->init(); // <-- Call it here if needed
-        ob_start();
-        ?>
-        <div id="pp-data-sources-table">
-            <?php echo $this->render_game_schedule_data_sources(); ?>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+	/**
+	 * Initialize any heavy things like DB setup.
+	 */
+	public function init(): void {
+		$this->schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils();
+		$this->schedule_db_utils->maybe_create_or_update_table( $this->table_name );
+		$this->schedule_db_utils->maybe_create_or_update_table( 'pp_game_schedule_for_display' );
+		$this->schedule_db_utils->maybe_create_or_update_table( 'pp_game_schedule_raw' );
+	}
 
-    public function render_header_button_content()
-    {
-        ob_start();
-    ?>
-        <button class="pp-button pp-button-primary" id="pp-add-source-button">
-            + Add Source
-        </button>
-    <?php
-        return ob_get_clean();
-    }
+	public function render_content() {
+		$this->init(); // <-- Call it here if needed
+		ob_start();
+		?>
+		<div id="pp-data-sources-table">
+			<?php echo $this->render_game_schedule_data_sources(); ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
 
-    public function render_game_schedule_data_sources()
-    {
-        global $wpdb;
-        $wp_table_name = $wpdb->prefix . $this->table_name;
-        // Check if table exists
-        $table_exists = $wpdb->get_var($wpdb->prepare(
-            "SHOW TABLES LIKE %s",
-            $wpdb->esc_like($wp_table_name)
-        ));
+	public function render_header_button_content() {
+		ob_start();
+		?>
+		<button class="pp-button pp-button-primary" id="pp-add-source-button">
+			+ Add Source
+		</button>
+		<?php
+		return ob_get_clean();
+	}
 
-        if ($table_exists !== $wp_table_name) {
-            return '<p>' . esc_html__('Data Sources table does not exist.', 'puck-press') . '</p>';
-        }
+	public function render_game_schedule_data_sources() {
+		global $wpdb;
+		$wp_table_name = $wpdb->prefix . $this->table_name;
+		// Check if table exists
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$wpdb->esc_like( $wp_table_name )
+			)
+		);
 
-        global $wpdb;
-        $data_sources = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM $wp_table_name WHERE schedule_id = %d ORDER BY id ASC",
-                $this->schedule_id
-            )
-        );
+		if ( $table_exists !== $wp_table_name ) {
+			return '<p>' . esc_html__( 'Data Sources table does not exist.', 'puck-press' ) . '</p>';
+		}
 
-        if (empty($data_sources)) {
-            ob_start();
-        ?>
-            <table class="pp-table" id="pp-sources-table">
-                <thead class="pp-thead">
-                    <tr>
-                        <th class="pp-th"><?php esc_html_e('Name', 'puck-press'); ?></th>
-                        <th class="pp-th"><?php esc_html_e('Type', 'puck-press'); ?></th>
-                        <th class="pp-th"><?php esc_html_e('URL', 'puck-press'); ?></th>
-                        <th class="pp-th"><?php esc_html_e('Last Updated', 'puck-press'); ?></th>
-                        <th class="pp-th"><?php esc_html_e('Status', 'puck-press'); ?></th>
-                        <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-            <p id="kill-me-please"><?php echo esc_html('No data sources yet..', 'puck-press') ?></p>
-        <?php
-            return ob_get_clean();
-        }
+		global $wpdb;
+		$data_sources = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM $wp_table_name WHERE schedule_id = %d ORDER BY id ASC",
+				$this->schedule_id
+			)
+		);
 
-        ob_start();
-        ?>
-        <table class="pp-table" id="pp-sources-table">
-            <thead class="pp-thead">
-                <tr>
-                    <th class="pp-th"><?php esc_html_e('Name', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Type', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('URL', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Last Updated', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Status', 'puck-press'); ?></th>
-                    <th class="pp-th"><?php esc_html_e('Actions', 'puck-press'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($data_sources as $source) : ?>
-                    <tr data-id="<?php echo esc_html($source->id) ?>">
-                        <td class="pp-td" id="pp-sched-source-name"><?php echo esc_html($source->name) ?></td>
-                        <td class="pp-td"><span class="pp-tag pp-tag-<?php echo esc_html($source->type) ?>"><?php echo esc_html($source->type) ?></span></td>
-                        <td class="pp-td"><?php
-                            if ( $source->type === 'usphlGameScheduleUrl' ) {
-                                $other = json_decode( $source->other_data ?? '{}', true );
-                                $display = 'Team: ' . esc_html( $source->source_url_or_path );
-                                if ( ! empty( $other['season_id'] ) ) {
-                                    $display .= ' / Season: ' . esc_html( $other['season_id'] );
-                                }
-                                echo $display;
-                            } else {
-                                echo esc_html( $source->source_url_or_path );
-                            }
-                        ?></td>
-                        <td class="pp-td"><?php echo esc_html(date('M d, Y h:i A', strtotime($source->last_updated))) ?></td>
-                        <td class="pp-td">
-                            <label class="pp-data-source-toggle-switch">
-                                <input type="checkbox" <?php echo esc_html($source->status === 'active' ? 'checked' : '') ?> data-id="<?php echo esc_html($source->id) ?>">
-                                <span class="pp-slider"></span>
-                            </label>
-                            <span style="margin-left: 10px;"><?php echo esc_html(ucfirst($source->status)) ?></span>
-                        </td>
-                        <td class="pp-td">
-                            <div class="pp-flex-small-gap">
-                                <button class="pp-button-icon" id="pp-delete-source" data-id="<?php echo esc_html($source->id) ?>">🗑️</button>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-<?php
-        return ob_get_clean();
-    }
+		if ( empty( $data_sources ) ) {
+			ob_start();
+			?>
+			<table class="pp-table" id="pp-sources-table">
+				<thead class="pp-thead">
+					<tr>
+						<th class="pp-th"><?php esc_html_e( 'Name', 'puck-press' ); ?></th>
+						<th class="pp-th"><?php esc_html_e( 'Type', 'puck-press' ); ?></th>
+						<th class="pp-th"><?php esc_html_e( 'URL', 'puck-press' ); ?></th>
+						<th class="pp-th"><?php esc_html_e( 'Last Updated', 'puck-press' ); ?></th>
+						<th class="pp-th"><?php esc_html_e( 'Status', 'puck-press' ); ?></th>
+						<th class="pp-th"><?php esc_html_e( 'Actions', 'puck-press' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>
+			<p id="kill-me-please"><?php echo esc_html( 'No data sources yet..', 'puck-press' ); ?></p>
+			<?php
+			return ob_get_clean();
+		}
 
-    public function ajax_add_data_source()
-    {
-        $data = $this->sanitize_add_data_source_request($_POST, $_FILES);
+		ob_start();
+		?>
+		<table class="pp-table" id="pp-sources-table">
+			<thead class="pp-thead">
+				<tr>
+					<th class="pp-th"><?php esc_html_e( 'Name', 'puck-press' ); ?></th>
+					<th class="pp-th"><?php esc_html_e( 'Type', 'puck-press' ); ?></th>
+					<th class="pp-th"><?php esc_html_e( 'URL', 'puck-press' ); ?></th>
+					<th class="pp-th"><?php esc_html_e( 'Last Updated', 'puck-press' ); ?></th>
+					<th class="pp-th"><?php esc_html_e( 'Status', 'puck-press' ); ?></th>
+					<th class="pp-th"><?php esc_html_e( 'Actions', 'puck-press' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $data_sources as $source ) : ?>
+					<tr data-id="<?php echo esc_html( $source->id ); ?>">
+						<td class="pp-td" id="pp-sched-source-name"><?php echo esc_html( $source->name ); ?></td>
+						<td class="pp-td"><span class="pp-tag pp-tag-<?php echo esc_html( $source->type ); ?>"><?php echo esc_html( $source->type ); ?></span></td>
+						<td class="pp-td">
+						<?php
+						if ( $source->type === 'usphlGameScheduleUrl' ) {
+							$other   = json_decode( $source->other_data ?? '{}', true );
+							$display = 'Team: ' . esc_html( $source->source_url_or_path );
+							if ( ! empty( $other['season_id'] ) ) {
+								$display .= ' / Season: ' . esc_html( $other['season_id'] );
+							}
+							echo $display;
+						} else {
+							echo esc_html( $source->source_url_or_path );
+						}
+						?>
+						</td>
+						<td class="pp-td"><?php echo esc_html( date( 'M d, Y h:i A', strtotime( $source->last_updated ) ) ); ?></td>
+						<td class="pp-td">
+							<label class="pp-data-source-toggle-switch">
+								<input type="checkbox" <?php echo esc_html( $source->status === 'active' ? 'checked' : '' ); ?> data-id="<?php echo esc_html( $source->id ); ?>">
+								<span class="pp-slider"></span>
+							</label>
+							<span style="margin-left: 10px;"><?php echo esc_html( ucfirst( $source->status ) ); ?></span>
+						</td>
+						<td class="pp-td">
+							<div class="pp-flex-small-gap">
+								<button class="pp-button-icon" id="pp-delete-source" data-id="<?php echo esc_html( $source->id ); ?>">🗑️</button>
+							</div>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php
+		return ob_get_clean();
+	}
 
-        if (is_wp_error($data)) {
-            wp_send_json_error(['message' => $data->get_error_message()]);
-            wp_die();
-        }
+	public function ajax_add_data_source() {
+		$data = $this->sanitize_add_data_source_request( $_POST, $_FILES );
 
-        $data['schedule_id'] = (int) ($_POST['schedule_id'] ?? 1);
+		if ( is_wp_error( $data ) ) {
+			wp_send_json_error( array( 'message' => $data->get_error_message() ) );
+			wp_die();
+		}
 
-        global $wpdb;
-        $result = $wpdb->insert($this->get_table_name(), $data);
+		$data['schedule_id'] = (int) ( $_POST['schedule_id'] ?? 1 );
 
-        if ($result) {
-            wp_send_json_success([
-                'message' => 'Data source added',
-                'id' => $wpdb->insert_id,
-            ]);
-        } else {
-            wp_send_json_error(['message' => 'Insert failed']);
-        }
+		global $wpdb;
+		$result = $wpdb->insert( $this->get_table_name(), $data );
 
-        wp_die();
-    }
+		if ( $result ) {
+			wp_send_json_success(
+				array(
+					'message' => 'Data source added',
+					'id'      => $wpdb->insert_id,
+				)
+			);
+		} else {
+			wp_send_json_error( array( 'message' => 'Insert failed' ) );
+		}
 
-    private function sanitize_add_data_source_request($post, $files)
-    {
-        $name   = sanitize_text_field($post['name'] ?? '');
-        $type   = sanitize_text_field($post['type'] ?? '');
-        $active = isset($post['active']) ? intval($post['active']) : 0;
+		wp_die();
+	}
 
-        $url = $season = $csv_content = $other_data = null;
+	private function sanitize_add_data_source_request( $post, $files ) {
+		$name   = sanitize_text_field( $post['name'] ?? '' );
+		$type   = sanitize_text_field( $post['type'] ?? '' );
+		$active = isset( $post['active'] ) ? intval( $post['active'] ) : 0;
 
-        switch ($type) {
-            case 'achaGameScheduleUrl':
-                $url = esc_url_raw($post['url'] ?? '');
-                $season = sanitize_text_field($post['season'] ?? '');
-                break;
+		$url = $season = $csv_content = $other_data = null;
 
-            case 'usphlGameScheduleUrl':
-                $url       = sanitize_text_field($post['team_id'] ?? '');
-                $season_id = sanitize_text_field($post['season_id'] ?? '');
-                $other_data = !empty($season_id) ? wp_json_encode(['season_id' => $season_id]) : null;
-                break;
+		switch ( $type ) {
+			case 'achaGameScheduleUrl':
+				$url    = esc_url_raw( $post['url'] ?? '' );
+				$season = sanitize_text_field( $post['season'] ?? '' );
+				break;
 
-            case 'csv':
-                if (!isset($files['csv'])) {
-                    return new WP_Error('csv_upload_error', 'CSV file not set. FILES: ' . print_r($files, true));
-                }
-            
-                if ($files['csv']['error'] !== UPLOAD_ERR_OK) {
-                    $error_code = $files['csv']['error'];
-                    return new WP_Error(
-                        'csv_upload_error',
-                        "CSV file upload failed. Error Code: $error_code. FILES: " . print_r($files['csv'], true)
-                    );
-                }
-               
-                $validation_result = Puck_Press_Schedule_Process_Csv_Data::validate_csv_headers($files['csv']['tmp_name']);
-                
-                if (is_wp_error($validation_result)) {
-                    return $validation_result; // return early with error to user
-                }
-            
-                $csv_content = file_get_contents($files['csv']['tmp_name']);
-                $url = sanitize_file_name($files['csv']['name']);
-                break;
+			case 'usphlGameScheduleUrl':
+				$url        = sanitize_text_field( $post['team_id'] ?? '' );
+				$season_id  = sanitize_text_field( $post['season_id'] ?? '' );
+				$other_data = ! empty( $season_id ) ? wp_json_encode( array( 'season_id' => $season_id ) ) : null;
+				break;
 
-            case 'customGame':
-                $json = wp_unslash($post['other_data'] ?? '');
-                $decoded = json_decode($json, true);
+			case 'csv':
+				if ( ! isset( $files['csv'] ) ) {
+					return new WP_Error( 'csv_upload_error', 'CSV file not set. FILES: ' . print_r( $files, true ) );
+				}
 
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return new WP_Error('json_error', 'Invalid JSON provided');
-                }
+				if ( $files['csv']['error'] !== UPLOAD_ERR_OK ) {
+					$error_code = $files['csv']['error'];
+					return new WP_Error(
+						'csv_upload_error',
+						"CSV file upload failed. Error Code: $error_code. FILES: " . print_r( $files['csv'], true )
+					);
+				}
 
-                $other_data = wp_json_encode($decoded);
-                break;
+				$validation_result = Puck_Press_Schedule_Process_Csv_Data::validate_csv_headers( $files['csv']['tmp_name'] );
 
-            default:
-                return new WP_Error('invalid_type', 'Invalid type or file upload error');
-        }
+				if ( is_wp_error( $validation_result ) ) {
+					return $validation_result; // return early with error to user
+				}
 
-        return [
-            'name' => $name,
-            'type' => $type,
-            'season' => $season,
-            'source_url_or_path' => $url,
-            'csv_data' => $csv_content,
-            'other_data' => $other_data,
-            'status' => $active ? 'active' : 'inactive',
-            'created_at' => current_time('mysql'),
-            'last_updated' => current_time('mysql'),
-        ];
-    }
+				$csv_content = file_get_contents( $files['csv']['tmp_name'] );
+				$url         = sanitize_file_name( $files['csv']['name'] );
+				break;
 
-    public function ajax_update_source_status_callback()
-    {
-        $source_id = isset($_POST['source_id']) ? intval($_POST['source_id']) : 0;
-        $status    = sanitize_text_field($_POST['status'] ?? '');
+			case 'customGame':
+				$json    = wp_unslash( $post['other_data'] ?? '' );
+				$decoded = json_decode( $json, true );
 
-        if (!$source_id || !in_array($status, ['active', 'inactive'], true)) {
-            wp_send_json_error(['message' => 'Invalid request data']);
-            wp_die();
-        }
+				if ( json_last_error() !== JSON_ERROR_NONE ) {
+					return new WP_Error( 'json_error', 'Invalid JSON provided' );
+				}
 
-        global $wpdb;
-        $updated = $wpdb->update(
-            $this->get_table_name(),
-            ['status' => $status],
-            ['id' => $source_id]
-        );
+				$other_data = wp_json_encode( $decoded );
+				break;
 
-        if ($updated !== false) {
-            wp_send_json_success(['message' => 'Status updated']);
-        } else {
-            wp_send_json_error(['message' => 'Failed to update status']);
-        }
+			default:
+				return new WP_Error( 'invalid_type', 'Invalid type or file upload error' );
+		}
 
-        wp_die();
-    }
+		return array(
+			'name'               => $name,
+			'type'               => $type,
+			'season'             => $season,
+			'source_url_or_path' => $url,
+			'csv_data'           => $csv_content,
+			'other_data'         => $other_data,
+			'status'             => $active ? 'active' : 'inactive',
+			'created_at'         => current_time( 'mysql' ),
+			'last_updated'       => current_time( 'mysql' ),
+		);
+	}
 
-    public function ajax_delete_schedule_source_callback()
-    {
-        $data_source_id = isset($_POST['source_id']) ? intval($_POST['source_id']) : 0;
+	public function ajax_update_source_status_callback() {
+		$source_id = isset( $_POST['source_id'] ) ? intval( $_POST['source_id'] ) : 0;
+		$status    = sanitize_text_field( $_POST['status'] ?? '' );
 
-        if (!$data_source_id) {
-            wp_send_json_error(['message' => 'Invalid data source ID']);
-            wp_die();
-        }
+		if ( ! $source_id || ! in_array( $status, array( 'active', 'inactive' ), true ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid request data' ) );
+			wp_die();
+		}
 
-        global $wpdb;
-        $result = $wpdb->delete($this->get_table_name(), ['id' => $data_source_id]);
+		global $wpdb;
+		$updated = $wpdb->update(
+			$this->get_table_name(),
+			array( 'status' => $status ),
+			array( 'id' => $source_id )
+		);
 
-        if ($result === false) {
-            wp_send_json_error([
-                'message' => 'Failed to delete data source from database',
-                'error' => $wpdb->last_error,
-            ]);
-        } else {
-            wp_send_json_success(['message' => 'Data source deleted successfully']);
-        }
+		if ( $updated !== false ) {
+			wp_send_json_success( array( 'message' => 'Status updated' ) );
+		} else {
+			wp_send_json_error( array( 'message' => 'Failed to update status' ) );
+		}
 
-        wp_die();
-    }
+		wp_die();
+	}
 
-    private function get_table_name()
-    {
-        global $wpdb;
-        return $wpdb->prefix . $this->table_name;
-    }
+	public function ajax_delete_schedule_source_callback() {
+		$data_source_id = isset( $_POST['source_id'] ) ? intval( $_POST['source_id'] ) : 0;
+
+		if ( ! $data_source_id ) {
+			wp_send_json_error( array( 'message' => 'Invalid data source ID' ) );
+			wp_die();
+		}
+
+		global $wpdb;
+		$result = $wpdb->delete( $this->get_table_name(), array( 'id' => $data_source_id ) );
+
+		if ( $result === false ) {
+			wp_send_json_error(
+				array(
+					'message' => 'Failed to delete data source from database',
+					'error'   => $wpdb->last_error,
+				)
+			);
+		} else {
+			wp_send_json_success( array( 'message' => 'Data source deleted successfully' ) );
+		}
+
+		wp_die();
+	}
+
+	private function get_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . $this->table_name;
+	}
 }

@@ -1,72 +1,74 @@
 <?php
 class Puck_Press_Schedule_Add_Game_Modal extends Puck_Press_Admin_Modal_Abstract {
-    private $team_data;
+	private $team_data;
 
-    public function __construct($id = 'pp-add-game-modal') {
-        parent::__construct($id, 'Add Manual Game', 'Add a one-off game to the schedule');
+	public function __construct( $id = 'pp-add-game-modal' ) {
+		parent::__construct( $id, 'Add Manual Game', 'Add a one-off game to the schedule' );
 
-        $this->team_data = $this->get_team_data();
+		$this->team_data = $this->get_team_data();
 
-        $this->set_footer_buttons([
-            [
-                'class' => 'pp-button-secondary',
-                'id'    => 'pp-cancel-add-game',
-                'label' => 'Cancel'
-            ],
-            [
-                'class' => 'pp-button-primary',
-                'id'    => 'pp-confirm-add-game',
-                'label' => 'Add Game'
-            ]
-        ]);
-    }
+		$this->set_footer_buttons(
+			array(
+				array(
+					'class' => 'pp-button-secondary',
+					'id'    => 'pp-cancel-add-game',
+					'label' => 'Cancel',
+				),
+				array(
+					'class' => 'pp-button-primary',
+					'id'    => 'pp-confirm-add-game',
+					'label' => 'Add Game',
+				),
+			)
+		);
+	}
 
-    protected function render_content() {
-        include plugin_dir_path(__FILE__) . '../../partials/schedule/add-game-form.php';
-    }
+	protected function render_content() {
+		include plugin_dir_path( __FILE__ ) . '../../partials/schedule/add-game-form.php';
+	}
 
-    private function get_team_data() {
-        $url = 'https://lscluster.hockeytech.com/feed/index.php?feed=statviewfeed&view=teamsForSeason&season=-1&division=-1&key=e6867b36742a0c9d&client_code=acha&site_id=2';
-        $raw = @file_get_contents($url);
-        $clean = substr($raw, 1, -1);
-        $json = json_decode($clean, true);
-        return $json['teams'] ?? [];
-    }
+	private function get_team_data() {
+		$url   = 'https://lscluster.hockeytech.com/feed/index.php?feed=statviewfeed&view=teamsForSeason&season=-1&division=-1&key=e6867b36742a0c9d&client_code=acha&site_id=2';
+		$raw   = @file_get_contents( $url );
+		$clean = substr( $raw, 1, -1 );
+		$json  = json_decode( $clean, true );
+		return $json['teams'] ?? array();
+	}
 
-    public function get_team_data_array() {
-        return $this->team_data;
-    }
+	public function get_team_data_array() {
+		return $this->team_data;
+	}
 
-    protected function render_team_option_picker(array $teams_data, string $htmlClassNameKey): string {
-        if (!isset($teams_data) || !is_array($teams_data)) {
-            return '<!-- Invalid JSON structure -->';
-        }
+	protected function render_team_option_picker( array $teams_data, string $htmlClassNameKey ): string {
+		if ( ! isset( $teams_data ) || ! is_array( $teams_data ) ) {
+			return '<!-- Invalid JSON structure -->';
+		}
 
-        $output = '<select name="pp-form-input" class="pp-select2-' . $htmlClassNameKey . '" id="pp-game-' . $htmlClassNameKey . '" style="width : 100%;">' . PHP_EOL;
+		$output = '<select name="pp-form-input" class="pp-select2-' . $htmlClassNameKey . '" id="pp-game-' . $htmlClassNameKey . '" style="width : 100%;">' . PHP_EOL;
 
-        foreach ($teams_data as $team) {
-            if (!isset($team['id'], $team['name'])) {
-                continue;
-            }
+		foreach ( $teams_data as $team ) {
+			if ( ! isset( $team['id'], $team['name'] ) ) {
+				continue;
+			}
 
-            $value = esc_attr($team['id']);
-            $label = esc_html($team['name']);
+			$value = esc_attr( $team['id'] );
+			$label = esc_html( $team['name'] );
 
-            $output .= "\t<option value=\"$value\"";
+			$output .= "\t<option value=\"$value\"";
 
-            foreach (['id', 'name', 'nickname', 'logo'] as $key) {
-                if (isset($team[$key])) {
-                    $data_key = esc_attr($key);
-                    $data_val = esc_attr($team[$key]);
-                    $output .= " data-$data_key=\"$data_val\"";
-                }
-            }
+			foreach ( array( 'id', 'name', 'nickname', 'logo' ) as $key ) {
+				if ( isset( $team[ $key ] ) ) {
+					$data_key = esc_attr( $key );
+					$data_val = esc_attr( $team[ $key ] );
+					$output  .= " data-$data_key=\"$data_val\"";
+				}
+			}
 
-            $output .= ">$label</option>" . PHP_EOL;
-        }
+			$output .= ">$label</option>" . PHP_EOL;
+		}
 
-        $output .= '</select>' . PHP_EOL;
+		$output .= '</select>' . PHP_EOL;
 
-        return $output;
-    }
+		return $output;
+	}
 }

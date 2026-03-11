@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'PUCK_PRESS_VERSION', '1.0.07');
+define( 'PUCK_PRESS_VERSION', '1.0.07' );
 define( 'PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
 
 // Optional dev constant — define in wp-config.php to override "now" for testing.
@@ -84,6 +84,5 @@ function run_puck_press() {
 
 	$plugin = new Puck_Press();
 	$plugin->run();
-
 }
 run_puck_press();

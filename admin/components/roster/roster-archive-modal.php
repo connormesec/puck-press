@@ -4,20 +4,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Puck_Press_Roster_Archive_Modal extends Puck_Press_Admin_Modal_Abstract
-{
-	public function __construct( string $id = 'pp-roster-archive-modal' )
-	{
+class Puck_Press_Roster_Archive_Modal extends Puck_Press_Admin_Modal_Abstract {
+
+	public function __construct( string $id = 'pp-roster-archive-modal' ) {
 		parent::__construct( $id, 'Archive Roster', 'Save a snapshot of the current roster stats.' );
 
-		$this->set_footer_buttons( [
-			[ 'class' => 'pp-button-secondary', 'id' => 'pp-cancel-roster-archive',  'label' => 'Cancel' ],
-			[ 'class' => 'pp-button-primary',   'id' => 'pp-confirm-roster-archive', 'label' => 'Archive Roster' ],
-		] );
+		$this->set_footer_buttons(
+			array(
+				array(
+					'class' => 'pp-button-secondary',
+					'id'    => 'pp-cancel-roster-archive',
+					'label' => 'Cancel',
+				),
+				array(
+					'class' => 'pp-button-primary',
+					'id'    => 'pp-confirm-roster-archive',
+					'label' => 'Archive Roster',
+				),
+			)
+		);
 	}
 
-	protected function render_content(): void
-	{
+	protected function render_content(): void {
 		$season_options = $this->get_season_options();
 		?>
 		<div class="pp-form-group">
@@ -34,17 +42,16 @@ class Puck_Press_Roster_Archive_Modal extends Puck_Press_Admin_Modal_Abstract
 		<?php
 	}
 
-	private function get_season_options(): array
-	{
+	private function get_season_options(): array {
 		$current_year  = (int) date( 'Y' );
 		$current_month = (int) date( 'n' );
 
 		$season_start = $current_month >= 7 ? $current_year : $current_year - 1;
 
-		$options = [];
+		$options = array();
 		for ( $start = $season_start + 1; $start >= $season_start - 5; $start-- ) {
-			$key           = $start . '-' . ( $start + 1 );
-			$options[$key] = $key;
+			$key             = $start . '-' . ( $start + 1 );
+			$options[ $key ] = $key;
 		}
 
 		return $options;

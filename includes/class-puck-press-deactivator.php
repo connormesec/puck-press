@@ -20,8 +20,8 @@
  * @subpackage Puck_Press/includes
  * @author     Connor Mesec <connormesec@gmail.com>
  */
-class Puck_Press_Deactivator
-{
+class Puck_Press_Deactivator {
+
 
 	/**
 	 * Short Description. (use period)
@@ -30,9 +30,8 @@ class Puck_Press_Deactivator
 	 *
 	 * @since    1.0.0
 	 */
-	public static function deactivate()
-	{
-		require_once plugin_dir_path(__FILE__) . 'class-puck-press-cron.php';
+	public static function deactivate() {
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-cron.php';
 		$cron = new Puck_Press_Cron();
 		$cron->unschedule_cron();
 	}

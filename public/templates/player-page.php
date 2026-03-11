@@ -18,57 +18,57 @@ $player_slug = sanitize_text_field( get_query_var( 'pp_player' ) );
 
 // ── Look up player ────────────────────────────────────────────────────────────
 $all_players = $wpdb->get_results(
-    "SELECT * FROM {$wpdb->prefix}pp_roster_for_display",
-    ARRAY_A
+	"SELECT * FROM {$wpdb->prefix}pp_roster_for_display",
+	ARRAY_A
 );
 
 $player = null;
 foreach ( $all_players as $row ) {
-    if ( sanitize_title( $row['name'] ) === $player_slug ) {
-        $player = $row;
-        break;
-    }
+	if ( sanitize_title( $row['name'] ) === $player_slug ) {
+		$player = $row;
+		break;
+	}
 }
 
 if ( ! $player ) {
-    status_header( 404 );
-    get_header();
-    echo '<div style="padding:4rem 2rem;text-align:center;">'
-        . '<h1>Player not found</h1>'
-        . '<p><a href="' . esc_url( home_url() ) . '">&larr; Back to site</a></p>'
-        . '</div>';
-    get_footer();
-    return;
+	status_header( 404 );
+	get_header();
+	echo '<div style="padding:4rem 2rem;text-align:center;">'
+		. '<h1>Player not found</h1>'
+		. '<p><a href="' . esc_url( home_url() ) . '">&larr; Back to site</a></p>'
+		. '</div>';
+	get_footer();
+	return;
 }
 
 // ── Look up stats ─────────────────────────────────────────────────────────────
 $is_goalie   = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
 $stats_table = $is_goalie
-    ? "{$wpdb->prefix}pp_roster_goalie_stats"
-    : "{$wpdb->prefix}pp_roster_stats";
+	? "{$wpdb->prefix}pp_roster_goalie_stats"
+	: "{$wpdb->prefix}pp_roster_stats";
 
 $stats = $wpdb->get_row(
-    $wpdb->prepare(
-        "SELECT * FROM {$stats_table} WHERE player_id = %s LIMIT 1",
-        $player['player_id']
-    ),
-    ARRAY_A
-) ?? [];
+	$wpdb->prepare(
+		"SELECT * FROM {$stats_table} WHERE player_id = %s LIMIT 1",
+		$player['player_id']
+	),
+	ARRAY_A
+) ?? array();
 
 // ── Look up archived stats (previous seasons) ─────────────────────────────────
 require_once PLUGIN_DIR_PATH . 'includes/roster/class-puck-press-roster-archive-wpdb-utils.php';
 $roster_archive_db = new Puck_Press_Roster_Archive_Wpdb_Utils();
 $archived_stats    = $is_goalie
-    ? $roster_archive_db->get_player_goalie_archives( $player['player_id'] )
-    : $roster_archive_db->get_player_skater_archives( $player['player_id'] );
+	? $roster_archive_db->get_player_goalie_archives( $player['player_id'] )
+	: $roster_archive_db->get_player_skater_archives( $player['player_id'] );
 
-$all_stats_rows = [];
+$all_stats_rows = array();
 if ( ! empty( $stats ) ) {
-    $stats['season'] = 'Current';
-    $all_stats_rows[] = $stats;
+	$stats['season']  = 'Current';
+	$all_stats_rows[] = $stats;
 }
 foreach ( $archived_stats as $archived_row ) {
-    $all_stats_rows[] = $archived_row;
+	$all_stats_rows[] = $archived_row;
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────

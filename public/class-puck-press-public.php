@@ -44,37 +44,40 @@ class Puck_Press_Public {
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of the plugin.
-	 * @param      string    $version    The version of this plugin.
+	 * @param      string $plugin_name       The name of the plugin.
+	 * @param      string $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ) {
 
 		$this->plugin_name = $plugin_name;
-		$this->version = $version;
-
+		$this->version     = $version;
 	}
 
-	public function schedule_builder_shortcode( $atts )
-	{
-		$atts = shortcode_atts( [ 'archive' => '', 'schedule' => '' ], $atts );
+	public function schedule_builder_shortcode( $atts ) {
+		$atts        = shortcode_atts(
+			array(
+				'archive'  => '',
+				'schedule' => '',
+			),
+			$atts
+		);
 		$archive_key = sanitize_title( $atts['archive'] );
 		$slug        = sanitize_title( $atts['schedule'] );
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/schedule/class-puck-press-schedule-render-utils.php';
 
-		$schedule_id     = Puck_Press_Group_Resolver::resolve( $slug, 'pp_schedules' );
-		$render_schedule = new Puck_Press_Schedule_Render_Utils( $archive_key, $schedule_id );
-		$options         = $archive_key !== '' ? ['is_archive' => true] : [];
+		$schedule_id              = Puck_Press_Group_Resolver::resolve( $slug, 'pp_schedules' );
+		$render_schedule          = new Puck_Press_Schedule_Render_Utils( $archive_key, $schedule_id );
+		$options                  = $archive_key !== '' ? array( 'is_archive' => true ) : array();
 		$options['schedule_slug'] = $slug !== '' ? $slug : 'default';
 		$options['schedule_id']   = $schedule_id;
 
 		return $render_schedule->get_current_template_html( $options );
 	}
 
-	public function slider_builder_shortcode( $atts = [] )
-	{
-		$atts = shortcode_atts( [ 'schedule' => '' ], $atts );
+	public function slider_builder_shortcode( $atts = array() ) {
+		$atts = shortcode_atts( array( 'schedule' => '' ), $atts );
 		$slug = sanitize_title( $atts['schedule'] );
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
@@ -85,37 +88,37 @@ class Puck_Press_Public {
 		return $render_schedule->get_current_template_html();
 	}
 
-	public function roster_builder_shortcode()
-	{
+	public function roster_builder_shortcode() {
 		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-render-utils.php';
-		$render_schedule = new Puck_Press_Roster_Render_Utils;
-		$output = $render_schedule->get_current_template_html();
+		$render_schedule = new Puck_Press_Roster_Render_Utils();
+		$output          = $render_schedule->get_current_template_html();
 
 		return $output;
 	}
 
-	public function stats_builder_shortcode()
-	{
+	public function stats_builder_shortcode() {
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
 		$render = new Puck_Press_Stats_Render_Utils();
 		return $render->get_current_template_html();
 	}
 
-	public function record_builder_shortcode( $atts )
-	{
-		$atts = shortcode_atts( [
-			'show_home_away' => 'true',
-			'show_goals'     => 'true',
-			'show_diff'      => 'true',
-			'title'          => 'Team Record',
-			'schedule'       => '',
-		], $atts );
+	public function record_builder_shortcode( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'show_home_away' => 'true',
+				'show_goals'     => 'true',
+				'show_diff'      => 'true',
+				'title'          => 'Team Record',
+				'schedule'       => '',
+			),
+			$atts
+		);
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/record/class-puck-press-record-render-utils.php';
 
 		$schedule_id = Puck_Press_Group_Resolver::resolve( sanitize_title( $atts['schedule'] ), 'pp_schedules' );
-		$render = new Puck_Press_Record_Render_Utils( $schedule_id );
+		$render      = new Puck_Press_Record_Render_Utils( $schedule_id );
 		return $render->get_current_template_html( $atts );
 	}
 
@@ -126,9 +129,10 @@ class Puck_Press_Public {
 	 * @param string $template Default template path.
 	 * @return string
 	 */
-	public function maybe_load_player_template( string $template ): string
-	{
-		if ( ! get_query_var( 'pp_player' ) ) return $template;
+	public function maybe_load_player_template( string $template ): string {
+		if ( ! get_query_var( 'pp_player' ) ) {
+			return $template;
+		}
 		return plugin_dir_path( __FILE__ ) . '../public/templates/player-page.php';
 	}
 
@@ -136,12 +140,13 @@ class Puck_Press_Public {
 	 * Enqueue the active roster template's CSS vars (inline style) on pages that
 	 * need them: the [pp-roster] shortcode page AND the /player/ detail page.
 	 */
-	public function enqueue_roster_assets(): void
-	{
+	public function enqueue_roster_assets(): void {
 		global $post;
 		$is_roster_page = is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'pp-roster' );
 		$is_player_page = (bool) get_query_var( 'pp_player' );
-		if ( ! $is_roster_page && ! $is_player_page ) return;
+		if ( ! $is_roster_page && ! $is_player_page ) {
+			return;
+		}
 
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-roster-template-manager.php';
@@ -160,17 +165,18 @@ class Puck_Press_Public {
 	 * @param array $title_parts WordPress title parts array.
 	 * @return array
 	 */
-	public function filter_player_page_title( array $title_parts ): array
-	{
+	public function filter_player_page_title( array $title_parts ): array {
 		$player_slug = sanitize_text_field( get_query_var( 'pp_player' ) );
-		if ( empty( $player_slug ) ) return $title_parts;
+		if ( empty( $player_slug ) ) {
+			return $title_parts;
+		}
 
 		global $wpdb;
 		$all_players = $wpdb->get_results(
 			"SELECT name, pos, number FROM {$wpdb->prefix}pp_roster_for_display",
 			ARRAY_A
 		);
-		$player = null;
+		$player      = null;
 		foreach ( $all_players as $row ) {
 			if ( sanitize_title( $row['name'] ) === $player_slug ) {
 				$player = $row;
@@ -178,26 +184,31 @@ class Puck_Press_Public {
 			}
 		}
 
-		if ( ! $player ) return $title_parts;
+		if ( ! $player ) {
+			return $title_parts;
+		}
 
-		$position_labels = [
-			'F'  => 'Forward',    'C'  => 'Center',
-			'LW' => 'Left Wing',  'RW' => 'Right Wing',
-			'D'  => 'Defenseman', 'LD' => 'Left Defense',
-			'RD' => 'Right Defense', 'G' => 'Goalie',
-		];
+		$position_labels = array(
+			'F'  => 'Forward',
+			'C'  => 'Center',
+			'LW' => 'Left Wing',
+			'RW' => 'Right Wing',
+			'D'  => 'Defenseman',
+			'LD' => 'Left Defense',
+			'RD' => 'Right Defense',
+			'G'  => 'Goalie',
+		);
 
 		$pos_code  = strtoupper( $player['pos'] ?? '' );
 		$pos_label = $position_labels[ $pos_code ] ?? $pos_code;
 		$number    = ! empty( $player['number'] ) ? '#' . $player['number'] : '';
-		$suffix    = implode( ' ', array_filter( [ $pos_label, $number ] ) );
+		$suffix    = implode( ' ', array_filter( array( $pos_label, $number ) ) );
 
 		$title_parts['title'] = $player['name'] . ( $suffix ? ' – ' . $suffix : '' );
 		return $title_parts;
 	}
 
-	public function register_ajax_hooks()
-	{
+	public function register_ajax_hooks() {
 		// Player detail is now handled by native WP routing (/player/{slug}).
 		// No AJAX hooks needed.
 	}
@@ -223,7 +234,6 @@ class Puck_Press_Public {
 		 */
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/puck-press-public.css', array(), $this->version, 'all' );
-
 	}
 
 	/**
@@ -288,7 +298,5 @@ class Puck_Press_Public {
 			filemtime( plugin_dir_path( __FILE__ ) . 'js/pp-player-detail.js' ),
 			true
 		);
-
 	}
-
 }

@@ -9,11 +9,11 @@
  *
  * @package Puck_Press
  */
-class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
-{
-    //no inline comments in this array, as it is used to create the tables in the database
-    protected $table_schemas = [
-        'pp_roster_data_sources' =>  "
+class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
+
+	// no inline comments in this array, as it is used to create the tables in the database
+	protected $table_schemas = array(
+		'pp_roster_data_sources' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             name VARCHAR(100) NOT NULL,
             type TEXT NOT NULL,
@@ -27,7 +27,7 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             other_data LONGTEXT NULL,
             PRIMARY KEY (id)
         ",
-        'pp_roster_raw' => "
+		'pp_roster_raw'          => '
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             source VARCHAR(100) NOT NULL,
             player_id VARCHAR(50) NOT NULL,
@@ -43,8 +43,8 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             year_in_school varchar(50),
             major varchar(100),
             PRIMARY KEY  (id)
-        ",
-        'pp_roster_mods' => "
+        ',
+		'pp_roster_mods'         => '
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             external_id VARCHAR(50) DEFAULT NULL,
 	        edit_action VARCHAR(50),
@@ -52,8 +52,8 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
-        ",
-        'pp_roster_for_display' => "
+        ',
+		'pp_roster_for_display'  => '
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             source VARCHAR(100) NOT NULL,
             player_id VARCHAR(50) NOT NULL,
@@ -70,8 +70,8 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             major varchar(100),
             hero_image_url text,
             PRIMARY KEY  (id)
-        ",
-        'pp_roster_stats' => "
+        ',
+		'pp_roster_stats'        => '
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             player_id VARCHAR(50) NOT NULL,
             source VARCHAR(100) NOT NULL,
@@ -88,8 +88,8 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             shooting_percentage DECIMAL(5,2) DEFAULT NULL,
             stat_rank SMALLINT DEFAULT NULL,
             PRIMARY KEY (id)
-        ",
-        'pp_roster_goalie_stats' => "
+        ',
+		'pp_roster_goalie_stats' => '
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             player_id VARCHAR(50) NOT NULL,
             source VARCHAR(100) NOT NULL,
@@ -109,86 +109,84 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             penalty_minutes SMALLINT DEFAULT NULL,
             stat_rank SMALLINT DEFAULT NULL,
             PRIMARY KEY (id)
-        "
-    ];
+        ',
+	);
 
-    public function get_active_roster_sources() {
-        global $wpdb;
+	public function get_active_roster_sources() {
+		global $wpdb;
 
-        $table_name = 'pp_roster_data_sources';
-        $full_table_name = $this->get_full_table_name($table_name);
+		$table_name      = 'pp_roster_data_sources';
+		$full_table_name = $this->get_full_table_name( $table_name );
 
-        return $wpdb->get_results(
-            $wpdb->prepare("SELECT * FROM $full_table_name WHERE status = %s", 'active'),
-            OBJECT
-        );
-    }
+		return $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $full_table_name WHERE status = %s", 'active' ),
+			OBJECT
+		);
+	}
 
-    public function insert_multiple_roster_rows($roster_rows = [])
-    {
-        return $this->insert_multiple_rows(
-            'pp_roster_raw',
-            $roster_rows,
-            'roster_rows',
-            function ($row, $field) { return !array_key_exists($field, $row); }
-        );
-    }
+	public function insert_multiple_roster_rows( $roster_rows = array() ) {
+		return $this->insert_multiple_rows(
+			'pp_roster_raw',
+			$roster_rows,
+			'roster_rows',
+			function ( $row, $field ) {
+				return ! array_key_exists( $field, $row ); }
+		);
+	}
 
-    public function delete_row_by_player_id($table_name, $player_id)
-    {
-        global $wpdb;
-        $full_table = $wpdb->prefix . $table_name;
+	public function delete_row_by_player_id( $table_name, $player_id ) {
+		global $wpdb;
+		$full_table = $wpdb->prefix . $table_name;
 
-        return $wpdb->delete($full_table, ['player_id' => $player_id]);
-    }
+		return $wpdb->delete( $full_table, array( 'player_id' => $player_id ) );
+	}
 
-    public function truncate_table($table_name)
-    {
-        global $wpdb;
-        $full_table = $wpdb->prefix . $table_name;
-        $wpdb->query("TRUNCATE TABLE $full_table");
-    }
+	public function truncate_table( $table_name ) {
+		global $wpdb;
+		$full_table = $wpdb->prefix . $table_name;
+		$wpdb->query( "TRUNCATE TABLE $full_table" );
+	}
 
-    public function insert_goalie_stats_rows( $stats_rows = [] ) {
-        return $this->insert_stats_rows_into( 'pp_roster_goalie_stats', $stats_rows );
-    }
+	public function insert_goalie_stats_rows( $stats_rows = array() ) {
+		return $this->insert_stats_rows_into( 'pp_roster_goalie_stats', $stats_rows );
+	}
 
-    public function insert_stats_rows( $stats_rows = [] ) {
-        return $this->insert_stats_rows_into( 'pp_roster_stats', $stats_rows );
-    }
+	public function insert_stats_rows( $stats_rows = array() ) {
+		return $this->insert_stats_rows_into( 'pp_roster_stats', $stats_rows );
+	}
 
-    private function insert_stats_rows_into( string $table_name, array $stats_rows ) {
-        global $wpdb;
+	private function insert_stats_rows_into( string $table_name, array $stats_rows ) {
+		global $wpdb;
 
-        if ( empty( $stats_rows ) || ! is_array( $stats_rows ) ) {
-            return new WP_Error( 'no_data', 'No stats rows provided.' );
-        }
+		if ( empty( $stats_rows ) || ! is_array( $stats_rows ) ) {
+			return new WP_Error( 'no_data', 'No stats rows provided.' );
+		}
 
-        $full_table_name = $this->get_full_table_name( $table_name );
-        $inserted_ids    = [];
-        $insert_errors   = [];
+		$full_table_name = $this->get_full_table_name( $table_name );
+		$inserted_ids    = array();
+		$insert_errors   = array();
 
-        foreach ( $stats_rows as $index => $row ) {
-            $inserted = $wpdb->insert(
-                $full_table_name,
-                $row,
-                $this->get_format_array_for_insert( $row )
-            );
+		foreach ( $stats_rows as $index => $row ) {
+			$inserted = $wpdb->insert(
+				$full_table_name,
+				$row,
+				$this->get_format_array_for_insert( $row )
+			);
 
-            if ( $inserted !== false ) {
-                $inserted_ids[] = $wpdb->insert_id;
-            } else {
-                $insert_errors[] = [
-                    'row_index' => $index,
-                    'row_data'  => $row,
-                    'db_error'  => $wpdb->last_error
-                ];
-            }
-        }
+			if ( $inserted !== false ) {
+				$inserted_ids[] = $wpdb->insert_id;
+			} else {
+				$insert_errors[] = array(
+					'row_index' => $index,
+					'row_data'  => $row,
+					'db_error'  => $wpdb->last_error,
+				);
+			}
+		}
 
-        return [
-            'inserted_ids'  => $inserted_ids,
-            'insert_errors' => $insert_errors,
-        ];
-    }
+		return array(
+			'inserted_ids'  => $inserted_ids,
+			'insert_errors' => $insert_errors,
+		);
+	}
 }

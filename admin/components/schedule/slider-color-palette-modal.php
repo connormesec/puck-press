@@ -12,54 +12,54 @@
  * @subpackage Puck_Press/admin/partials/schedule
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-$templates = new Puck_Press_Slider_Template_Manager;
-$sliderTemplates = $templates->get_registered_templates_metadata();
+$templates         = new Puck_Press_Slider_Template_Manager();
+$sliderTemplates   = $templates->get_registered_templates_metadata();
 $selected_template = $templates->get_current_template_key();
 ?>
 
 <!-- Color Palette Modal -->
 <div id="pp-slider-paletteModal" class="pp-modal-overlay-palette">
-    <div class="pp-modal-palette">
-        <button class="pp-modal-close" id="pp-slider-palette-modal-close">✕</button>
-        <div class="pp-form-row">
-        <div class="pp-modal-header">
-            <h3 class="pp-modal-title">Customize Colors</h3>
-            <p class="pp-modal-subtitle">Customize your slider.</p>
-        </div>
+	<div class="pp-modal-palette">
+		<button class="pp-modal-close" id="pp-slider-palette-modal-close">✕</button>
+		<div class="pp-form-row">
+		<div class="pp-modal-header">
+			<h3 class="pp-modal-title">Customize Colors</h3>
+			<p class="pp-modal-subtitle">Customize your slider.</p>
+		</div>
 
-        <div class="pp-modal-header">
-            <!-- Template Selector -->
-            <label for="pp-slider-template-selector">Choose a Template:</label>
-            <select id="pp-slider-template-selector">
-                <?php foreach ($sliderTemplates as $key => $template) : ?>
-                    <option value="<?php echo esc_attr($key); ?>" <?php selected($key, $selected_template); ?>>
-                        <?php echo esc_html($template['name']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        </div>
-        <div class="pp-modal-content">
-            <form id="pp-slider-color-palette-form">
-                <div class="pp-form-row" id="pp-slider-dynamic-color-fields">
-                    <!-- Color inputs will be dynamically generated here -->
-                </div>
-                <div class="pp-form-row" style="margin-top: 12px;">
-                    <label for="pp-slider-cal-url" class="pp-form-label">Schedule Page URL</label>
-                    <input type="text" id="pp-slider-cal-url" name="cal_url"
-                           class="pp-text-input" style="width:100%;box-sizing:border-box;"
-                           placeholder="https://example.com/schedule"
-                           value="<?php echo esc_attr( get_option( 'pp_slider_cal_url', '' ) ); ?>">
-                </div>
-            </form>
-        </div>
-        <div class="pp-modal-footer">
-            <button class="pp-button pp-button-secondary" id="pp-cancel-save-colors">Cancel</button>
-            <button class="pp-button pp-button-primary" id="pp-slider-palette-save-colors">Save Colors</button>
-        </div>
-    </div>
+		<div class="pp-modal-header">
+			<!-- Template Selector -->
+			<label for="pp-slider-template-selector">Choose a Template:</label>
+			<select id="pp-slider-template-selector">
+				<?php foreach ( $sliderTemplates as $key => $template ) : ?>
+					<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $key, $selected_template ); ?>>
+						<?php echo esc_html( $template['name'] ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		</div>
+		<div class="pp-modal-content">
+			<form id="pp-slider-color-palette-form">
+				<div class="pp-form-row" id="pp-slider-dynamic-color-fields">
+					<!-- Color inputs will be dynamically generated here -->
+				</div>
+				<div class="pp-form-row" style="margin-top: 12px;">
+					<label for="pp-slider-cal-url" class="pp-form-label">Schedule Page URL</label>
+					<input type="text" id="pp-slider-cal-url" name="cal_url"
+							class="pp-text-input" style="width:100%;box-sizing:border-box;"
+							placeholder="https://example.com/schedule"
+							value="<?php echo esc_attr( get_option( 'pp_slider_cal_url', '' ) ); ?>">
+				</div>
+			</form>
+		</div>
+		<div class="pp-modal-footer">
+			<button class="pp-button pp-button-secondary" id="pp-cancel-save-colors">Cancel</button>
+			<button class="pp-button pp-button-primary" id="pp-slider-palette-save-colors">Save Colors</button>
+		</div>
+	</div>
 </div>

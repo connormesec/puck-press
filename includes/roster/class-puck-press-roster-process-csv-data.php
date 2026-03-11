@@ -20,103 +20,100 @@
  * @subpackage Puck_Press/public/partials/schedule
  * @author     Connor Mesec <connormesec@gmail.com>
  */
-class Puck_Press_Roster_Process_Csv_Data
-{
+class Puck_Press_Roster_Process_Csv_Data {
 
-    protected string $csv_string;
-    protected string $source_name;
 
-    public function __construct(string $csv_string, string $source_name)
-    {
-        $this->csv_string = $csv_string;
-        $this->source_name = $source_name;
-    }
+	protected string $csv_string;
+	protected string $source_name;
 
-    public function parse(): array
-    {
-        $lines = array_map('trim', explode("\n", $this->csv_string));
-        $header = str_getcsv(array_shift($lines));
+	public function __construct( string $csv_string, string $source_name ) {
+		$this->csv_string  = $csv_string;
+		$this->source_name = $source_name;
+	}
 
-        $players = [];
+	public function parse(): array {
+		$lines  = array_map( 'trim', explode( "\n", $this->csv_string ) );
+		$header = str_getcsv( array_shift( $lines ) );
 
-        foreach ($lines as $line) {
-            if (empty($line)) {
-                continue;
-            }
+		$players = array();
 
-            $row = array_map('trim', str_getcsv($line));
-            $data = array_combine($header, $row);
+		foreach ( $lines as $line ) {
+			if ( empty( $line ) ) {
+				continue;
+			}
 
-            $playerArr = [
-                'source' => $this->source_name,
-                'player_id' => "csv_player_{$data['name']}",
-                'name' => $data['name'],
-                'headshot_link' => $data['headshot_link'],
-                'number' => $data['number'],
-                'pos' => $data['pos'],
-                'ht' => $data['ht'],
-                'wt' => $data['wt'],
-                'shoots' => $data['shoots'],
-                'hometown' => $data['hometown'],
-                'last_team' => $data['last_team'],
-                'year_in_school' => $data['year_in_school'],
-                'major' => $data['major']
-            ];
+			$row  = array_map( 'trim', str_getcsv( $line ) );
+			$data = array_combine( $header, $row );
 
-            $players[] = $playerArr;
-        }
+			$playerArr = array(
+				'source'         => $this->source_name,
+				'player_id'      => "csv_player_{$data['name']}",
+				'name'           => $data['name'],
+				'headshot_link'  => $data['headshot_link'],
+				'number'         => $data['number'],
+				'pos'            => $data['pos'],
+				'ht'             => $data['ht'],
+				'wt'             => $data['wt'],
+				'shoots'         => $data['shoots'],
+				'hometown'       => $data['hometown'],
+				'last_team'      => $data['last_team'],
+				'year_in_school' => $data['year_in_school'],
+				'major'          => $data['major'],
+			);
 
-        return $players;
-    }
+			$players[] = $playerArr;
+		}
 
-    public static function validate_csv_headers($file_path)
-    {
-        $expected_headers = [
-            'name',
-            'headshot_link',
-            'number',
-            'pos',
-            'ht',
-            'wt',
-            'shoots',
-            'hometown',
-            'last_team',
-            'year_in_school',
-            'major'
-        ];
+		return $players;
+	}
 
-        if (!file_exists($file_path)) {
-            return new WP_Error('file_missing', 'CSV file is missing or path is invalid.');
-        }
+	public static function validate_csv_headers( $file_path ) {
+		$expected_headers = array(
+			'name',
+			'headshot_link',
+			'number',
+			'pos',
+			'ht',
+			'wt',
+			'shoots',
+			'hometown',
+			'last_team',
+			'year_in_school',
+			'major',
+		);
 
-        $handle = fopen($file_path, 'r');
-        if (!$handle) {
-            return new WP_Error('file_open_error', 'Could not open CSV file for reading.');
-        }
+		if ( ! file_exists( $file_path ) ) {
+			return new WP_Error( 'file_missing', 'CSV file is missing or path is invalid.' );
+		}
 
-        $header_line = fgetcsv($handle);
-        fclose($handle);
+		$handle = fopen( $file_path, 'r' );
+		if ( ! $handle ) {
+			return new WP_Error( 'file_open_error', 'Could not open CSV file for reading.' );
+		}
 
-        if (!$header_line || !is_array($header_line)) {
-            return new WP_Error('invalid_csv', 'Could not read headers from CSV file.');
-        }
+		$header_line = fgetcsv( $handle );
+		fclose( $handle );
 
-        $headers = array_map('trim', $header_line);
+		if ( ! $header_line || ! is_array( $header_line ) ) {
+			return new WP_Error( 'invalid_csv', 'Could not read headers from CSV file.' );
+		}
 
-        $missing_headers    = array_diff($expected_headers, $headers);
-        $unexpected_headers = array_diff($headers, $expected_headers);
+		$headers = array_map( 'trim', $header_line );
 
-        if (!empty($missing_headers) || !empty($unexpected_headers)) {
-            $message = '';
-            if (!empty($missing_headers)) {
-                $message .= 'Missing required headers: ' . implode(', ', $missing_headers) . '. ';
-            }
-            if (!empty($unexpected_headers)) {
-                $message .= 'Unexpected headers found: ' . implode(', ', $unexpected_headers) . '.';
-            }
-            return new WP_Error('csv_header_validation_failed', trim($message));
-        }
+		$missing_headers    = array_diff( $expected_headers, $headers );
+		$unexpected_headers = array_diff( $headers, $expected_headers );
 
-        return true;
-    }
+		if ( ! empty( $missing_headers ) || ! empty( $unexpected_headers ) ) {
+			$message = '';
+			if ( ! empty( $missing_headers ) ) {
+				$message .= 'Missing required headers: ' . implode( ', ', $missing_headers ) . '. ';
+			}
+			if ( ! empty( $unexpected_headers ) ) {
+				$message .= 'Unexpected headers found: ' . implode( ', ', $unexpected_headers ) . '.';
+			}
+			return new WP_Error( 'csv_header_validation_failed', trim( $message ) );
+		}
+
+		return true;
+	}
 }

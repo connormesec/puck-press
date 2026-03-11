@@ -1,201 +1,200 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-class Puck_Press_Admin_Instagram_Post_Importer_Display
-{
-    public function render()
-    {
-        // Manual save for API keys
-        if (isset($_POST['pp_save_keys'])) {
-            check_admin_referer('pp_insta_post_nonce');
+class Puck_Press_Admin_Instagram_Post_Importer_Display {
 
-            update_option('pp_insta_scraper_api_key', sanitize_text_field($_POST['pp_insta_scraper_api_key']));
-            update_option('pp_insta_handle', sanitize_text_field($_POST['pp_insta_handle']));
+	public function render() {
+		// Manual save for API keys
+		if ( isset( $_POST['pp_save_keys'] ) ) {
+			check_admin_referer( 'pp_insta_post_nonce' );
 
-            // Save feature toggle checkbox
-            $enabled = isset($_POST['pp_enable_insta_post']) ? 1 : 0;
-            update_option('pp_enable_insta_post', $enabled);
+			update_option( 'pp_insta_scraper_api_key', sanitize_text_field( $_POST['pp_insta_scraper_api_key'] ) );
+			update_option( 'pp_insta_handle', sanitize_text_field( $_POST['pp_insta_handle'] ) );
 
-            echo '<div class="updated"><p>Settings saved.</p></div>';
-        }
-        $api_key  = esc_attr(get_option('pp_insta_scraper_api_key', ''));
-        $insta_handle = esc_attr(get_option('pp_insta_handle', ''));
-        $enabled    = get_option('pp_enable_insta_post', 0);
-?>
-        <div class="wrap">
-            <h1>Instagram Post Maker</h1>
-            <form method="post">
-                <?php wp_nonce_field('pp_insta_post_nonce'); ?>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">Enable Instagram Post Import Feature</th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="pp_enable_insta_post" value="1" <?php checked($enabled, 1); ?> />
-                                Enable automatic posting of Instagram posts
-                            </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="pp_insta_scraper_api_key">Instagram API Key</label></th>
-                        <td><input type="text" name="pp_insta_scraper_api_key" id="pp_insta_scraper_api_key"
-                                value="<?php echo $api_key; ?>" class="regular-text" /></td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="pp_insta_handle">Instagram Handle</label></th>
-                        <td><input type="text" name="pp_insta_handle" id="pp_insta_handle"
-                                value="<?php echo $insta_handle; ?>" class="regular-text" /></td>
-                    </tr>
-                </table>
-                <?php submit_button('Save Settings', 'primary', 'pp_save_keys'); ?>
-            </form>
+			// Save feature toggle checkbox
+			$enabled = isset( $_POST['pp_enable_insta_post'] ) ? 1 : 0;
+			update_option( 'pp_enable_insta_post', $enabled );
 
-            <h2>Test API Connections</h2>
-            <p>
-                <button class="button button-secondary" id="pp-get-example-posts">Get Example Posts</button>
-                <button class="button button-secondary" id="pp-get-example-posts-and-create">Get Example Posts And Create Posts</button>
-                <span id="pp-example-posts-result"></span>
-            </p>
+			echo '<div class="updated"><p>Settings saved.</p></div>';
+		}
+		$api_key      = esc_attr( get_option( 'pp_insta_scraper_api_key', '' ) );
+		$insta_handle = esc_attr( get_option( 'pp_insta_handle', '' ) );
+		$enabled      = get_option( 'pp_enable_insta_post', 0 );
+		?>
+		<div class="wrap">
+			<h1>Instagram Post Maker</h1>
+			<form method="post">
+				<?php wp_nonce_field( 'pp_insta_post_nonce' ); ?>
+				<table class="form-table">
+					<tr>
+						<th scope="row">Enable Instagram Post Import Feature</th>
+						<td>
+							<label>
+								<input type="checkbox" name="pp_enable_insta_post" value="1" <?php checked( $enabled, 1 ); ?> />
+								Enable automatic posting of Instagram posts
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="pp_insta_scraper_api_key">Instagram API Key</label></th>
+						<td><input type="text" name="pp_insta_scraper_api_key" id="pp_insta_scraper_api_key"
+								value="<?php echo $api_key; ?>" class="regular-text" /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="pp_insta_handle">Instagram Handle</label></th>
+						<td><input type="text" name="pp_insta_handle" id="pp_insta_handle"
+								value="<?php echo $insta_handle; ?>" class="regular-text" /></td>
+					</tr>
+				</table>
+				<?php submit_button( 'Save Settings', 'primary', 'pp_save_keys' ); ?>
+			</form>
 
-            <div id="pp-example-posts-container" style="display: none; margin-top: 20px;">
-                <h3>Example Instagram Posts</h3>
-                <div id="pp-posts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                    <!-- Posts will be loaded here via AJAX -->
-                </div>
-            </div>
+			<h2>Test API Connections</h2>
+			<p>
+				<button class="button button-secondary" id="pp-get-example-posts">Get Example Posts</button>
+				<button class="button button-secondary" id="pp-get-example-posts-and-create">Get Example Posts And Create Posts</button>
+				<span id="pp-example-posts-result"></span>
+			</p>
 
-            <style>
-                .pp-post-item {
-                    border: 1px solid #ddd;
-                    border-radius: 8px;
-                    padding: 15px;
-                    background: #fff;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }
+			<div id="pp-example-posts-container" style="display: none; margin-top: 20px;">
+				<h3>Example Instagram Posts</h3>
+				<div id="pp-posts-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+					<!-- Posts will be loaded here via AJAX -->
+				</div>
+			</div>
 
-                .pp-post-image {
-                    width: 100%;
-                    height: 200px;
-                    object-fit: cover;
-                    border-radius: 4px;
-                    margin-bottom: 10px;
-                }
+			<style>
+				.pp-post-item {
+					border: 1px solid #ddd;
+					border-radius: 8px;
+					padding: 15px;
+					background: #fff;
+					box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+				}
 
-                .pp-post-caption {
-                    font-size: 14px;
-                    line-height: 1.4;
-                    color: #333;
-                    margin-bottom: 8px;
-                }
+				.pp-post-image {
+					width: 100%;
+					height: 200px;
+					object-fit: cover;
+					border-radius: 4px;
+					margin-bottom: 10px;
+				}
 
-                .pp-post-title {
-                    font-weight: bold;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    color: #333;
-                    margin-bottom: 6px;
-                }
+				.pp-post-caption {
+					font-size: 14px;
+					line-height: 1.4;
+					color: #333;
+					margin-bottom: 8px;
+				}
 
-                .pp-post-meta {
-                    font-size: 12px;
-                    color: #666;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
+				.pp-post-title {
+					font-weight: bold;
+					font-size: 14px;
+					line-height: 1.4;
+					color: #333;
+					margin-bottom: 6px;
+				}
 
-                .pp-loading {
-                    color: #0073aa;
-                    font-style: italic;
-                }
+				.pp-post-meta {
+					font-size: 12px;
+					color: #666;
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+				}
 
-                .pp-error {
-                    color: #dc3232;
-                }
+				.pp-loading {
+					color: #0073aa;
+					font-style: italic;
+				}
 
-                .pp-success {
-                    color: #46b450;
-                }
-            </style>
-        </div>
-<?php
-    }
+				.pp-error {
+					color: #dc3232;
+				}
 
-    public function ajax_get_example_posts()
-    {
-        // Verify nonce for security
-        check_ajax_referer('pp_insta_post_nonce', 'nonce');
+				.pp-success {
+					color: #46b450;
+				}
+			</style>
+		</div>
+		<?php
+	}
 
-        include_once plugin_dir_path(dirname(__FILE__)) . '../../includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
+	public function ajax_get_example_posts() {
+		// Verify nonce for security
+		check_ajax_referer( 'pp_insta_post_nonce', 'nonce' );
 
-        // Call your importer logic
-        $importer = new Puck_Press_Instagram_Post_Importer();
-        $result = $importer->fetch_instagram_posts();
+		include_once plugin_dir_path( __DIR__ ) . '../../includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
 
-        if ($result['success']) {
-            wp_send_json_success($result['data']);
-        } else {
-            wp_send_json_error($result['message']);
-        }
-    }
+		// Call your importer logic
+		$importer = new Puck_Press_Instagram_Post_Importer();
+		$result   = $importer->fetch_instagram_posts();
 
-    public function ajax_get_example_posts_and_create()
-    {
-        // Verify nonce for security
-        check_ajax_referer('pp_insta_post_nonce', 'nonce');
+		if ( $result['success'] ) {
+			wp_send_json_success( $result['data'] );
+		} else {
+			wp_send_json_error( $result['message'] );
+		}
+	}
 
-        include_once plugin_dir_path(dirname(__FILE__)) . '../../includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
+	public function ajax_get_example_posts_and_create() {
+		// Verify nonce for security
+		check_ajax_referer( 'pp_insta_post_nonce', 'nonce' );
 
-        // Call your importer logic
-        $importer = new Puck_Press_Instagram_Post_Importer();
-        $existing_insta_ids = $importer->get_existing_insta_ids(-1);
-        $fetch_result = $importer->fetch_instagram_posts($existing_insta_ids);
+		include_once plugin_dir_path( __DIR__ ) . '../../includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
 
-        if (!$fetch_result['success']) {
-            wp_send_json_error($fetch_result['message']);
-            return;
-        }
+		// Call your importer logic
+		$importer           = new Puck_Press_Instagram_Post_Importer();
+		$existing_insta_ids = $importer->get_existing_insta_ids( -1 );
+		$fetch_result       = $importer->fetch_instagram_posts( $existing_insta_ids );
 
-        $successful_imports = [];
-        $failed_imports = [];
+		if ( ! $fetch_result['success'] ) {
+			wp_send_json_error( $fetch_result['message'] );
+			return;
+		}
 
-        foreach ($fetch_result['data'] as $post_data) {
-            $title     = isset($post_data['post_title']) ? $post_data['post_title'] : 'Instagram Post';
-            $content   = isset($post_data['post_body']) ? $post_data['post_body'] : '';
-            $b64_image = isset($post_data['image_buffer']) ? $post_data['image_buffer'] : '';
-            $insta_id  = isset($post_data['insta_id']) ? $post_data['insta_id'] : '';
-            $image_name = 'insta-' . $insta_id . '.jpg';
-            $slug = isset($post_data['slug']) ? $post_data['slug'] : '';
+		$successful_imports = array();
+		$failed_imports     = array();
 
-            // Double check to make sure Instagram post ID hasn't already been imported
-            if (in_array($insta_id, $existing_insta_ids, true) || preg_grep('/^' . preg_quote($insta_id, '/') . '-/', $existing_insta_ids)) {
-                $failed_imports[] = [
-                    'post_data' => $post_data,
-                    'error' => 'Post with Instagram ID ' . $insta_id . ' already exists.',
-                ];
-                continue;
-            }
+		foreach ( $fetch_result['data'] as $post_data ) {
+			$title      = isset( $post_data['post_title'] ) ? $post_data['post_title'] : 'Instagram Post';
+			$content    = isset( $post_data['post_body'] ) ? $post_data['post_body'] : '';
+			$b64_image  = isset( $post_data['image_buffer'] ) ? $post_data['image_buffer'] : '';
+			$insta_id   = isset( $post_data['insta_id'] ) ? $post_data['insta_id'] : '';
+			$image_name = 'insta-' . $insta_id . '.jpg';
+			$slug       = isset( $post_data['slug'] ) ? $post_data['slug'] : '';
 
-            // Create the post
-            $post_id = $importer->create_instagram_post($title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id);
+			// Double check to make sure Instagram post ID hasn't already been imported
+			if ( in_array( $insta_id, $existing_insta_ids, true ) || preg_grep( '/^' . preg_quote( $insta_id, '/' ) . '-/', $existing_insta_ids ) ) {
+				$failed_imports[] = array(
+					'post_data' => $post_data,
+					'error'     => 'Post with Instagram ID ' . $insta_id . ' already exists.',
+				);
+				continue;
+			}
 
-            if (is_wp_error($post_id)) {
-                $failed_imports[] = [
-                    'post_data' => $post_data,
-                    'error' => $post_id->get_error_message(),
-                ];
-                continue;
-            }
-            $post_data['post_id'] = $post_id;
-            $successful_imports[] =  $post_data;
-        }
+			// Create the post
+			$post_id = $importer->create_instagram_post( $title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id );
 
-        return wp_send_json_success([
-            'successful_imports' => $successful_imports,
-            'failed_imports' => $failed_imports,
-        ]);
-    }
+			if ( is_wp_error( $post_id ) ) {
+				$failed_imports[] = array(
+					'post_data' => $post_data,
+					'error'     => $post_id->get_error_message(),
+				);
+				continue;
+			}
+			$post_data['post_id'] = $post_id;
+			$successful_imports[] = $post_data;
+		}
+
+		return wp_send_json_success(
+			array(
+				'successful_imports' => $successful_imports,
+				'failed_imports'     => $failed_imports,
+			)
+		);
+	}
 }

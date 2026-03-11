@@ -1,85 +1,77 @@
 <?php
 
-class Puck_Press_Slider_Render_Utils
-{
-    protected $template_manager;
-    protected $wpdb_utils;
-    protected $games;
-    protected $templates;
-    protected $selected_template_key;
+class Puck_Press_Slider_Render_Utils {
 
-    public function __construct(int $schedule_id = 1)
-    {
-        $this->load_dependencies();
+	protected $template_manager;
+	protected $wpdb_utils;
+	protected $games;
+	protected $templates;
+	protected $selected_template_key;
 
-        $this->template_manager = new Puck_Press_Slider_Template_Manager();
-        $this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
+	public function __construct( int $schedule_id = 1 ) {
+		$this->load_dependencies();
 
-        global $wpdb;
-        $table       = $wpdb->prefix . 'pp_game_schedule_for_display';
-        $this->games = $wpdb->get_results(
-            $wpdb->prepare("SELECT * FROM $table WHERE schedule_id = %d", $schedule_id),
-            ARRAY_A
-        );
+		$this->template_manager = new Puck_Press_Slider_Template_Manager();
+		$this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
 
-        $this->templates = $this->template_manager->get_all_templates();
+		global $wpdb;
+		$table       = $wpdb->prefix . 'pp_game_schedule_for_display';
+		$this->games = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM $table WHERE schedule_id = %d", $schedule_id ),
+			ARRAY_A
+		);
 
-        $this->selected_template_key = $this->template_manager->get_current_template_key();
-    }
+		$this->templates = $this->template_manager->get_all_templates();
 
-    public function load_dependencies()
-    {
-        require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-template-manager-abstract.php';
-        require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-slider-template-manager.php';
-        require_once plugin_dir_path(__FILE__) . '../class-puck-press-wpdb-utils-base-abstract.php';
-        require_once plugin_dir_path(__FILE__) . 'class-puck-press-schedule-wpdb-utils.php';
-    }
+		$this->selected_template_key = $this->template_manager->get_current_template_key();
+	}
 
-    // 🔁 Echo all templates
-    public function render_all_templates()
-    {
-        $this->template_manager->enqueue_all_template_assets();
-        echo $this->get_all_templates_html();
-    }
+	public function load_dependencies() {
+		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-slider-template-manager.php';
+		require_once plugin_dir_path( __FILE__ ) . '../class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-schedule-wpdb-utils.php';
+	}
 
-    // 🔍 Echo one template
-    public function render_template($template_name)
-    {
-        $this->template_manager->enqueue_template_assets($template_name);
-        echo $this->get_template_html($template_name);
-    }
+	// 🔁 Echo all templates
+	public function render_all_templates() {
+		$this->template_manager->enqueue_all_template_assets();
+		echo $this->get_all_templates_html();
+	}
 
-    // 🧾 Return HTML string of all templates
-    public function get_all_templates_html()
-    {
-        $output = '';
+	// 🔍 Echo one template
+	public function render_template( $template_name ) {
+		$this->template_manager->enqueue_template_assets( $template_name );
+		echo $this->get_template_html( $template_name );
+	}
 
-        foreach ($this->templates as $template) {
-            $output .= $template->render($this->games);
-        }
+	// 🧾 Return HTML string of all templates
+	public function get_all_templates_html() {
+		$output = '';
 
-        return $output;
-    }
+		foreach ( $this->templates as $template ) {
+			$output .= $template->render( $this->games );
+		}
 
-    // 🧾 Return HTML string for a specific template
-    public function get_template_html($template_name)
-    {
-        foreach ($this->templates as $template) {
-            if ($template->get_key() === $template_name) {
-                return $template->render($this->games);
-            }
-        }
+		return $output;
+	}
 
-        return '<p>Template not found: ' . esc_html($template_name) . '</p>';
-    }
+	// 🧾 Return HTML string for a specific template
+	public function get_template_html( $template_name ) {
+		foreach ( $this->templates as $template ) {
+			if ( $template->get_key() === $template_name ) {
+				return $template->render( $this->games );
+			}
+		}
 
-    public function render_current_template()
-    {
-        return $this->render_template($this->selected_template_key);
-    }
+		return '<p>Template not found: ' . esc_html( $template_name ) . '</p>';
+	}
 
-    public function get_current_template_html()
-    {
-        return $this->get_template_html($this->selected_template_key);
-    }
+	public function render_current_template() {
+		return $this->render_template( $this->selected_template_key );
+	}
+
+	public function get_current_template_html() {
+		return $this->get_template_html( $this->selected_template_key );
+	}
 }

@@ -22,32 +22,32 @@ class Puck_Press_Admin_Loader {
 		// Core Admin Classes
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-admin.php';
 
-        // Utilities
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-wpdb-utils.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-archive-wpdb-utils.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
-        
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-puck-press-tts-api.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-acha-url.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-usphl-url.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-process-csv-data.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/schedule/class-puck-press-schedule-source-importer.php';
-		
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-source-importer.php';
-		
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-template-manager-abstract.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-schedule-template-manager.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-roster-template-manager.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-slider-template-manager.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-record-template-manager.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/record/class-puck-press-record-wpdb-utils.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/templates/class-puck-press-stats-template-manager.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/stats/class-puck-press-stats-wpdb-utils.php';
+		// Utilities
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-archive-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-tts-api.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-process-acha-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-process-usphl-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-process-csv-data.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-source-importer.php';
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-source-importer.php';
+
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-schedule-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-roster-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-slider-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-record-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/record/class-puck-press-record-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-stats-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/stats/class-puck-press-stats-wpdb-utils.php';
 
 		// Abstracts
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-card-abstract.php';
@@ -69,7 +69,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-data-sources-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-edits-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-preview-card.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/roster/class-puck-press-roster-archive-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-archive-wpdb-utils.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-archive-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/roster-archive-modal.php';
 
@@ -82,7 +82,7 @@ class Puck_Press_Admin_Loader {
 		// Insta Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/insta-post-importer/instagram-post-admin-display.php';
 
-		//update checker
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/update.php';
+		// update checker
+		require_once plugin_dir_path( __DIR__ ) . 'includes/update.php';
 	}
 }

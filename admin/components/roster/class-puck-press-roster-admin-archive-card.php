@@ -4,17 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstract
-{
+class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstract {
+
 	private $archive_db = null;
 
-	public function init(): void
-	{
+	public function init(): void {
 		$this->get_archive_db();
 	}
 
-	private function get_archive_db(): Puck_Press_Roster_Archive_Wpdb_Utils
-	{
+	private function get_archive_db(): Puck_Press_Roster_Archive_Wpdb_Utils {
 		if ( ! $this->archive_db ) {
 			$this->archive_db = new Puck_Press_Roster_Archive_Wpdb_Utils();
 			$this->archive_db->init_tables();
@@ -22,13 +20,11 @@ class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstrac
 		return $this->archive_db;
 	}
 
-	protected function render_header_button_content(): string
-	{
+	protected function render_header_button_content(): string {
 		return '';
 	}
 
-	protected function render_content(): string
-	{
+	protected function render_content(): string {
 		$archives = $this->get_archive_db()->get_all_roster_archives();
 
 		ob_start();
@@ -48,9 +44,10 @@ class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstrac
 					</tr>
 				</thead>
 				<tbody>
-					<?php foreach ( $archives as $archive ) :
+					<?php
+					foreach ( $archives as $archive ) :
 						$created = ! empty( $archive['created_at'] ) ? date( 'M j, Y', strtotime( $archive['created_at'] ) ) : '&mdash;';
-					?>
+						?>
 					<tr data-key="<?php echo esc_attr( $archive['archive_key'] ); ?>">
 						<td><?php echo esc_html( $archive['season'] ); ?></td>
 						<td><?php echo esc_html( $archive['skater_count'] ); ?></td>
@@ -73,8 +70,7 @@ class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstrac
 		return ob_get_clean();
 	}
 
-	public function ajax_get_stats_count(): void
-	{
+	public function ajax_get_stats_count(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
@@ -83,8 +79,7 @@ class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstrac
 		wp_die();
 	}
 
-	public function ajax_create_roster_archive(): void
-	{
+	public function ajax_create_roster_archive(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
@@ -108,12 +103,11 @@ class Puck_Press_Roster_Admin_Archive_Card extends Puck_Press_Admin_Card_Abstrac
 		$archive_key = sanitize_title( $season );
 		$db->create_stats_archive( $archive_key, $season );
 
-		wp_send_json_success( [ 'html' => $this->render_content() ] );
+		wp_send_json_success( array( 'html' => $this->render_content() ) );
 		wp_die();
 	}
 
-	public function ajax_delete_roster_archive(): void
-	{
+	public function ajax_delete_roster_archive(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( 'Unauthorized' );
 		}
