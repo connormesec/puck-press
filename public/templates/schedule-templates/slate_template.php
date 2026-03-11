@@ -49,14 +49,21 @@ class SlateTemplate extends PuckPressTemplate
 
     public function render_with_options(array $games, array $options): string
     {
-        $inline_css = self::get_inline_css();
-        $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-        return $css_block . $this->buildSlateSchedule($games, $options['is_archive'] ?? false);
+        $slug         = $options['schedule_slug'] ?? '';
+        $schedule_id  = isset($options['schedule_id']) ? (int) $options['schedule_id'] : 0;
+        $container_id = $slug ? 'pp-sched-' . sanitize_html_class($slug) : '';
+        $scope        = $container_id ? '#' . $container_id : ':root';
+        $colors       = $schedule_id > 0 ? self::get_schedule_colors($schedule_id) : null;
+        $fonts        = $schedule_id > 0 ? self::get_schedule_fonts($schedule_id) : null;
+        $inline_css   = self::get_inline_css($scope, $colors, $fonts);
+        $css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+        return $css_block . $this->buildSlateSchedule($games, $options['is_archive'] ?? false, $container_id);
     }
 
-    private function buildSlateSchedule(array $games, bool $is_archive = false): string
+    private function buildSlateSchedule(array $games, bool $is_archive = false, string $container_id = ''): string
     {
-        $html = '<div class="slate_schedule_container">';
+        $id_attr = $container_id ? ' id="' . esc_attr($container_id) . '"' : '';
+        $html = '<div class="slate_schedule_container"' . $id_attr . '>';
 
         if ($is_archive) {
             $all_grouped = self::group_games_by_month($games, false);

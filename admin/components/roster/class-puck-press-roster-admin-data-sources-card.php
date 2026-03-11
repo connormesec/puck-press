@@ -39,8 +39,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
         ob_start();
     ?>
         <button class="pp-button pp-button-primary" id="pp-add-source-button">
-            <i>+</i>
-            Add Source
+            + Add Source
         </button>
         <?php
         return ob_get_clean();

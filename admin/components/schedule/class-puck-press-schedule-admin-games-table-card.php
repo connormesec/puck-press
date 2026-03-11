@@ -1,6 +1,14 @@
 <?php
 class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_Abstract
 {
+    private int $schedule_id;
+
+    public function __construct(array $args = [], int $schedule_id = 1)
+    {
+        parent::__construct($args);
+        $this->schedule_id = $schedule_id;
+    }
+
     public function render_content()
     {
         return $this->render_game_schedule_admin_preview();
@@ -23,17 +31,27 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
 
         // Active games: from for_display, LEFT JOIN update mods for override highlighting
         $active_games = $wpdb->get_results(
-            "SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
-             FROM $display_table f
-             LEFT JOIN $mods_table m ON f.game_id COLLATE utf8mb4_unicode_ci = m.external_id COLLATE utf8mb4_unicode_ci AND m.edit_action = 'update'",
+            $wpdb->prepare(
+                "SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
+                 FROM $display_table f
+                 LEFT JOIN $mods_table m ON f.game_id COLLATE utf8mb4_unicode_ci = m.external_id COLLATE utf8mb4_unicode_ci AND m.edit_action = 'update' AND m.schedule_id = %d
+                 WHERE f.schedule_id = %d",
+                $this->schedule_id,
+                $this->schedule_id
+            ),
             ARRAY_A
         ) ?: [];
 
         // Deleted sourced games: in raw but have a delete mod (not in for_display)
         $deleted_games = $wpdb->get_results(
-            "SELECT r.*, dm.id AS delete_mod_id
-             FROM $raw_table r
-             INNER JOIN $mods_table dm ON r.game_id COLLATE utf8mb4_unicode_ci = dm.external_id COLLATE utf8mb4_unicode_ci AND dm.edit_action = 'delete'",
+            $wpdb->prepare(
+                "SELECT r.*, dm.id AS delete_mod_id
+                 FROM $raw_table r
+                 INNER JOIN $mods_table dm ON r.game_id COLLATE utf8mb4_unicode_ci = dm.external_id COLLATE utf8mb4_unicode_ci AND dm.edit_action = 'delete' AND dm.schedule_id = %d
+                 WHERE r.schedule_id = %d",
+                $this->schedule_id,
+                $this->schedule_id
+            ),
             ARRAY_A
         ) ?: [];
 
@@ -253,17 +271,20 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
             'source_type'           => 'manual',
         ];
 
+        $manual_game_schedule_id = (int) ($_POST['schedule_id'] ?? 1);
+
         // Insert the mod row with placeholder game_id
         $inserted = $wpdb->insert(
             $table_mods,
             [
+                'schedule_id' => $manual_game_schedule_id,
                 'external_id' => null,
                 'edit_action' => 'insert',
                 'edit_data'   => wp_json_encode($game_data),
                 'created_at'  => $current_time,
                 'updated_at'  => $current_time,
             ],
-            ['%s', '%s', '%s', '%s', '%s']
+            ['%d', '%s', '%s', '%s', '%s', '%s']
         );
 
         if (!$inserted) {
@@ -282,13 +303,14 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         );
 
         // Rebuild the for_display table
+        $manual_schedule_id = (int) ($_POST['schedule_id'] ?? 1);
         $utils = new Puck_Press_Schedule_Wpdb_Utils();
-        $utils->reset_table('pp_game_schedule_for_display');
-        $importer = new Puck_Press_Schedule_Source_Importer();
+        $utils->delete_rows_for_schedule('pp_game_schedule_for_display', $manual_schedule_id);
+        $importer = new Puck_Press_Schedule_Source_Importer($manual_schedule_id);
         $importer->apply_edits_and_save_to_display_table();
 
         // Return refreshed UI
-        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
+        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card([], $manual_schedule_id);
         $games_table_html = $games_table_card->render_game_schedule_admin_preview();
 
         wp_send_json_success([
@@ -327,13 +349,14 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         }
 
         // Rebuild the for_display table
+        $delete_schedule_id = (int) ($_POST['schedule_id'] ?? 1);
         $utils = new Puck_Press_Schedule_Wpdb_Utils();
-        $utils->reset_table('pp_game_schedule_for_display');
-        $importer = new Puck_Press_Schedule_Source_Importer();
+        $utils->delete_rows_for_schedule('pp_game_schedule_for_display', $delete_schedule_id);
+        $importer = new Puck_Press_Schedule_Source_Importer($delete_schedule_id);
         $importer->apply_edits_and_save_to_display_table();
 
         // Return refreshed UI
-        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
+        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card([], $delete_schedule_id);
         $games_table_html = $games_table_card->render_game_schedule_admin_preview();
 
         wp_send_json_success([

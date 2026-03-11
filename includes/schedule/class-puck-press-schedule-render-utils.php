@@ -4,22 +4,31 @@ require_once plugin_dir_path(__FILE__) . '../class-puck-press-render-utils-abstr
 
 class Puck_Press_Schedule_Render_Utils extends Puck_Press_Render_Utils_Abstract
 {
-    public function __construct( string $archive_key = '' )
+    public function __construct( string $archive_key = '', int $schedule_id = 1 )
     {
         $this->load_dependencies();
 
-        $this->template_manager = new Puck_Press_Schedule_Template_Manager();
+        $this->template_manager = new Puck_Press_Schedule_Template_Manager( $schedule_id );
         $this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
 
         if ( $archive_key !== '' ) {
             global $wpdb;
             $archive_table = $wpdb->prefix . 'pp_schedule_archive_games';
             $this->games   = $wpdb->get_results(
-                $wpdb->prepare( "SELECT * FROM $archive_table WHERE archive_key = %s", $archive_key ),
+                $wpdb->prepare(
+                    "SELECT * FROM $archive_table WHERE archive_key = %s AND schedule_id = %d",
+                    $archive_key,
+                    $schedule_id
+                ),
                 ARRAY_A
             );
         } else {
-            $this->games = $this->wpdb_utils->get_all_table_data( 'pp_game_schedule_for_display', 'ARRAY_A' );
+            global $wpdb;
+            $table       = $wpdb->prefix . 'pp_game_schedule_for_display';
+            $this->games = $wpdb->get_results(
+                $wpdb->prepare("SELECT * FROM $table WHERE schedule_id = %d", $schedule_id),
+                ARRAY_A
+            );
         }
 
         $this->templates             = $this->template_manager->get_all_templates();
@@ -31,6 +40,7 @@ class Puck_Press_Schedule_Render_Utils extends Puck_Press_Render_Utils_Abstract
         require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-template-manager-abstract.php';
         require_once plugin_dir_path(__FILE__) . '../../public/templates/class-puck-press-schedule-template-manager.php';
         require_once plugin_dir_path(__FILE__) . '../class-puck-press-wpdb-utils-base-abstract.php';
+        require_once plugin_dir_path(__FILE__) . '../class-puck-press-group-aware-wpdb-utils-abstract.php';
         require_once plugin_dir_path(__FILE__) . 'class-puck-press-schedule-wpdb-utils.php';
     }
 

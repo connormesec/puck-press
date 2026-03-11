@@ -20,6 +20,7 @@
             ajaxAction:             'puck_press_update_record_colors',
             containerSuffix:        '_record_container',
             fontFieldsContainerId:  '#pp-record-dynamic-font-fields',
+            extraData:              { schedule_id: (window.ppRecordAdmin || {}).scheduleId || 1 },
         });
     });
 })(jQuery);

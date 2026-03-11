@@ -1,29 +1,44 @@
 <?php
 
-/**
- * Class Puck_Press_Schedule_Admin_Wpdb_Utils
- *
- * Utility class for managing custom database tables used in the Puck Press plugin.
- *
- * This class provides methods to create, reset, and conditionally create WordPress
- * database tables using custom schemas. It is designed to handle various tables
- * involved in storing schedule data, API raw data, or other plugin-specific structures.
- *
- * Key Features:
- * - create_schedule_table(): Creates a custom table based on the provided schema.
- * - maybe_create_or_update_table(): Only creates the table if it doesn't already exist.
- * - reset_schedule_table(): Drops and recreates the table.
- *
- * Intended for internal plugin use within admin or installation workflows.
- *
- * @package Puck_Press
- */
-class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
+require_once plugin_dir_path(dirname(__FILE__)) . 'class-puck-press-wpdb-utils-base-abstract.php';
+require_once plugin_dir_path(dirname(__FILE__)) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
+
+class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Group_Aware_Wpdb_Utils
 {
+    protected function get_registry_table_name(): string
+    {
+        return 'pp_schedules';
+    }
+
+    protected function get_group_id_column(): string
+    {
+        return 'schedule_id';
+    }
+
+    protected function get_domain_tables(): array
+    {
+        return [
+            'pp_schedule_data_sources',
+            'pp_game_schedule_raw',
+            'pp_game_schedule_mods',
+            'pp_game_schedule_for_display',
+        ];
+    }
+
     //no inline comments in this array, as it is used to create the tables in the database
     protected $table_schemas = [
-        'pp_schedule_data_sources' =>  "
+        'pp_schedules' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            slug VARCHAR(100) NOT NULL,
+            name VARCHAR(200) NOT NULL,
+            description TEXT DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY slug (slug)
+        ",
+        'pp_schedule_data_sources' => "
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            schedule_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
             name VARCHAR(100) NOT NULL,
             type TEXT NOT NULL,
             season VARCHAR(50) DEFAULT NULL,
@@ -33,10 +48,12 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             csv_data LONGTEXT NULL,
             other_data LONGTEXT NULL,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY schedule_id (schedule_id)
         ",
         'pp_game_schedule_raw' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            schedule_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
             source VARCHAR(100) NOT NULL,
             source_type VARCHAR(100) NOT NULL,
             game_id VARCHAR(50) NOT NULL,
@@ -58,19 +75,23 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             venue VARCHAR(150) DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY game_id (game_id)
+            UNIQUE KEY schedule_game (schedule_id, game_id),
+            KEY schedule_id (schedule_id)
         ",
         'pp_game_schedule_mods' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            schedule_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
             external_id VARCHAR(50) DEFAULT NULL,
 	        edit_action VARCHAR(50),
 	        edit_data LONGTEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY schedule_id (schedule_id)
         ",
         'pp_game_schedule_for_display' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            schedule_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
             source VARCHAR(100) NOT NULL,
             source_type VARCHAR(100) NOT NULL,
             game_id VARCHAR(50) NOT NULL,
@@ -96,19 +117,23 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
             home_or_away ENUM('home', 'away') NOT NULL DEFAULT 'home',
             venue VARCHAR(150) DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY schedule_id (schedule_id)
         "
     ];
 
-    public function get_active_schedule_sources()
+    public function get_active_schedule_sources(int $schedule_id = 1)
     {
         global $wpdb;
 
-        $table_name = 'pp_schedule_data_sources';
-        $full_table_name = $this->get_full_table_name($table_name);
+        $full_table_name = $this->get_full_table_name('pp_schedule_data_sources');
 
         $active_sources = $wpdb->get_results(
-            $wpdb->prepare("SELECT * FROM $full_table_name WHERE status = %s", 'active'),
+            $wpdb->prepare(
+                "SELECT * FROM $full_table_name WHERE status = %s AND schedule_id = %d",
+                'active',
+                $schedule_id
+            ),
             OBJECT
         );
 
@@ -136,6 +161,12 @@ class Puck_Press_Schedule_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base
         return $wpdb->delete($full_table, ['game_id' => $game_id]);
     }
 
+    public function delete_rows_for_schedule(string $table_name, int $schedule_id): void
+    {
+        global $wpdb;
+        $full_table = $wpdb->prefix . $table_name;
+        $wpdb->delete($full_table, ['schedule_id' => $schedule_id], ['%d']);
+    }
 
     function console_log($output, $with_script_tags = true)
     {

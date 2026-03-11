@@ -64,26 +64,32 @@ class ConferenceTemplate extends PuckPressTemplate
 
     public function render_with_options(array $games, array $options): string
     {
-        $inline_css = self::get_inline_css();
-        $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-        return $css_block . $this->buildScoreboard($games, $options['is_archive'] ?? false);
+        $slug         = $options['schedule_slug'] ?? '';
+        $schedule_id  = isset($options['schedule_id']) ? (int) $options['schedule_id'] : 0;
+        $container_id = $slug ? 'pp-sched-' . sanitize_html_class($slug) : '';
+        $scope        = $container_id ? '#' . $container_id : ':root';
+        $colors       = $schedule_id > 0 ? self::get_schedule_colors($schedule_id) : null;
+        $fonts        = $schedule_id > 0 ? self::get_schedule_fonts($schedule_id) : null;
+        $inline_css   = self::get_inline_css($scope, $colors, $fonts);
+        $css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+        return $css_block . $this->buildScoreboard($games, $options['is_archive'] ?? false, $container_id);
     }
 
     // ── Layout shell ──────────────────────────────────────────────────────────
 
-    private function buildScoreboard(array $raw_games, bool $is_archive): string
+    private function buildScoreboard(array $raw_games, bool $is_archive, string $container_id = ''): string
     {
         $games = $this->normalize_and_deduplicate($raw_games);
 
         if (empty($games)) {
-            return $this->renderContainer('<p class="csb-no-games">No games found.</p>');
+            return $this->renderContainer('<p class="csb-no-games">No games found.</p>', $container_id);
         }
 
         $records = $this->compute_records($games);
 
         if ($is_archive) {
             $games_by_date = array_reverse($this->group_by_date($games), true);
-            return $this->renderContainer($this->renderAllDates($games_by_date, $records));
+            return $this->renderContainer($this->renderAllDates($games_by_date, $records), $container_id);
         }
 
         $split          = $this->split_games_by_time($games);
@@ -103,12 +109,13 @@ class ConferenceTemplate extends PuckPressTemplate
             : $this->renderAllDates($past_dates, $records);
         $html .= '</div>';
 
-        return $this->renderContainer($html);
+        return $this->renderContainer($html, $container_id);
     }
 
-    private function renderContainer(string $inner): string
+    private function renderContainer(string $inner, string $container_id = ''): string
     {
-        return '<div class="conference_schedule_container">' . $inner . '</div>';
+        $id_attr = $container_id ? ' id="' . esc_attr($container_id) . '"' : '';
+        return '<div class="conference_schedule_container"' . $id_attr . '>' . $inner . '</div>';
     }
 
     private function renderTabs(): string
@@ -213,6 +220,22 @@ class ConferenceTemplate extends PuckPressTemplate
 
         $html .= '</div>';
 
+        if (!empty($game['promo_header']) || !empty($game['promo_text']) || !empty($game['promo_img_url'])) {
+            $html .= '<div class="csb-promo">';
+            if (!empty($game['promo_img_url'])) {
+                $html .= '<img class="csb-promo__img" src="' . esc_url($game['promo_img_url']) . '" loading="lazy" alt="">';
+            }
+            $html .= '<div class="csb-promo__body">';
+            if (!empty($game['promo_header'])) {
+                $html .= '<p class="csb-promo__header">' . esc_html($game['promo_header']) . '</p>';
+            }
+            if (!empty($game['promo_text'])) {
+                $html .= '<p class="csb-promo__text">' . nl2br(esc_html($game['promo_text'] ?? '')) . '</p>';
+            }
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+
         $html .= '<div class="csb-card__right">';
         if (!empty($game['promo_ticket_link'])) {
             $html .= '<a class="csb-ticket-btn" href="' . esc_url($game['promo_ticket_link']) . '" target="_blank" rel="noopener">Buy Tickets</a>';
@@ -271,6 +294,9 @@ class ConferenceTemplate extends PuckPressTemplate
             'venue'             => $game['venue']             ?? '',
             'game_status'       => $game['game_status']       ?? '',
             'promo_ticket_link' => $game['promo_ticket_link'] ?? '',
+            'promo_header'      => $game['promo_header']      ?? '',
+            'promo_text'        => $game['promo_text']        ?? '',
+            'promo_img_url'     => $game['promo_img_url']     ?? '',
             'post_link'         => $game['post_link']         ?? '',
             'home_team_name'    => $is_home ? ($game['target_team_name']   ?? '') : ($game['opponent_team_name'] ?? ''),
             'home_team_logo'    => $is_home ? ($game['target_team_logo']   ?? '') : ($game['opponent_team_logo'] ?? ''),
@@ -309,6 +335,11 @@ class ConferenceTemplate extends PuckPressTemplate
                 }
                 if (empty($result[$key]['promo_ticket_link']) && !empty($normalized['promo_ticket_link'])) {
                     $result[$key]['promo_ticket_link'] = $normalized['promo_ticket_link'];
+                }
+                foreach (['promo_header', 'promo_text', 'promo_img_url'] as $f) {
+                    if (empty($result[$key][$f]) && !empty($normalized[$f])) {
+                        $result[$key][$f] = $normalized[$f];
+                    }
                 }
             }
         }

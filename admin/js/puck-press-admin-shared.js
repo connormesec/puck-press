@@ -87,11 +87,13 @@ function refreshGamesTable(successCallback, errorCallback) {
         });
     } else {
         //is schedule tab
+        const scheduleId = (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1;
         return (jQuery).ajax({
             url: ajaxurl, // WordPress AJAX URL
             type: 'POST',
             data: {
                 action: 'pp_refresh_all_sources', // The action hook for refreshing all sources
+                schedule_id: scheduleId,
             },
             success: (response) => {
                 if (response.success) {

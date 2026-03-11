@@ -66,6 +66,7 @@
 
 			const formData = new FormData();
 			formData.append('action', 'pp_add_manual_game');
+			formData.append('schedule_id', (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1);
 			formData.append('game_date', $('#pp-game-date', $modal).val());
 			formData.append('game_time', $('#pp-game-time', $modal).val());
 			formData.append('target_team_id', target.id || '0');

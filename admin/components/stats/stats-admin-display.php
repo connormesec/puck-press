@@ -47,6 +47,7 @@ class Puck_Press_Stats_Admin_Display
                                 name="pp-stats-shortcode"
                                 class="pp-shortcode-input"
                                 value="[pp-stats]"
+                                size="10"
                                 spellcheck="false"
                                 aria-label="shortcode"
                                 onfocus="this.select();"

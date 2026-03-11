@@ -111,21 +111,22 @@ class Puck_Press_Admin
 	public function ajax_refresh_all_sources_callback()
 	{
 		global $wpdb;
+		$schedule_id = (int) ($_POST['schedule_id'] ?? 1);
 		$utils = new Puck_Press_Schedule_Wpdb_Utils;
-		$utils->reset_table('pp_game_schedule_raw');
-		$utils->reset_table('pp_game_schedule_for_display');
+		$utils->delete_rows_for_schedule('pp_game_schedule_raw', $schedule_id);
+		$utils->delete_rows_for_schedule('pp_game_schedule_for_display', $schedule_id);
 
-		$importer = new Puck_Press_Schedule_Source_Importer();
+		$importer = new Puck_Press_Schedule_Source_Importer($schedule_id);
 		$raw_table_results = $importer->populate_raw_schedule_table_from_sources();
 		$display_game_table_results = $importer->apply_edits_and_save_to_display_table();
 
-		$refresh_game_table_ui = new Puck_Press_Schedule_Admin_Games_Table_Card;
+		$refresh_game_table_ui = new Puck_Press_Schedule_Admin_Games_Table_Card([], $schedule_id);
 		$refreshed_game_table_ui = $refresh_game_table_ui->render_game_schedule_admin_preview();
 
-		$refresh_game_preview = Puck_Press_Schedule_Admin_Preview_Card::create_and_init();
+		$refresh_game_preview = Puck_Press_Schedule_Admin_Preview_Card::create_and_init($schedule_id);
 		$refresh_game_preview_html = $refresh_game_preview->get_all_templates_html();
 
-		$refresh_slider_preview = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init();
+		$refresh_slider_preview = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init($schedule_id);
 		$refresh_slider_preview_html = $refresh_slider_preview->get_all_templates_html();
 
 
@@ -375,7 +376,8 @@ class Puck_Press_Admin
 
 	public static function pp_ajax_update_schedule_template_colors()
 	{
-		self::update_template_colors(new Puck_Press_Schedule_Template_Manager());
+		$schedule_id = (int) ($_POST['schedule_id'] ?? 1);
+		self::update_template_colors(new Puck_Press_Schedule_Template_Manager($schedule_id));
 	}
 
 	public static function pp_ajax_update_slider_template_colors()
@@ -394,7 +396,8 @@ class Puck_Press_Admin
 
 	public static function pp_ajax_update_record_template_colors()
 	{
-		self::update_template_colors(new Puck_Press_Record_Template_Manager());
+		$schedule_id = isset($_POST['schedule_id']) ? (int) $_POST['schedule_id'] : 1;
+		self::update_template_colors(new Puck_Press_Record_Template_Manager($schedule_id));
 	}
 
 	public static function pp_ajax_update_stats_template_colors()
@@ -506,7 +509,7 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-color-picker-shared', plugin_dir_url(__FILE__) . 'js/puck-press-color-picker-shared.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-record-color-picker', plugin_dir_url(__FILE__) . 'js/record/puck-press-record-color-picker.js', array('jquery', 'select2-js', 'puck-press-color-picker-shared'), $this->version, false);
 				// Enqueue saved Google Fonts and CSS vars for record templates in head to avoid FOUT on admin preview.
-				$record_tm = new Puck_Press_Record_Template_Manager();
+				$record_tm = new Puck_Press_Record_Template_Manager(isset($_GET['schedule_id']) ? (int) $_GET['schedule_id'] : 1);
 				$font_vars_css = ':root {';
 				foreach ( $record_tm->get_all_template_fonts() as $tpl_key => $font_set ) {
 					foreach ( $font_set as $font_key => $font_name ) {
@@ -588,13 +591,27 @@ class Puck_Press_Admin
 				wp_enqueue_script('puck-press-schedule-preview', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-preview.js', array('jquery'), $this->version, false);
 				wp_enqueue_script('puck-press-schedule-archive', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-archive.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
 				wp_enqueue_script('puck-press-bulk-edit-schedule', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-bulk-edit-schedule.js', array('jquery', 'puck-press-admin-shared'), $this->version, false);
+				wp_enqueue_script('puck-press-schedule-groups', plugin_dir_url(__FILE__) . 'js/schedule/puck-press-schedule-groups.js', array('jquery', 'puck-press-schedule-sources'), $this->version, false);
 				break;
 		}
 	}
 
 	public function localize_scripts()
 	{
-		$template_manager = new Puck_Press_Schedule_Template_Manager;
+		$active_schedule_id   = (int) get_option('pp_admin_active_schedule_id', 1);
+		$schedule_wpdb        = new Puck_Press_Schedule_Wpdb_Utils();
+		$all_schedule_groups  = $schedule_wpdb->get_all_groups();
+		$active_group_arr     = array_values(array_filter($all_schedule_groups, fn($g) => (int) $g['id'] === $active_schedule_id));
+		$active_schedule_slug = $active_group_arr[0]['slug'] ?? 'default';
+
+		wp_localize_script('puck-press-schedule-groups', 'ppScheduleAdmin', [
+			'activeScheduleId'   => $active_schedule_id,
+			'activeScheduleSlug' => $active_schedule_slug,
+			'scheduleGroups'     => $all_schedule_groups,
+			'nonce'              => wp_create_nonce('pp_schedule_group_nonce'),
+		]);
+
+		$template_manager = new Puck_Press_Schedule_Template_Manager($active_schedule_id);
 		$scheduleTemplates = $template_manager->get_all_template_colors();
 		$selected_template =  $template_manager->get_current_template_key();
 		$templates = [
@@ -647,7 +664,8 @@ class Puck_Press_Admin
 			'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 		] );
 
-		$record_template_manager  = new Puck_Press_Record_Template_Manager();
+		$record_schedule_id       = isset($_GET['schedule_id']) ? (int) $_GET['schedule_id'] : 1;
+		$record_template_manager  = new Puck_Press_Record_Template_Manager($record_schedule_id);
 		$selected_record_template = $record_template_manager->get_current_template_key();
 		$record_templates = [
 			'recordTemplates'   => $record_template_manager->get_all_template_colors(),
@@ -657,6 +675,9 @@ class Puck_Press_Admin
 			'selected_template' => $selected_record_template,
 		];
 		wp_localize_script('puck-press-record-color-picker', 'ppRecordTemplates', $record_templates);
+		wp_localize_script('puck-press-record-color-picker', 'ppRecordAdmin', [
+			'scheduleId' => $record_schedule_id,
+		]);
 
 		$stats_template_manager  = new Puck_Press_Stats_Template_Manager();
 		$selected_stats_template = $stats_template_manager->get_current_template_key();
@@ -703,6 +724,64 @@ class Puck_Press_Admin
 		$updater->set_repository('puck-press');
 
 		$updater->initialize();
+	}
+
+	public static function pp_ajax_create_schedule_group(): void
+	{
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error(['message' => 'Insufficient permissions.']);
+		}
+		check_ajax_referer('pp_schedule_group_nonce', 'nonce');
+
+		$name = sanitize_text_field($_POST['name'] ?? '');
+		$slug = sanitize_title($_POST['slug'] ?? $name);
+		$desc = sanitize_textarea_field($_POST['description'] ?? '');
+
+		if (empty($name) || empty($slug)) {
+			wp_send_json_error(['message' => 'Name and slug are required.']);
+		}
+
+		$wpdb_utils = new Puck_Press_Schedule_Wpdb_Utils();
+		$id = $wpdb_utils->create_group($slug, $name, $desc);
+
+		if (!$id) {
+			wp_send_json_error(['message' => 'Failed to create schedule group. Slug may already exist.']);
+		}
+
+		wp_send_json_success([
+			'message' => "Schedule group '{$name}' created.",
+			'id'      => $id,
+			'slug'    => $slug,
+			'name'    => $name,
+		]);
+	}
+
+	public static function pp_ajax_delete_schedule_group(): void
+	{
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error(['message' => 'Insufficient permissions.']);
+		}
+		check_ajax_referer('pp_schedule_group_nonce', 'nonce');
+
+		$group_id = (int) ($_POST['group_id'] ?? 0);
+		if ($group_id <= 1) {
+			wp_send_json_error(['message' => 'Cannot delete the default schedule group.']);
+		}
+
+		$wpdb_utils = new Puck_Press_Schedule_Wpdb_Utils();
+		$wpdb_utils->delete_group($group_id);
+
+		wp_send_json_success(['message' => 'Schedule group deleted.']);
+	}
+
+	public static function pp_ajax_set_active_schedule_id(): void
+	{
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error(['message' => 'Insufficient permissions.']);
+		}
+		$schedule_id = (int) ($_POST['schedule_id'] ?? 1);
+		update_option('pp_admin_active_schedule_id', $schedule_id);
+		wp_send_json_success(['message' => 'Active schedule updated.', 'schedule_id' => $schedule_id]);
 	}
 
 	public function register_ajax_hooks()
@@ -765,6 +844,11 @@ class Puck_Press_Admin
 		add_action('wp_ajax_pp_refresh_all_sources', [$this, 'ajax_refresh_all_sources_callback']);
 		add_action('wp_ajax_pp_refresh_all_roster_sources', [$this, 'ajax_refresh_all_roster_sources_callback']);
 		add_action('wp_ajax_pp_fix_roster_databases', [$this, 'ajax_fix_roster_databases_callback']);
+
+		// Schedule group CRUD and active group selection
+		add_action('wp_ajax_pp_create_schedule_group', [self::class, 'pp_ajax_create_schedule_group']);
+		add_action('wp_ajax_pp_delete_schedule_group', [self::class, 'pp_ajax_delete_schedule_group']);
+		add_action('wp_ajax_pp_set_active_schedule_id', [self::class, 'pp_ajax_set_active_schedule_id']);
 
 		// Register the AJAX action for saving colors in color picker
 		add_action('wp_ajax_puck_press_update_schedule_colors', [self::class, 'pp_ajax_update_schedule_template_colors']);

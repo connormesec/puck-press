@@ -24,35 +24,63 @@ class Puck_Press_Schedule_Admin_Display
     private $game_template_preview;
     private $game_slider_preview;
     private $archive_card;
+    private $groups_card;
     private $last_run;
+    private array $schedule_groups;
+    private int $active_schedule_id;
+    private string $active_schedule_slug;
 
     public function __construct()
     {
+        $wpdb_utils = new Puck_Press_Schedule_Wpdb_Utils();
+        $this->schedule_groups    = $wpdb_utils->get_all_groups();
+        $this->active_schedule_id = (int) get_option('pp_admin_active_schedule_id', 1);
+
+        // Validate active_schedule_id is still in the groups list; fall back to 1
+        $valid_ids = array_column($this->schedule_groups, 'id');
+        if (!in_array((string) $this->active_schedule_id, $valid_ids, false)) {
+            $this->active_schedule_id = 1;
+        }
+
+        $active_group = array_values(array_filter(
+            $this->schedule_groups,
+            fn($g) => (int) $g['id'] === $this->active_schedule_id
+        ));
+        $this->active_schedule_slug = $active_group[0]['slug'] ?? 'default';
+
+        $sid = $this->active_schedule_id;
+
+        $this->groups_card = new Puck_Press_Schedule_Admin_Groups_Card([
+            'title'    => 'Schedule Groups',
+            'subtitle' => 'Manage multiple schedule groups',
+            'id'       => 'schedule-groups',
+        ]);
+
         $this->pp_sched_admin = new Puck_Press_Schedule_Admin_Games_Table_Card([
             'title' => 'Games',
             'subtitle' => '0 games scheduled',
             'id' => 'schedule-game-list'
-        ]);
+        ], $sid);
         $this->pp_sched_data_sources = new Puck_Press_Schedule_Admin_Data_Sources_Card([
             'title' => 'Data Sources',
             'subtitle' => 'Manage external data sources for games',
             'id' => 'data-sources-table'
-        ]);
+        ], $sid);
         $this->pp_sched_edits = new Puck_Press_Schedule_Admin_Edits_Table_Card([
             'title' => 'Edits',
             'subtitle' => 'Review and apply changes to game data before sending to frontend',
             'id' => 'game-schedule-edits'
-        ]);
+        ], $sid);
         $this->game_template_preview = new Puck_Press_Schedule_Admin_Preview_Card([
             'title' => 'Preview',
             'subtitle' => 'Preview how the schedule will appear on the public website',
             'id' => 'game-schedule-preview'
-        ]);
+        ], $sid);
         $this->game_slider_preview = new Puck_Press_Schedule_Admin_Slider_Preview_Card([
             'title' => 'Game Slider Preview',
             'subtitle' => 'Preview how the game slider will appear on the public website',
             'id' => 'game-slider-preview'
-        ]);
+        ], $sid, $this->active_schedule_slug);
         $this->archive_card = new Puck_Press_Schedule_Admin_Archive_Card([
             'title'    => 'Season Archives',
             'subtitle' => 'Snapshots of past season game data',
@@ -79,12 +107,16 @@ class Puck_Press_Schedule_Admin_Display
                     <div class="pp-shortcode-container">
                         <div class="pp-shortcode-label">Schedule Shortcode</div>
                         <div class="pp-shortcode-input-group">
+                            <?php
+                            $schedule_sc = '[pp-schedule' . ($this->active_schedule_slug !== 'default' ? ' schedule="' . esc_attr($this->active_schedule_slug) . '"' : '') . ']';
+                            ?>
                             <input
                                 type="text"
                                 id="pp-schedule-shortcode"
                                 name="pp-schedule-shortcode"
                                 class="pp-shortcode-input"
-                                value="[pp-schedule]"
+                                value="<?php echo esc_attr($schedule_sc); ?>"
+                                size="<?php echo strlen($schedule_sc); ?>"
                                 spellcheck="false"
                                 aria-label="shortcode"
                                 onfocus="this.select();"
@@ -128,6 +160,28 @@ class Puck_Press_Schedule_Admin_Display
                 </div>
 
                 <p class="pp-refresh-info">Last refreshed: <?php echo esc_html($this->last_run); ?></p>
+
+                <?php echo $this->groups_card->render(); ?>
+
+                <div class="pp-card" style="margin-bottom: 16px;">
+                    <div class="pp-card-content" style="padding: 16px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <label for="pp-schedule-group-selector"><strong>Editing schedule:</strong></label>
+                        <select id="pp-schedule-group-selector" class="pp-select">
+                            <?php foreach ($this->schedule_groups as $group) : ?>
+                                <option value="<?php echo esc_attr($group['id']); ?>"
+                                    data-slug="<?php echo esc_attr($group['slug']); ?>"
+                                    <?php selected((int) $group['id'], $this->active_schedule_id); ?>>
+                                    <?php echo esc_html($group['name']); ?> (<?php echo esc_html($group['slug']); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span style="color: #666; font-size: 0.85rem;">
+                            Shortcode: <code>[pp-schedule<?php echo $this->active_schedule_slug !== 'default' ? ' schedule="' . esc_attr($this->active_schedule_slug) . '"' : ''; ?>]</code>
+                        </span>
+                    </div>
+                </div>
+
+                <input type="hidden" id="pp-active-schedule-id" value="<?php echo esc_attr($this->active_schedule_id); ?>">
 
                 <?php echo $this->pp_sched_data_sources->render() ?>
 

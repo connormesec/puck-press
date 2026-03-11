@@ -41,8 +41,16 @@
       applyTableCellClamping();
     };
 
-    const doWithRefresh = (ajaxOptions, preRefreshFn) =>
-      withRefresh(ajaxOptions, {
+    const getScheduleId = () => (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1;
+
+    const doWithRefresh = (ajaxOptions, preRefreshFn) => {
+      const opts = Object.assign({}, ajaxOptions);
+      if (opts.data && !(opts.data instanceof FormData) && typeof opts.data === 'object') {
+        opts.data = Object.assign({ schedule_id: getScheduleId() }, opts.data);
+      } else if (opts.data instanceof FormData) {
+        opts.data.append('schedule_id', getScheduleId());
+      }
+      return withRefresh(opts, {
         dim: dimEditListStyles,
         restore: restoreEditListStyles,
         onSuccess: (response) => {
@@ -50,6 +58,7 @@
           refreshGamesTable(afterRefresh, afterRefresh);
         }
       });
+    };
 
     //############################################################//
     //                                                            //
@@ -366,6 +375,7 @@
 
       const formData = new FormData();
       formData.append("action", "pp_update_game_promos");
+      formData.append("schedule_id", (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1);
       formData.append("edit_data", JSON.stringify(edit_data));
 
       closeEditGameModal();

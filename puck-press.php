@@ -41,7 +41,7 @@ define( 'PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
 // Optional dev constant — define in wp-config.php to override "now" for testing.
 // Example: define( 'PP_FAKE_NOW', '2025-01-15 18:00:00' );
 if ( ! defined( 'PP_FAKE_NOW' ) ) {
-	define( 'PP_FAKE_NOW', '2025-012-15 18:00:00'  );
+	define( 'PP_FAKE_NOW', '2025-12-15 18:00:00' );
 }
 
 /**

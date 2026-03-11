@@ -6,9 +6,17 @@ if (!defined('ABSPATH')) {
 
 class Puck_Press_Record_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card_Abstract
 {
+    private int $schedule_id;
+
+    public function __construct(array $options = [])
+    {
+        $this->schedule_id = (int) ($options['schedule_id'] ?? 1);
+        parent::__construct($options);
+    }
+
     protected function make_template_manager()
     {
-        return new Puck_Press_Record_Template_Manager();
+        return new Puck_Press_Record_Template_Manager($this->schedule_id);
     }
 
     protected function make_wpdb_utils()
@@ -16,8 +24,6 @@ class Puck_Press_Record_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card
         return new Puck_Press_Record_Wpdb_Utils();
     }
 
-    // get_data_table_name() is required by the abstract but not used —
-    // we override init() to call get_record_stats() instead.
     protected function get_data_table_name(): string
     {
         return 'pp_game_schedule_for_display';
@@ -33,12 +39,9 @@ class Puck_Press_Record_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card
         return 'pp-record-preview';
     }
 
-    /**
-     * Override init() to fetch computed stats rather than raw table rows.
-     */
     public function init()
     {
-        $this->data                  = $this->wpdb_utils->get_record_stats();
+        $this->data                  = $this->wpdb_utils->get_record_stats($this->schedule_id);
         $this->templates             = $this->template_manager->get_all_templates();
         $this->selected_template_key = $this->template_manager->get_current_template_key();
         $this->template_manager->enqueue_all_template_assets();

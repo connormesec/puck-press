@@ -178,8 +178,9 @@
         url: ajaxurl,
         method: 'POST',
         data: {
-          action:   'pp_bulk_update_schedule_field',
-          nonce:    ppBulkSchedule.nonce,
+          action:      'pp_bulk_update_schedule_field',
+          nonce:       ppBulkSchedule.nonce,
+          schedule_id: (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1,
           field,
           value,
           game_ids: JSON.stringify(ids),

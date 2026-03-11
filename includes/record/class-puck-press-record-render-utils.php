@@ -8,12 +8,14 @@ class Puck_Press_Record_Render_Utils
 {
     private $template_manager;
     private $wpdb_utils;
+    private int $schedule_id;
 
-    public function __construct()
+    public function __construct(int $schedule_id = 1)
     {
         $this->load_dependencies();
-        $this->template_manager = new Puck_Press_Record_Template_Manager();
+        $this->template_manager = new Puck_Press_Record_Template_Manager($schedule_id);
         $this->wpdb_utils       = new Puck_Press_Record_Wpdb_Utils();
+        $this->schedule_id      = $schedule_id;
     }
 
     private function load_dependencies(): void
@@ -37,7 +39,7 @@ class Puck_Press_Record_Render_Utils
      */
     public function get_current_template_html(array $atts = []): string
     {
-        $stats = $this->wpdb_utils->get_record_stats();
+        $stats = $this->wpdb_utils->get_record_stats($this->schedule_id);
 
         $data = array_merge($stats, [
             'show_home_away' => isset($atts['show_home_away']) ? $atts['show_home_away'] : 'true',

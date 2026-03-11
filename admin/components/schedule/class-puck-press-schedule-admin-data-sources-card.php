@@ -3,10 +3,12 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
 {
     private $table_name = 'pp_schedule_data_sources';
     private $schedule_db_utils;
+    private int $schedule_id;
 
-    public function __construct(array $args = [])
+    public function __construct(array $args = [], int $schedule_id = 1)
     {
         parent::__construct($args);
+        $this->schedule_id = $schedule_id;
     }
 
     /**
@@ -37,8 +39,7 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
         ob_start();
     ?>
         <button class="pp-button pp-button-primary" id="pp-add-source-button">
-            <i>+</i>
-            Add Source
+            + Add Source
         </button>
     <?php
         return ob_get_clean();
@@ -58,7 +59,13 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
             return '<p>' . esc_html__('Data Sources table does not exist.', 'puck-press') . '</p>';
         }
 
-        $data_sources = $this->schedule_db_utils->get_all_table_data($this->table_name);
+        global $wpdb;
+        $data_sources = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $wp_table_name WHERE schedule_id = %d ORDER BY id ASC",
+                $this->schedule_id
+            )
+        );
 
         if (empty($data_sources)) {
             ob_start();
@@ -141,6 +148,8 @@ class Puck_Press_Schedule_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_
             wp_send_json_error(['message' => $data->get_error_message()]);
             wp_die();
         }
+
+        $data['schedule_id'] = (int) ($_POST['schedule_id'] ?? 1);
 
         global $wpdb;
         $result = $wpdb->insert($this->get_table_name(), $data);

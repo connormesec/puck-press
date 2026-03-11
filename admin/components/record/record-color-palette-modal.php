@@ -4,8 +4,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$record_templates       = new Puck_Press_Record_Template_Manager();
-$record_templates_meta  = $record_templates->get_registered_templates_metadata();
+$schedule_id              = isset($_GET['schedule_id']) ? (int) $_GET['schedule_id'] : 1;
+$record_templates         = new Puck_Press_Record_Template_Manager($schedule_id);
+$record_templates_meta    = $record_templates->get_registered_templates_metadata();
 $selected_record_template = $record_templates->get_current_template_key();
 ?>
 

@@ -72,6 +72,7 @@ class Puck_Press_Roster_Admin_Display
                                 name="pp-roster-shortcode"
                                 class="pp-shortcode-input"
                                 value="[pp-roster]"
+                                size="11"
                                 spellcheck="false"
                                 aria-label="shortcode"
                                 onfocus="this.select();"

@@ -106,19 +106,60 @@ abstract class PuckPressTemplate
     }
 
     /**
-     * Optionally return inline CSS (e.g. using colors from get_option)
+     * Get saved colors for a schedule-specific template instance.
+     *
+     * Reads from the per-schedule option (pp_schedule_{id}_template_colors_{key}).
+     * Falls back to the legacy option (pp_schedule_template_colors_{key}) for schedule 1,
+     * and ultimately to get_default_colors() if nothing is saved.
+     *
+     * @param int $schedule_id The schedule group ID.
+     * @return array Colors array.
      */
-    public static function get_inline_css(): ?string
+    public static function get_schedule_colors(int $schedule_id): array
     {
-        $colors       = static::get_template_colors();
-        $fonts        = static::get_template_fonts();
+        $key    = static::get_key();
+        $option = "pp_schedule_{$schedule_id}_template_colors_{$key}";
+        $saved  = get_option($option, null);
+
+        if ($saved === null && $schedule_id === 1) {
+            $saved = get_option("pp_schedule_template_colors_{$key}", null);
+        }
+
+        return is_array($saved) ? $saved : static::get_default_colors();
+    }
+
+    public static function get_schedule_fonts(int $schedule_id): array
+    {
+        $key    = static::get_key();
+        $option = "pp_schedule_{$schedule_id}_template_fonts_{$key}";
+        $saved  = get_option($option, null);
+
+        if ($saved === null && $schedule_id === 1) {
+            $saved = get_option("pp_schedule_template_fonts_{$key}", null);
+        }
+
+        return is_array($saved) ? $saved : static::get_default_fonts();
+    }
+
+    /**
+     * Optionally return inline CSS (e.g. using colors from get_option).
+     *
+     * @param string     $scope  CSS selector to scope variables under (default ':root').
+     *                           Pass '#pp-sched-{slug}' to isolate per-schedule-instance.
+     * @param array|null $colors Color override array. When null, reads from the option.
+     * @param array|null $fonts  Font override array. When null, reads from the option.
+     */
+    public static function get_inline_css(string $scope = ':root', ?array $colors = null, ?array $fonts = null): ?string
+    {
+        $colors       = $colors ?? static::get_template_colors();
+        $fonts        = $fonts  ?? static::get_template_fonts();
         $template_key = static::get_key();
 
         if (empty($colors) || !is_array($colors)) {
             return null;
         }
 
-        $css = ':root {';
+        $css = $scope . ' {';
 
         // Template-scoped color variables.
         foreach ($colors as $key => $val) {

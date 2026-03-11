@@ -77,6 +77,7 @@
 
         $(cfg.openBtnId).on('click', () => {
             $modal.css('display', 'flex');
+            $(cfg.templateSelectorId).val(cfg.templatesData.selected_template);
             const key = $(cfg.templateSelectorId).val();
             generateColorFields(key);
             if (hasFont) generateFontFields(key);
@@ -112,6 +113,7 @@
             const data   = { action: cfg.ajaxAction, template_key: key, colors: colors };
             if (hasFont) data.fonts = getFontSettings();
             if (cfg.calUrlFieldId) data.cal_url = $(cfg.calUrlFieldId).val().trim();
+            if (cfg.extraData) Object.assign(data, (typeof cfg.extraData === 'function' ? cfg.extraData() : cfg.extraData));
 
             $.ajax({
                 url: ajaxurl,

@@ -141,6 +141,9 @@ class Puck_Press
 		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-puck-press-yoast-sitemap.php';
 		Puck_Press_Yoast_Sitemap::init();
 
+		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-puck-press-activator.php';
+		add_action('plugins_loaded', ['Puck_Press_Activator', 'maybe_run_migrations']);
+
 		$this->loader = new Puck_Press_Loader();
 	}
 

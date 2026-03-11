@@ -2,6 +2,13 @@
 class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abstract
 {
     public $table_name = 'pp_game_schedule_mods';
+    private int $schedule_id;
+
+    public function __construct(array $args = [], int $schedule_id = 1)
+    {
+        parent::__construct($args);
+        $this->schedule_id = $schedule_id;
+    }
 
     public function render_content()
     {
@@ -14,9 +21,14 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
 
     public function render_edits_table()
     {
+        global $wpdb;
         $schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils;
         $schedule_db_utils->maybe_create_or_update_table($this->table_name);
-        $edits = $schedule_db_utils->get_all_table_data($this->table_name, 'ARRAY_A');
+        $table = $wpdb->prefix . $this->table_name;
+        $edits = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM $table WHERE schedule_id = %d ORDER BY id ASC", $this->schedule_id),
+            ARRAY_A
+        );
 
         if ($edits == null) {
             return '<table class="pp-table" id="pp-schedule-edits-table"><caption>' . esc_html__('No game edits', 'puck-press') . '</caption></table>';
@@ -212,10 +224,12 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
                 wp_send_json_error(['message' => 'Update failed', 'db_error' => $wpdb->last_error]);
             }
         } else {
-            $edit_data_json = wp_json_encode($parsed_data['fields']);
+            $edit_data_json  = wp_json_encode($parsed_data['fields']);
+            $save_schedule_id = (int) ($_POST['schedule_id'] ?? 1);
             $result = $wpdb->insert(
                 $table,
                 [
+                    'schedule_id' => $save_schedule_id,
                     'external_id' => $external_id,
                     'edit_action' => $edit_action,
                     'edit_data'   => $edit_data_json,
@@ -320,24 +334,26 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
     function ajax_reset_all_edits_callback() {
         global $wpdb;
 
-        $table_mods = $wpdb->prefix . 'pp_game_schedule_mods';
-        $wpdb->query( "TRUNCATE TABLE $table_mods" );
+        $schedule_id    = (int) ($_POST['schedule_id'] ?? 1);
+        $table_mods     = $wpdb->prefix . 'pp_game_schedule_mods';
+        $wpdb->delete($table_mods, ['schedule_id' => $schedule_id], ['%d']);
 
         // Rebuild for_display from existing raw data — no external API calls needed.
         $utils = new Puck_Press_Schedule_Wpdb_Utils();
-        $utils->reset_table( 'pp_game_schedule_for_display' );
-        $importer = new Puck_Press_Schedule_Source_Importer();
+        $utils->delete_rows_for_schedule('pp_game_schedule_for_display', $schedule_id);
+        $importer = new Puck_Press_Schedule_Source_Importer($schedule_id);
         $importer->apply_edits_and_save_to_display_table();
 
-        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card();
+        $games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card([], $schedule_id);
         $games_table_html = $games_table_card->render_game_schedule_admin_preview();
 
-        $preview_card = Puck_Press_Schedule_Admin_Preview_Card::create_and_init();
+        $preview_card = Puck_Press_Schedule_Admin_Preview_Card::create_and_init($schedule_id);
         $preview_html = $preview_card->get_all_templates_html();
 
-        $slider_card = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init();
+        $slider_card = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init($schedule_id);
         $slider_html = $slider_card->get_all_templates_html();
 
+        $this->schedule_id    = $schedule_id;
         $edits_table_html = $this->render_edits_table();
 
         wp_send_json_success( [
@@ -420,14 +436,15 @@ class Puck_Press_Schedule_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_A
             }
         }
 
+        $bulk_schedule_id = (int) ($_POST['schedule_id'] ?? 1);
         $utils = new Puck_Press_Schedule_Wpdb_Utils();
-        $utils->reset_table('pp_game_schedule_for_display');
-        $importer = new Puck_Press_Schedule_Source_Importer();
+        $utils->delete_rows_for_schedule('pp_game_schedule_for_display', $bulk_schedule_id);
+        $importer = new Puck_Press_Schedule_Source_Importer($bulk_schedule_id);
         $importer->apply_edits_and_save_to_display_table();
 
-        $games_table_html        = (new Puck_Press_Schedule_Admin_Games_Table_Card())->render_game_schedule_admin_preview();
-        $schedule_preview_html   = Puck_Press_Schedule_Admin_Preview_Card::create_and_init()->get_all_templates_html();
-        $slider_preview_html     = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init()->get_all_templates_html();
+        $games_table_html        = (new Puck_Press_Schedule_Admin_Games_Table_Card([], $bulk_schedule_id))->render_game_schedule_admin_preview();
+        $schedule_preview_html   = Puck_Press_Schedule_Admin_Preview_Card::create_and_init($bulk_schedule_id)->get_all_templates_html();
+        $slider_preview_html     = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init($bulk_schedule_id)->get_all_templates_html();
 
         wp_send_json_success([
             'games_table_html'      => $games_table_html,

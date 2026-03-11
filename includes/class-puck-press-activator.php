@@ -22,13 +22,41 @@
  */
 class Puck_Press_Activator {
 
-	/**
-	 * Short Description. (use period)
-	 *
-	 * Long Description.
-	 *
-	 * @since    1.0.0
-	 */
+	public static function maybe_run_migrations(): void
+	{
+		$db_version = get_option('pp_db_version', '1.0');
+		if (version_compare($db_version, '2.0', '>=')) {
+			return;
+		}
+
+		require_once plugin_dir_path(__FILE__) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path(__FILE__) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
+		require_once plugin_dir_path(__FILE__) . 'class-puck-press-group-migration.php';
+		require_once plugin_dir_path(__FILE__) . 'schedule/class-puck-press-schedule-wpdb-utils.php';
+
+		$schedule_utils = new Puck_Press_Schedule_Wpdb_Utils();
+		$schedule_utils->maybe_create_or_update_table('pp_schedules');
+		$schedule_utils->seed_default_group('Main Schedule');
+
+		Puck_Press_Group_Migration::maybe_add_group_id_column(
+			[
+				'pp_schedule_data_sources',
+				'pp_game_schedule_raw',
+				'pp_game_schedule_mods',
+				'pp_game_schedule_for_display',
+			],
+			'schedule_id',
+			[
+				'table'   => 'pp_game_schedule_raw',
+				'old_key' => 'game_id',
+				'new_key' => 'schedule_game',
+				'columns' => '(schedule_id, game_id)',
+			]
+		);
+
+		update_option('pp_db_version', '2.0');
+	}
+
 	public static function activate() {
 		require_once plugin_dir_path(__FILE__) . 'class-puck-press-cron.php';
     	$cron = new Puck_Press_Cron();

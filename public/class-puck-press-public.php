@@ -56,21 +56,33 @@ class Puck_Press_Public {
 
 	public function schedule_builder_shortcode( $atts )
 	{
-		$atts        = shortcode_atts( [ 'archive' => '' ], $atts );
+		$atts = shortcode_atts( [ 'archive' => '', 'schedule' => '' ], $atts );
 		$archive_key = sanitize_title( $atts['archive'] );
+		$slug        = sanitize_title( $atts['schedule'] );
 
+		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/schedule/class-puck-press-schedule-render-utils.php';
-		$render_schedule = new Puck_Press_Schedule_Render_Utils( $archive_key );
+
+		$schedule_id     = Puck_Press_Group_Resolver::resolve( $slug, 'pp_schedules' );
+		$render_schedule = new Puck_Press_Schedule_Render_Utils( $archive_key, $schedule_id );
 		$options         = $archive_key !== '' ? ['is_archive' => true] : [];
+		$options['schedule_slug'] = $slug !== '' ? $slug : 'default';
+		$options['schedule_id']   = $schedule_id;
+
 		return $render_schedule->get_current_template_html( $options );
 	}
 
-	public function slider_builder_shortcode()
+	public function slider_builder_shortcode( $atts = [] )
 	{
+		$atts = shortcode_atts( [ 'schedule' => '' ], $atts );
+		$slug = sanitize_title( $atts['schedule'] );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/schedule/class-puck-press-slider-render-utils.php';
-		$render_schedule = new Puck_Press_Slider_Render_Utils;
-		$output = $render_schedule->get_current_template_html();
-		return $output;
+
+		$schedule_id     = Puck_Press_Group_Resolver::resolve( $slug, 'pp_schedules' );
+		$render_schedule = new Puck_Press_Slider_Render_Utils( $schedule_id );
+		return $render_schedule->get_current_template_html();
 	}
 
 	public function roster_builder_shortcode()
@@ -96,10 +108,14 @@ class Puck_Press_Public {
 			'show_goals'     => 'true',
 			'show_diff'      => 'true',
 			'title'          => 'Team Record',
+			'schedule'       => '',
 		], $atts );
 
+		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/record/class-puck-press-record-render-utils.php';
-		$render = new Puck_Press_Record_Render_Utils();
+
+		$schedule_id = Puck_Press_Group_Resolver::resolve( sanitize_title( $atts['schedule'] ), 'pp_schedules' );
+		$render = new Puck_Press_Record_Render_Utils( $schedule_id );
 		return $render->get_current_template_html( $atts );
 	}
 

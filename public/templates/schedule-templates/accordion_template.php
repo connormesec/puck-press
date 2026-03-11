@@ -61,15 +61,25 @@ class AccordionTemplate extends PuckPressTemplate
      */
     public function render_with_options(array $games, array $options): string
     {
-        return $this->buildAccordionSchedule($games, $options['is_archive'] ?? false);
+        $slug         = $options['schedule_slug'] ?? '';
+        $schedule_id  = isset($options['schedule_id']) ? (int) $options['schedule_id'] : 0;
+        $container_id = $slug ? 'pp-sched-' . sanitize_html_class($slug) : '';
+        $scope        = $container_id ? '#' . $container_id : ':root';
+        $colors       = $schedule_id > 0 ? self::get_schedule_colors($schedule_id) : null;
+        $fonts        = $schedule_id > 0 ? self::get_schedule_fonts($schedule_id) : null;
+        $inline_css   = self::get_inline_css($scope, $colors, $fonts);
+        $css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+        return $css_block . $this->buildAccordionSchedule($games, $options['is_archive'] ?? false, $container_id);
     }
 
-    public function buildAccordionSchedule(array $games, bool $is_archive = false)
+    public function buildAccordionSchedule(array $games, bool $is_archive = false, string $container_id = '')
     {
         $grouped_games = self::group_games_by_month($games, false);
 
-        $now = new DateTime();
-        $content = '<div class="accordion_schedule_container css-transitions-only-after-page-load">';
+        $fake = defined('PP_FAKE_NOW') ? PP_FAKE_NOW : null;
+        $now  = $fake ? new DateTime($fake) : new DateTime();
+        $id_attr = $container_id ? ' id="' . esc_attr($container_id) . '"' : '';
+        $content = '<div class="accordion_schedule_container css-transitions-only-after-page-load"' . $id_attr . '>';
         foreach ($grouped_games as $key => $month) {
             $showActive = '';
 
@@ -160,7 +170,7 @@ class AccordionTemplate extends PuckPressTemplate
 						<p class="accordion_game_promotion_item_header">
 							<strong>' . $header . ' </strong>
 						</p>
-						<p>' . nl2br( $text ) . '</p>
+						<p>' . nl2br( $text ?? '' ) . '</p>
 					</div>
 				</div>
 			</div>
@@ -177,8 +187,12 @@ class AccordionTemplate extends PuckPressTemplate
         if (! empty($game['game_status'])) {
             return true;
         }
-        if (! empty($game['game_timestamp']) && strtotime($game['game_timestamp']) < time()) {
-            return true;
+        if (! empty($game['game_timestamp'])) {
+            $fake    = defined('PP_FAKE_NOW') ? PP_FAKE_NOW : null;
+            $now_ts  = $fake ? (new DateTime($fake))->getTimestamp() : time();
+            if (strtotime($game['game_timestamp']) < $now_ts) {
+                return true;
+            }
         }
         return false;
     }

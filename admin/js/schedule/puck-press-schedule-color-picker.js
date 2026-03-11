@@ -14,6 +14,7 @@
             ajaxAction:             'puck_press_update_schedule_colors',
             containerSuffix:        '_schedule_container',
             fontFieldsContainerId:  '#pp-schedule-dynamic-font-fields',
+            extraData:              () => ({ schedule_id: (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1 }),
         });
     });
 })(jQuery);

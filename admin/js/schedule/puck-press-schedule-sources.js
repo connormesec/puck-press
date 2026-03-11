@@ -69,7 +69,8 @@
 					const data = {
 						name: $('#pp-source-name').val(),
 						type,
-						active: $('#pp-new-source-active').is(':checked') ? 1 : 0
+						active: $('#pp-new-source-active').is(':checked') ? 1 : 0,
+						schedule_id: (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1
 					};
 
 					if (type === 'achaGameScheduleUrl') {

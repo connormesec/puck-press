@@ -12,18 +12,22 @@ class Puck_Press_Record_Wpdb_Utils
      *
      * @return array Flat associative array of stats.
      */
-    public function get_record_stats(): array
+    public function get_record_stats(int $schedule_id = 1): array
     {
         global $wpdb;
         $table = $wpdb->prefix . 'pp_game_schedule_for_display';
 
         $games = $wpdb->get_results(
-            "SELECT target_score, opponent_score, home_or_away, game_status
-               FROM {$table}
-              WHERE target_score IS NOT NULL
-                AND opponent_score IS NOT NULL
-                AND game_status IS NOT NULL
-                AND game_status NOT IN ('', 'null')",
+            $wpdb->prepare(
+                "SELECT target_score, opponent_score, home_or_away, game_status
+                   FROM {$table}
+                  WHERE schedule_id = %d
+                    AND target_score IS NOT NULL
+                    AND opponent_score IS NOT NULL
+                    AND game_status IS NOT NULL
+                    AND game_status NOT IN ('', 'null')",
+                $schedule_id
+            ),
             ARRAY_A
         );
 

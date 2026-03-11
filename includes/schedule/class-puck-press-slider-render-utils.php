@@ -8,17 +8,23 @@ class Puck_Press_Slider_Render_Utils
     protected $templates;
     protected $selected_template_key;
 
-    public function __construct()
+    public function __construct(int $schedule_id = 1)
     {
         $this->load_dependencies();
 
         $this->template_manager = new Puck_Press_Slider_Template_Manager();
         $this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
 
-        $this->games     = $this->wpdb_utils->get_all_table_data('pp_game_schedule_for_display', 'ARRAY_A');
+        global $wpdb;
+        $table       = $wpdb->prefix . 'pp_game_schedule_for_display';
+        $this->games = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM $table WHERE schedule_id = %d", $schedule_id),
+            ARRAY_A
+        );
+
         $this->templates = $this->template_manager->get_all_templates();
 
-        $this->selected_template_key =  $this->template_manager->get_current_template_key();
+        $this->selected_template_key = $this->template_manager->get_current_template_key();
     }
 
     public function load_dependencies()

@@ -1,5 +1,42 @@
 /* Conference Scoreboard Template */
 
+/* ── Promo section ────────────────────────────────────── */
+.csb-promo {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
+.csb-promo__img {
+  max-width: 150px;
+  min-width: 80px;
+  height: auto;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.csb-promo__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.csb-promo__header {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--pp-conference-text);
+  margin: 0 0 4px;
+}
+
+.csb-promo__text {
+  font-size: 0.85rem;
+  color: var(--pp-conference-text_muted);
+  margin: 0;
+}
+
 /* ── Container ────────────────────────────────────────── */
 .conference_schedule_container {
   background: var(--pp-conference-page_bg);
@@ -263,40 +300,66 @@
   padding: 20px 0;
 }
 
-/* ── Responsive: 680px ────────────────────────────────── */
-@media screen and (max-width: 680px) {
-  .csb-card__right {
-    min-width: 110px;
-    padding: 14px 12px;
-  }
-
-  .csb-team-record {
-    display: none;
-  }
-
-  .csb-score {
-    font-size: 18px;
-  }
-}
-
-/* ── Responsive: 480px ────────────────────────────────── */
-@media screen and (max-width: 480px) {
-  .csb-card__right {
-    min-width: 80px;
+/* ── Responsive: mobile stack ─────────────────────────── */
+@media screen and (max-width: 600px) {
+  .conference_schedule_container {
     padding: 12px 10px;
   }
 
-  .csb-team-name {
-    font-size: 13px;
+  /* Stack card vertically */
+  .csb-card {
+    flex-direction: column;
   }
 
+  /* Full-width team section */
+  .csb-card__left {
+    padding: 12px 14px 10px;
+  }
+
+  /* Promo becomes full-width below teams */
+  .csb-promo {
+    flex: none;
+    width: 100%;
+    padding: 10px 14px;
+    border-top: 1px solid var(--pp-conference-divider);
+    justify-content: flex-start;
+  }
+
+  .csb-promo__img {
+    max-width: 70px;
+    min-width: 60px;
+  }
+
+  /* Buttons row at the bottom */
+  .csb-card__right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    min-width: unset;
+    width: 100%;
+    padding: 10px 14px;
+    border-left: none;
+    border-top: 1px solid var(--pp-conference-divider);
+    gap: 8px;
+  }
+
+  /* Buttons fill the row nicely */
   .csb-ticket-btn,
   .csb-action-btn {
-    font-size: 11px;
-    padding: 6px 10px;
+    font-size: 13px;
+    padding: 8px 16px;
+    flex: 1;
+    text-align: center;
   }
 
+  /* Keep score readable */
+  .csb-score {
+    font-size: 20px;
+  }
+
+  /* Keep home badge on mobile */
   .csb-home-badge {
-    display: none;
+    display: inline-block;
   }
 }

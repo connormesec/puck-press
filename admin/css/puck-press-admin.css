@@ -135,7 +135,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.pp-section-header > .pp-flex-row {
+  flex-shrink: 0;
 }
 
 .pp-section-title {
@@ -183,6 +189,11 @@
 .pp-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.pp-groups-table-wrapper .pp-table td,
+.pp-groups-table-wrapper .pp-table th {
+  text-align: center;
 }
 
 .pp-thead {
@@ -678,26 +689,27 @@ input[type="file"]#pp-schedule-fileInput {
 }
 
 .pp-shortcode-container {
-  width: 100%;
-  max-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 20px;
+  flex-shrink: 0;
 }
 
 .pp-shortcode-label {
   font-weight: 500;
   color: #333;
-  margin-bottom: 8px;
   font-size: 16px;
+  white-space: nowrap;
 }
 
 .pp-shortcode-input-group {
-  max-width: 300px;
   position: relative;
-  width: 100%;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .pp-shortcode-input {
-  width: 100%;
   padding: 12px 40px 12px 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -717,7 +729,7 @@ input[type="file"]#pp-schedule-fileInput {
 
 .pp-shortcode-copy-btn {
   position: absolute;
-  right: 8px;
+  right: -3px;
   top: 50%;
   transform: translateY(-50%);
   background: none;

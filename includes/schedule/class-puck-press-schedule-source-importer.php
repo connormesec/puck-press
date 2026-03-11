@@ -46,6 +46,7 @@ class Puck_Press_Schedule_Source_Importer
 
     private $schedule_db_utils;
     private $results = [];
+    private int $schedule_id;
 
     /**
      * CANONICAL GAME SCHEMA
@@ -156,10 +157,11 @@ class Puck_Press_Schedule_Source_Importer
         ],
     ];
 
-    public function __construct()
+    public function __construct(int $schedule_id = 1)
     {
         $this->load_dependencies();
         $this->schedule_db_utils = new Puck_Press_Schedule_Wpdb_Utils();
+        $this->schedule_id       = $schedule_id;
     }
 
     private function load_dependencies()
@@ -226,7 +228,7 @@ class Puck_Press_Schedule_Source_Importer
             'messages'      => [],
         ];
 
-        $active_sources = $this->schedule_db_utils->get_active_schedule_sources() ?? [];
+        $active_sources = $this->schedule_db_utils->get_active_schedule_sources($this->schedule_id) ?? [];
 
         if ( empty( $active_sources ) ) {
             $this->results['messages'][] = 'No active sources to import.';
@@ -294,6 +296,7 @@ class Puck_Press_Schedule_Source_Importer
                     $game = [
                         'source'                 => $source->name,
                         'source_type'            => $source->type,
+                        'schedule_id'            => $this->schedule_id,
                         'game_id'                => "custom_game_{$game_timestamp}_{$source->name}",
                         'target_team_name'       => $other_data['target']['name'],
                         'target_team_nickname'   => $other_data['target']['nickname'],
@@ -357,6 +360,7 @@ class Puck_Press_Schedule_Source_Importer
         foreach ( $games as &$game ) {
             $game['source']      = $source->name;
             $game['source_type'] = $source->type;
+            $game['schedule_id'] = $this->schedule_id;
         }
         return $games;
     }
@@ -412,13 +416,24 @@ class Puck_Press_Schedule_Source_Importer
      */
     function apply_edits_and_save_to_display_table()
     {
+        global $wpdb;
+
         $table_a = 'pp_game_schedule_raw';
         $table_b = 'pp_game_schedule_mods';
         $table_c = 'pp_game_schedule_for_display';
 
-        $originals = $this->schedule_db_utils->get_all_table_data( $table_a, 'ARRAY_A' ) ?? [];
+        $full_a = $wpdb->prefix . $table_a;
+        $full_b = $wpdb->prefix . $table_b;
 
-        $edits = $this->schedule_db_utils->get_all_table_data( $table_b, 'ARRAY_A' );
+        $originals = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM $full_a WHERE schedule_id = %d", $this->schedule_id),
+            ARRAY_A
+        ) ?? [];
+
+        $edits = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM $full_b WHERE schedule_id = %d", $this->schedule_id),
+            ARRAY_A
+        ) ?? [];
 
         $edit_map   = []; // game_id => merged field overrides
         $delete_ids = []; // game_ids to exclude
