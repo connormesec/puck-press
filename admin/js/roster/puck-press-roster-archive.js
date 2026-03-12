@@ -1,4 +1,6 @@
 (function ($) {
+    const getRosterId = () => (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
+
     $(document).ready(() => {
         const $modal      = $('#pp-roster-archive-modal');
         const $statsCount = $('#pp-roster-archive-stats-count');
@@ -17,7 +19,7 @@
             $error.hide().text('');
             $statsCount.text('Loading...');
 
-            $.post(ajaxurl, { action: 'pp_get_roster_stats_count' }, (response) => {
+            $.post(ajaxurl, { action: 'pp_get_roster_stats_count', roster_id: getRosterId() }, (response) => {
                 if (response.success) {
                     const { skater_count, goalie_count } = response.data;
                     $statsCount.text(`${skater_count} skater${skater_count !== 1 ? 's' : ''} and ${goalie_count} goalie${goalie_count !== 1 ? 's' : ''} will be archived.`);
@@ -50,6 +52,7 @@
             $.post(ajaxurl, {
                 action: 'pp_create_roster_archive',
                 season,
+                roster_id: getRosterId(),
             }, (response) => {
                 $confirmBtn.prop('disabled', false).text('Archive Roster');
 
@@ -72,6 +75,7 @@
             $.post(ajaxurl, {
                 action: 'pp_delete_roster_archive',
                 archive_key: key,
+                roster_id: getRosterId(),
             }, (response) => {
                 if (response.success) {
                     $row.remove();

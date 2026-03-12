@@ -34,10 +34,20 @@ class Puck_Press_Record_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card
 	}
 
 	public function init() {
-		$this->data                  = $this->wpdb_utils->get_record_stats( $this->schedule_id );
 		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
 		$this->template_manager->enqueue_all_template_assets();
+
+		if ( $this->selected_template_key === 'conference' ) {
+			$this->data = array(
+				'rows'           => $this->wpdb_utils->get_multi_source_stats( $this->schedule_id ),
+				'show_home_away' => 'true',
+				'show_goals'     => 'true',
+				'show_diff'      => 'true',
+			);
+		} else {
+			$this->data = $this->wpdb_utils->get_record_stats( $this->schedule_id );
+		}
 	}
 
 	public function render_header_button_content() {

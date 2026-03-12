@@ -3,9 +3,11 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 
 	private $table_name = 'pp_roster_data_sources';
 	private $roster_db_utils;
+	private int $roster_id;
 
-	public function __construct( array $args = array() ) {
+	public function __construct( array $args = array(), int $roster_id = 1 ) {
 		parent::__construct( $args );
+		$this->roster_id = $roster_id;
 	}
 
 	/**
@@ -21,7 +23,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 	}
 
 	public function render_content() {
-		$this->init(); // <-- Call it here if needed
+		$this->init();
 		ob_start();
 		?>
 		<div id="pp-data-sources-table">
@@ -44,8 +46,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 	public function render_game_roster_data_sources() {
 		global $wpdb;
 		$wp_table_name = $wpdb->prefix . $this->table_name;
-		// Check if table exists
-		$table_exists = $wpdb->get_var(
+		$table_exists  = $wpdb->get_var(
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
 				$wpdb->esc_like( $wp_table_name )
@@ -56,7 +57,12 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 			return '<p>' . esc_html__( 'Data Sources table does not exist.', 'puck-press' ) . '</p>';
 		}
 
-		$data_sources = $this->roster_db_utils->get_all_table_data( $this->table_name );
+		$data_sources = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wp_table_name} WHERE roster_id = %d ORDER BY id ASC",
+				$this->roster_id
+			)
+		);
 
 		if ( empty( $data_sources ) ) {
 			ob_start();
@@ -143,6 +149,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 
 	public function ajax_delete_roster_source_callback() {
 		$data_source_id = isset( $_POST['source_id'] ) ? intval( $_POST['source_id'] ) : 0;
+		$roster_id      = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( ! $data_source_id ) {
 			wp_send_json_error( array( 'message' => 'Invalid data source ID' ) );
@@ -150,7 +157,13 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 		}
 
 		global $wpdb;
-		$result = $wpdb->delete( $this->get_table_name(), array( 'id' => $data_source_id ) );
+		$result = $wpdb->delete(
+			$this->get_table_name(),
+			array(
+				'id'        => $data_source_id,
+				'roster_id' => $roster_id,
+			)
+		);
 
 		if ( $result === false ) {
 			wp_send_json_error(
@@ -169,6 +182,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 	public function ajax_update_roster_source_status_callback() {
 		$source_id = isset( $_POST['source_id'] ) ? intval( $_POST['source_id'] ) : 0;
 		$status    = sanitize_text_field( $_POST['status'] ?? '' );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( ! $source_id || ! in_array( $status, array( 'active', 'inactive' ), true ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid request data' ) );
@@ -179,7 +193,10 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 		$updated = $wpdb->update(
 			$this->get_table_name(),
 			array( 'status' => $status ),
-			array( 'id' => $source_id )
+			array(
+				'id'        => $source_id,
+				'roster_id' => $roster_id,
+			)
 		);
 
 		if ( $updated !== false ) {
@@ -192,12 +209,15 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 	}
 
 	public function ajax_add_roster_source() {
-		$data = $this->sanitize_add_data_source_request( $_POST, $_FILES );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
+		$data      = $this->sanitize_add_data_source_request( $_POST, $_FILES );
 
 		if ( is_wp_error( $data ) ) {
 			wp_send_json_error( array( 'message' => $data->get_error_message() ) );
 			wp_die();
 		}
+
+		$data['roster_id'] = $roster_id;
 
 		global $wpdb;
 		$result = $wpdb->insert( $this->get_table_name(), $data );
@@ -252,7 +272,7 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 				$validation_result = Puck_Press_Roster_Process_Csv_Data::validate_csv_headers( $files['csv']['tmp_name'] );
 
 				if ( is_wp_error( $validation_result ) ) {
-					return $validation_result; // return early with error to user
+					return $validation_result;
 				}
 
 				$csv_content = file_get_contents( $files['csv']['tmp_name'] );

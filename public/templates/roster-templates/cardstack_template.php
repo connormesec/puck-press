@@ -79,18 +79,25 @@ class CardStackTemplate extends PuckPressTemplate {
 	 * Returns the template output
 	 */
 	public function render_with_options( array $players, array $options ): string {
-		$output = $this->buildCardStack( $players );
-		// Include the template file and capture output
-
+		$roster_id  = isset( $options['roster_id'] ) ? (int) $options['roster_id'] : 1;
+		$colors     = self::get_roster_colors( $roster_id );
+		$fonts      = self::get_roster_fonts( $roster_id );
+		$inline_css = self::get_inline_css( ':root', $colors, $fonts );
+		$css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+		$output     = $css_block . $this->buildCardStack( $players, $roster_id );
 		return $output;
 	}
 
-	public function buildCardStack( array $players ) {
+	public function buildCardStack( array $players, int $roster_id = 1 ) {
 		global $wpdb;
 		$player_ids_with_stats = $wpdb->get_col(
-			"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats"
+			$wpdb->prepare(
+				"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats WHERE roster_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats WHERE roster_id = %d",
+				$roster_id,
+				$roster_id
+			)
 		);
-		$players_with_stats    = array_flip( $player_ids_with_stats ?: array() );
+		$players_with_stats    = array_flip( array_filter( $player_ids_with_stats ?: array(), 'is_scalar' ) );
 
 		$content = '<div class="cardstack_roster_container clearfix">';
 

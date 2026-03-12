@@ -158,21 +158,18 @@ class Puck_Press_Admin {
 
 	public function ajax_refresh_all_roster_sources_callback() {
 		global $wpdb;
-		$utils = new Puck_Press_Roster_Wpdb_Utils();
-		$utils->reset_table( 'pp_roster_raw' );
-		$utils->reset_table( 'pp_roster_for_display' );
-		$utils->reset_table( 'pp_roster_stats' );
-		$utils->reset_table( 'pp_roster_goalie_stats' );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
-		$importer                     = new Puck_Press_Roster_Source_Importer();
+		$importer                     = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$raw_table_results            = $importer->populate_raw_roster_table_from_sources();
 		$display_roster_table_results = $importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
-		$refresh_roster_preview      = Puck_Press_Roster_Admin_Preview_Card::create_and_init();
+		$refresh_roster_preview = new Puck_Press_Roster_Admin_Preview_Card( array(), $roster_id );
+		$refresh_roster_preview->init();
 		$refresh_roster_preview_html = $refresh_roster_preview->get_all_templates_html();
 
-		$refresh_edits_table        = new Puck_Press_Roster_Admin_Edits_Table_Card();
+		$refresh_edits_table        = new Puck_Press_Roster_Admin_Edits_Table_Card( array(), $roster_id );
 		$refreshed_edits_table_html = $refresh_edits_table->render_edits_table();
 
 		$response_data = array(
@@ -394,7 +391,70 @@ class Puck_Press_Admin {
 	}
 
 	public static function pp_ajax_update_roster_template_colors() {
-		self::update_template_colors( new Puck_Press_Roster_Template_Manager() );
+		$roster_id = isset( $_POST['roster_id'] ) ? (int) $_POST['roster_id'] : 1;
+		self::update_template_colors( new Puck_Press_Roster_Template_Manager( $roster_id ) );
+	}
+
+	public static function pp_ajax_create_roster_group(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_roster_group_nonce', 'nonce' );
+
+		$name = sanitize_text_field( $_POST['name'] ?? '' );
+		$slug = sanitize_title( $_POST['slug'] ?? $name );
+		$desc = sanitize_textarea_field( $_POST['description'] ?? '' );
+
+		if ( empty( $name ) || empty( $slug ) ) {
+			wp_send_json_error( array( 'message' => 'Name and slug are required.' ) );
+		}
+
+		$wpdb_utils = new Puck_Press_Roster_Wpdb_Utils();
+		$id         = $wpdb_utils->create_group( $slug, $name, $desc );
+
+		if ( ! $id ) {
+			wp_send_json_error( array( 'message' => 'Failed to create roster group. Slug may already exist.' ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => "Roster group '{$name}' created.",
+				'id'      => $id,
+				'slug'    => $slug,
+				'name'    => $name,
+			)
+		);
+	}
+
+	public static function pp_ajax_delete_roster_group(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_roster_group_nonce', 'nonce' );
+
+		$group_id = (int) ( $_POST['group_id'] ?? 0 );
+		if ( $group_id <= 1 ) {
+			wp_send_json_error( array( 'message' => 'Cannot delete the default roster group.' ) );
+		}
+
+		$wpdb_utils = new Puck_Press_Roster_Wpdb_Utils();
+		$wpdb_utils->delete_group( $group_id );
+
+		wp_send_json_success( array( 'message' => 'Roster group deleted.' ) );
+	}
+
+	public static function pp_ajax_set_active_roster_id(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		$roster_id = (int) ( $_POST['roster_id'] ?? 1 );
+		update_option( 'pp_admin_active_roster_id', $roster_id );
+		wp_send_json_success(
+			array(
+				'message'   => 'Active roster updated.',
+				'roster_id' => $roster_id,
+			)
+		);
 	}
 
 	public static function pp_ajax_update_record_template_colors() {
@@ -577,6 +637,7 @@ class Puck_Press_Admin {
 				wp_enqueue_script( 'puck-press-roster-preview', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-preview.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-roster-archive', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-archive.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-roster', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-bulk-edit-roster.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-roster-groups', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-groups.js', array( 'jquery', 'puck-press-roster-sources' ), $this->version, false );
 				break;
 			case 'player-page':
 				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
@@ -646,7 +707,23 @@ class Puck_Press_Admin {
 		);
 		wp_localize_script( 'puck-press-slider-color-picker', 'ppSliderTemplates', $templates );
 
-		$roster_template_manager  = new Puck_Press_Roster_Template_Manager();
+		$active_roster_id         = (int) get_option( 'pp_admin_active_roster_id', 1 );
+		$roster_wpdb              = new Puck_Press_Roster_Wpdb_Utils();
+		$all_roster_groups        = $roster_wpdb->get_all_groups();
+		$active_roster_arr        = array_values( array_filter( $all_roster_groups, fn( $g ) => (int) $g['id'] === $active_roster_id ) );
+		$active_roster_slug       = $active_roster_arr[0]['slug'] ?? 'default';
+		wp_localize_script(
+			'puck-press-roster-groups',
+			'ppRosterAdmin',
+			array(
+				'activeRosterId'   => $active_roster_id,
+				'activeRosterSlug' => $active_roster_slug,
+				'rosterGroups'     => $all_roster_groups,
+				'nonce'            => wp_create_nonce( 'pp_roster_group_nonce' ),
+			)
+		);
+
+		$roster_template_manager  = new Puck_Press_Roster_Template_Manager( $active_roster_id );
 		$rosterTemplates          = $roster_template_manager->get_all_template_colors();
 		$selected_roster_template = $roster_template_manager->get_current_template_key();
 		$roster_templates         = array(
@@ -888,6 +965,11 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_create_schedule_group', array( self::class, 'pp_ajax_create_schedule_group' ) );
 		add_action( 'wp_ajax_pp_delete_schedule_group', array( self::class, 'pp_ajax_delete_schedule_group' ) );
 		add_action( 'wp_ajax_pp_set_active_schedule_id', array( self::class, 'pp_ajax_set_active_schedule_id' ) );
+
+		// Roster group CRUD and active group selection
+		add_action( 'wp_ajax_pp_create_roster_group', array( self::class, 'pp_ajax_create_roster_group' ) );
+		add_action( 'wp_ajax_pp_delete_roster_group', array( self::class, 'pp_ajax_delete_roster_group' ) );
+		add_action( 'wp_ajax_pp_set_active_roster_id', array( self::class, 'pp_ajax_set_active_roster_id' ) );
 
 		// Register the AJAX action for saving colors in color picker
 		add_action( 'wp_ajax_puck_press_update_schedule_colors', array( self::class, 'pp_ajax_update_schedule_template_colors' ) );

@@ -25,11 +25,13 @@ function refreshGamesTable(successCallback, errorCallback) {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab === 'roster') {
+        const rosterId = (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
         return (jQuery).ajax({
             url: ajaxurl, // WordPress AJAX URL
             type: 'POST',
             data: {
                 action: 'pp_refresh_all_roster_sources', // The action hook for refreshing all sources
+                roster_id: rosterId,
             },
             success: (response) => {
                 if (response.success) {

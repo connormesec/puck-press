@@ -188,33 +188,41 @@ class Puck_Press_Cron {
 				}
 			}
 
-			// Roster: reset raw + stats tables, then populate.
-			$r_utils = new Puck_Press_Roster_Wpdb_Utils();
-			$r_utils->reset_table( 'pp_roster_raw' );
-			$r_utils->reset_table( 'pp_roster_stats' );
-			$r_utils->reset_table( 'pp_roster_goalie_stats' );
+			// Roster: loop over all roster groups and refresh each one.
+			$r_utils       = new Puck_Press_Roster_Wpdb_Utils();
+			$roster_groups = $r_utils->get_all_groups();
+			$all_no_active = true;
 
-			$r_importer         = new Puck_Press_Roster_Source_Importer();
-			$raw_roster_results = $r_importer->populate_raw_roster_table_from_sources();
+			foreach ( $roster_groups as $group ) {
+				$group_id   = (int) $group['id'];
+				$group_name = $group['name'] ?? "Group {$group_id}";
 
-			// Same guard for roster. apply_edits_and_save_to_display_table() truncates
-			// pp_roster_for_display internally, so only call it when we have fresh data.
-			$no_active_roster = in_array( 'No active sources to import.', $raw_roster_results['messages'] ?? array() );
-			$roster_import_ok = ( $raw_roster_results['success_count'] ?? 0 ) > 0 || $no_active_roster;
+				$r_importer         = new Puck_Press_Roster_Source_Importer( $group_id );
+				$raw_roster_results = $r_importer->populate_raw_roster_table_from_sources();
 
-			if ( $roster_import_ok ) {
-				$r_importer->apply_edits_and_save_to_display_table();
-				$r_importer->sanitize_roster_display_table();
-				$this->log_message( 'Puck Press Cron: Roster display table rebuilt.' );
-				$roster_ok = true;
-			} else {
-				$this->log_error( 'Puck Press Cron: Roster import returned no data — preserving existing display table.' );
-				foreach ( $raw_roster_results['errors'] ?? array() as $err ) {
-					$source = is_array( $err ) ? ( $err['source'] ?? 'unknown' ) : 'unknown';
-					$msg    = is_array( $err ) ? ( $err['message'] ?? print_r( $err, true ) ) : (string) $err;
-					$this->log_error( "Puck Press Cron: Roster source '{$source}' error — {$msg}" );
+				$group_no_active = in_array( 'No active sources to import.', $raw_roster_results['messages'] ?? array() );
+				$roster_import_ok = ( $raw_roster_results['success_count'] ?? 0 ) > 0 || $group_no_active;
+
+				if ( ! $group_no_active ) {
+					$all_no_active = false;
+				}
+
+				if ( $roster_import_ok ) {
+					$r_importer->apply_edits_and_save_to_display_table();
+					$r_importer->sanitize_roster_display_table();
+					$this->log_message( "Puck Press Cron: Roster '{$group_name}' display table rebuilt." );
+					$roster_ok = true;
+				} else {
+					$this->log_error( "Puck Press Cron: Roster '{$group_name}' import returned no data — preserving existing display table." );
+					foreach ( $raw_roster_results['errors'] ?? array() as $err ) {
+						$source = is_array( $err ) ? ( $err['source'] ?? 'unknown' ) : 'unknown';
+						$msg    = is_array( $err ) ? ( $err['message'] ?? print_r( $err, true ) ) : (string) $err;
+						$this->log_error( "Puck Press Cron: Roster '{$group_name}' source '{$source}' error — {$msg}" );
+					}
 				}
 			}
+
+			$no_active_roster = $all_no_active;
 
 			$execution_time = round( microtime( true ) - $start_time, 2 );
 			$this->log_message( 'Puck Press Cron: schedule/roster refresh executed in ' . $execution_time . ' seconds' );

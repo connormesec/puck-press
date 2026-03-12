@@ -88,12 +88,16 @@ class Puck_Press_Public {
 		return $render_schedule->get_current_template_html();
 	}
 
-	public function roster_builder_shortcode() {
-		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-render-utils.php';
-		$render_schedule = new Puck_Press_Roster_Render_Utils();
-		$output          = $render_schedule->get_current_template_html();
+	public function roster_builder_shortcode( $atts = array() ) {
+		$atts = shortcode_atts( array( 'roster' => '' ), $atts );
+		$slug = sanitize_title( $atts['roster'] );
 
-		return $output;
+		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
+		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-render-utils.php';
+
+		$roster_id = Puck_Press_Group_Resolver::resolve( $slug, 'pp_rosters' );
+		$render    = new Puck_Press_Roster_Render_Utils( $roster_id );
+		return $render->get_current_template_html();
 	}
 
 	public function stats_builder_shortcode() {
@@ -110,6 +114,7 @@ class Puck_Press_Public {
 				'show_diff'      => 'true',
 				'title'          => 'Team Record',
 				'schedule'       => '',
+				'team'           => '',
 			),
 			$atts
 		);

@@ -1,4 +1,6 @@
 (function ($) {
+    const getRosterId = () => (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
+
     jQuery(document).ready(function ($) {
 
         const $modal      = $('#pp-add-player-modal');
@@ -50,6 +52,7 @@
             formData.append('major',         $('#pp-new-player-major').val());
             formData.append('headshot_link',  $('#pp-new-player-headshot-url').val());
             formData.append('hero_image_url', $('#pp-new-player-hero-image-url').val());
+            formData.append('roster_id',        getRosterId());
 
             $confirmBtn.prop('disabled', true).text('Adding...');
 

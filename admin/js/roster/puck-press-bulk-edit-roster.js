@@ -1,4 +1,6 @@
 (function ($) {
+  const getRosterId = () => (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
+
   jQuery(() => {
 
     // ── Field config ─────────────────────────────────────────────────────────
@@ -184,7 +186,7 @@
         $.ajax({
           url: ajaxurl,
           method: 'POST',
-          data: { action: 'pp_bulk_revert_roster_edits', nonce: ppBulkRoster.nonce, player_ids: JSON.stringify(ids) },
+          data: { action: 'pp_bulk_revert_roster_edits', nonce: ppBulkRoster.nonce, player_ids: JSON.stringify(ids), roster_id: getRosterId() },
           success: handleBulkResponse,
           error: () => restoreStyles(),
         });
@@ -216,6 +218,7 @@
           field,
           value,
           player_ids: JSON.stringify(ids),
+          roster_id:  getRosterId(),
         },
         success: handleBulkResponse,
         error: () => restoreStyles(),

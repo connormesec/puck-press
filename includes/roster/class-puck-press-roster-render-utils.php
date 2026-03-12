@@ -4,15 +4,25 @@ require_once plugin_dir_path( __FILE__ ) . '../class-puck-press-render-utils-abs
 
 class Puck_Press_Roster_Render_Utils extends Puck_Press_Render_Utils_Abstract {
 
-	public function __construct() {
+	private int $roster_id;
+
+	public function __construct( int $roster_id = 1 ) {
+		$this->roster_id = $roster_id;
 		$this->load_dependencies();
 
-		$this->template_manager = new Puck_Press_Roster_Template_Manager();
+		$this->template_manager = new Puck_Press_Roster_Template_Manager( $roster_id );
 		$this->wpdb_utils       = new Puck_Press_Roster_Wpdb_Utils();
 
-		$this->games     = $this->wpdb_utils->get_all_table_data( 'pp_roster_for_display', 'ARRAY_A' );
-		$this->templates = $this->template_manager->get_all_templates();
+		global $wpdb;
+		$this->games = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}pp_roster_for_display WHERE roster_id = %d",
+				$roster_id
+			),
+			ARRAY_A
+		) ?? array();
 
+		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
 	}
 
@@ -25,6 +35,7 @@ class Puck_Press_Roster_Render_Utils extends Puck_Press_Render_Utils_Abstract {
 	}
 
 	public function get_current_template_html( array $options = array() ): string {
+		$options['roster_id'] = $this->roster_id;
 		return $this->build_schema() . $this->get_template_html( $this->selected_template_key, $options );
 	}
 

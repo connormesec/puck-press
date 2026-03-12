@@ -2,6 +2,12 @@
 class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abstract {
 
 	public $table_name = 'pp_roster_mods';
+	private int $roster_id;
+
+	public function __construct( array $args = array(), int $roster_id = 1 ) {
+		parent::__construct( $args );
+		$this->roster_id = $roster_id;
+	}
 
 	public function render_content() {
 		return $this->render_edits_table();
@@ -19,20 +25,29 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 		$display_table = $wpdb->prefix . 'pp_roster_for_display';
 		$mods_table    = $wpdb->prefix . 'pp_roster_mods';
 		$raw_table     = $wpdb->prefix . 'pp_roster_raw';
+		$roster_id     = $this->roster_id;
 
-		// Active players: from for_display, LEFT JOIN update mods for override highlighting
 		$active_players = $wpdb->get_results(
-			"SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
-             FROM $display_table f
-             LEFT JOIN $mods_table m ON f.player_id = m.external_id AND m.edit_action = 'update'",
+			$wpdb->prepare(
+				"SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
+				 FROM $display_table f
+				 LEFT JOIN $mods_table m ON f.player_id = m.external_id AND m.edit_action = 'update' AND m.roster_id = %d
+				 WHERE f.roster_id = %d",
+				$roster_id,
+				$roster_id
+			),
 			ARRAY_A
 		) ?: array();
 
-		// Deleted sourced players: in raw but have a delete mod
 		$deleted_players = $wpdb->get_results(
-			"SELECT r.*, dm.id AS delete_mod_id
-             FROM $raw_table r
-             INNER JOIN $mods_table dm ON r.player_id = dm.external_id AND dm.edit_action = 'delete'",
+			$wpdb->prepare(
+				"SELECT r.*, dm.id AS delete_mod_id
+				 FROM $raw_table r
+				 INNER JOIN $mods_table dm ON r.player_id = dm.external_id AND dm.edit_action = 'delete' AND dm.roster_id = %d
+				 WHERE r.roster_id = %d",
+				$roster_id,
+				$roster_id
+			),
 			ARRAY_A
 		) ?: array();
 
@@ -206,6 +221,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 	function ajax_get_player_data_callback() {
 		global $wpdb;
 		$player_id = sanitize_text_field( $_POST['player_id'] ?? '' );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 		if ( empty( $player_id ) ) {
 			wp_send_json_error( array( 'message' => 'Missing player_id' ) );
 			wp_die();
@@ -213,8 +229,9 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 		$display_table = $wpdb->prefix . 'pp_roster_for_display';
 		$player        = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM $display_table WHERE player_id = %s LIMIT 1",
-				$player_id
+				"SELECT * FROM $display_table WHERE player_id = %s AND roster_id = %d LIMIT 1",
+				$player_id,
+				$roster_id
 			),
 			ARRAY_A
 		);
@@ -228,7 +245,8 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 	function ajax_save_player_edit_callback() {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pp_roster_mods';
+		$table     = $wpdb->prefix . 'pp_roster_mods';
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( ! isset( $_POST['edit_data'] ) ) {
 			wp_send_json_error( array( 'message' => 'Missing edit_data' ) );
@@ -250,14 +268,14 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 		$existing_row_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM $table WHERE external_id = %s AND edit_action = %s LIMIT 1",
+				"SELECT id FROM $table WHERE external_id = %s AND edit_action = %s AND roster_id = %d LIMIT 1",
 				$external_id,
-				$edit_action
+				$edit_action,
+				$roster_id
 			)
 		);
 
 		if ( $existing_row_id ) {
-			// Merge with existing edit_data to preserve prior overrides
 			$existing_json   = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT edit_data FROM $table WHERE id = %d",
@@ -283,14 +301,14 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 					'external_id' => $external_id,
 					'edit_action' => $edit_action,
 					'edit_data'   => $edit_data_json,
+					'roster_id'   => $roster_id,
 					'created_at'  => $current_time,
 					'updated_at'  => $current_time,
 				)
 			);
 		}
 
-		// Rebuild and normalize the display table
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
@@ -305,8 +323,9 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 	function ajax_delete_player_edit_callback() {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pp_roster_mods';
-		$id    = isset( $_POST['id'] ) ? sanitize_text_field( $_POST['id'] ) : '';
+		$table     = $wpdb->prefix . 'pp_roster_mods';
+		$id        = isset( $_POST['id'] ) ? sanitize_text_field( $_POST['id'] ) : '';
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( empty( $id ) ) {
 			wp_send_json_error( array( 'message' => 'Missing required fields' ) );
@@ -316,8 +335,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 		$result = $wpdb->delete( $table, array( 'id' => $id ), array( '%s' ) );
 
 		if ( $result !== false ) {
-			// Rebuild and normalize the display table
-			$importer = new Puck_Press_Roster_Source_Importer();
+			$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 			$importer->apply_edits_and_save_to_display_table();
 			$importer->sanitize_roster_display_table();
 
@@ -336,9 +354,10 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 	function ajax_revert_player_field_callback() {
 		global $wpdb;
-		$table  = $wpdb->prefix . 'pp_roster_mods';
-		$mod_id = intval( $_POST['mod_id'] ?? 0 );
-		$fields = isset( $_POST['fields'] ) ? (array) $_POST['fields'] : array();
+		$table     = $wpdb->prefix . 'pp_roster_mods';
+		$mod_id    = intval( $_POST['mod_id'] ?? 0 );
+		$fields    = isset( $_POST['fields'] ) ? (array) $_POST['fields'] : array();
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( ! $mod_id || empty( $fields ) ) {
 			wp_send_json_error( array( 'message' => 'Missing mod_id or fields' ) );
@@ -364,11 +383,9 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 			unset( $edit_data[ $field ] );
 		}
 
-		// Remove metadata key
 		$meaningful_keys = array_diff( array_keys( $edit_data ), array( 'external_id' ) );
 
 		if ( empty( $meaningful_keys ) ) {
-			// No fields left — delete the entire mod record
 			$wpdb->delete( $table, array( 'id' => $mod_id ), array( '%d' ) );
 		} else {
 			$wpdb->update(
@@ -381,8 +398,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 			);
 		}
 
-		// Rebuild and normalize the display table
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
@@ -397,7 +413,8 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 	function ajax_add_manual_player_callback() {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pp_roster_mods';
+		$table     = $wpdb->prefix . 'pp_roster_mods';
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		$name = sanitize_text_field( $_POST['name'] ?? '' );
 		if ( empty( $name ) ) {
@@ -429,6 +446,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 				'external_id' => null,
 				'edit_action' => 'insert',
 				'edit_data'   => wp_json_encode( $player_data ),
+				'roster_id'   => $roster_id,
 				'created_at'  => $current_time,
 				'updated_at'  => $current_time,
 			)
@@ -447,8 +465,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 			array( 'id' => $mod_id )
 		);
 
-		// Rebuild and normalize the display table
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
@@ -465,23 +482,24 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 		global $wpdb;
 		$table     = $wpdb->prefix . 'pp_roster_mods';
 		$player_id = sanitize_text_field( $_POST['player_id'] ?? '' );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		if ( empty( $player_id ) || strpos( $player_id, 'manual_' ) !== 0 ) {
 			wp_send_json_error( array( 'message' => 'Invalid player_id' ) );
 			wp_die();
 		}
 
-		// Delete the insert mod row for this manual player
 		$result = $wpdb->delete(
 			$table,
 			array(
 				'external_id' => $player_id,
 				'edit_action' => 'insert',
+				'roster_id'   => $roster_id,
 			)
 		);
 
 		if ( $result !== false ) {
-			$importer = new Puck_Press_Roster_Source_Importer();
+			$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 			$importer->apply_edits_and_save_to_display_table();
 			$importer->sanitize_roster_display_table();
 
@@ -503,6 +521,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 		check_ajax_referer( 'pp_bulk_roster_nonce', 'nonce' );
 
+		$roster_id      = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 		$allowed_fields = array( 'hero_image_url', 'headshot_link' );
 		$field          = sanitize_key( $_POST['field'] ?? '' );
 		if ( ! in_array( $field, $allowed_fields, true ) ) {
@@ -525,11 +544,11 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 		foreach ( $player_ids as $player_id ) {
 			$player_id = sanitize_text_field( $player_id );
 
-			// Skip deleted players
 			$has_delete = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT id FROM $table WHERE external_id = %s AND edit_action = 'delete' LIMIT 1",
-					$player_id
+					"SELECT id FROM $table WHERE external_id = %s AND edit_action = 'delete' AND roster_id = %d LIMIT 1",
+					$player_id,
+					$roster_id
 				)
 			);
 			if ( $has_delete ) {
@@ -538,16 +557,15 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 			$existing = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT id, edit_data FROM $table WHERE external_id = %s AND edit_action = 'update' LIMIT 1",
-					$player_id
+					"SELECT id, edit_data FROM $table WHERE external_id = %s AND edit_action = 'update' AND roster_id = %d LIMIT 1",
+					$player_id,
+					$roster_id
 				),
 				ARRAY_A
 			);
 
 			if ( $existing ) {
-				$edit_data = ! empty( $existing['edit_data'] ) ? ( json_decode( $existing['edit_data'], true ) ?: array() ) : array();
-				// Always store the value (including empty string) so a blank value
-				// explicitly overrides the raw data rather than reverting to it.
+				$edit_data           = ! empty( $existing['edit_data'] ) ? ( json_decode( $existing['edit_data'], true ) ?: array() ) : array();
 				$edit_data[ $field ] = $value;
 				$wpdb->update(
 					$table,
@@ -569,6 +587,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 								$field        => $value,
 							)
 						),
+						'roster_id'   => $roster_id,
 						'created_at'  => $now,
 						'updated_at'  => $now,
 					)
@@ -576,11 +595,13 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 			}
 		}
 
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
-		$roster_preview_html = Puck_Press_Roster_Admin_Preview_Card::create_and_init()->get_all_templates_html();
+		$preview_card        = new Puck_Press_Roster_Admin_Preview_Card( array(), $roster_id );
+		$preview_card->init();
+		$roster_preview_html = $preview_card->get_all_templates_html();
 		wp_send_json_success(
 			array(
 				'roster_table_html'   => $this->render_edits_table(),
@@ -595,6 +616,7 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 
 		check_ajax_referer( 'pp_bulk_roster_nonce', 'nonce' );
 
+		$roster_id  = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 		$player_ids = json_decode( stripslashes( $_POST['player_ids'] ?? '[]' ), true );
 		if ( ! is_array( $player_ids ) || empty( $player_ids ) ) {
 			wp_send_json_error( array( 'message' => 'No players selected.' ) );
@@ -610,16 +632,19 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 				array(
 					'external_id' => $player_id,
 					'edit_action' => 'update',
+					'roster_id'   => $roster_id,
 				),
-				array( '%s', '%s' )
+				array( '%s', '%s', '%d' )
 			);
 		}
 
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 
-		$roster_preview_html = Puck_Press_Roster_Admin_Preview_Card::create_and_init()->get_all_templates_html();
+		$preview_card        = new Puck_Press_Roster_Admin_Preview_Card( array(), $roster_id );
+		$preview_card->init();
+		$roster_preview_html = $preview_card->get_all_templates_html();
 		wp_send_json_success(
 			array(
 				'roster_table_html'   => $this->render_edits_table(),
@@ -630,15 +655,13 @@ class Puck_Press_Roster_Admin_Edits_Table_Card extends Puck_Press_Admin_Card_Abs
 	}
 
 	function ajax_reset_all_roster_edits_callback() {
-		global $wpdb;
-
-		$table_mods = $wpdb->prefix . 'pp_roster_mods';
-		$wpdb->query( "TRUNCATE TABLE $table_mods" );
+		$roster_id = isset( $_POST['roster_id'] ) ? intval( $_POST['roster_id'] ) : 1;
 
 		$utils = new Puck_Press_Roster_Wpdb_Utils();
-		$utils->reset_table( 'pp_roster_for_display' );
+		$utils->delete_rows_for_roster( 'pp_roster_mods', $roster_id );
+		$utils->delete_rows_for_roster( 'pp_roster_for_display', $roster_id );
 
-		$importer = new Puck_Press_Roster_Source_Importer();
+		$importer = new Puck_Press_Roster_Source_Importer( $roster_id );
 		$importer->apply_edits_and_save_to_display_table();
 		$importer->sanitize_roster_display_table();
 

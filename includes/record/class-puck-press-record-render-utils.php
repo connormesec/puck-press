@@ -36,23 +36,35 @@ class Puck_Press_Record_Render_Utils {
 	 * @return string HTML output.
 	 */
 	public function get_current_template_html( array $atts = array() ): string {
-		$stats = $this->wpdb_utils->get_record_stats( $this->schedule_id );
-
-		$data = array_merge(
-			$stats,
-			array(
-				'show_home_away' => isset( $atts['show_home_away'] ) ? $atts['show_home_away'] : 'true',
-				'show_goals'     => isset( $atts['show_goals'] ) ? $atts['show_goals'] : 'true',
-				'show_diff'      => isset( $atts['show_diff'] ) ? $atts['show_diff'] : 'true',
-				'title'          => isset( $atts['title'] ) ? $atts['title'] : 'Team Record',
-			)
-		);
-
 		$template = $this->template_manager->get_current_template();
 		if ( ! $template ) {
 			return '';
 		}
 
-		return $template->render( $data );
+		$common = array(
+			'show_home_away' => isset( $atts['show_home_away'] ) ? $atts['show_home_away'] : 'true',
+			'show_goals'     => isset( $atts['show_goals'] )     ? $atts['show_goals']     : 'true',
+			'show_diff'      => isset( $atts['show_diff'] )      ? $atts['show_diff']      : 'true',
+			'title'          => isset( $atts['title'] )          ? $atts['title']          : '',
+		);
+
+		if ( $template->get_key() === 'conference' ) {
+			$data = array_merge(
+				$common,
+				array( 'rows' => $this->wpdb_utils->get_multi_source_stats( $this->schedule_id ) )
+			);
+		} else {
+			$stats = $this->wpdb_utils->get_record_stats( $this->schedule_id );
+			$data  = array_merge(
+				$stats,
+				$common,
+				array(
+					'title' => isset( $atts['title'] ) ? $atts['title'] : 'Team Record',
+					'team'  => isset( $atts['team'] )  ? $atts['team']  : '',
+				)
+			);
+		}
+
+		return $template->render_with_options( $data, array( 'schedule_id' => $this->schedule_id ) );
 	}
 }

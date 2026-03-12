@@ -141,6 +141,7 @@ class Puck_Press {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-activator.php';
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_migrations' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_group_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}

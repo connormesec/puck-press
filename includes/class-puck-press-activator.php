@@ -56,6 +56,36 @@ class Puck_Press_Activator {
 		update_option( 'pp_db_version', '2.0' );
 	}
 
+	public static function maybe_run_roster_group_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '3.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-migration.php';
+		require_once plugin_dir_path( __FILE__ ) . 'roster/class-puck-press-roster-wpdb-utils.php';
+
+		$roster_utils = new Puck_Press_Roster_Wpdb_Utils();
+		$roster_utils->maybe_create_or_update_table( 'pp_rosters' );
+		$roster_utils->seed_default_group( 'Main Roster' );
+
+		Puck_Press_Group_Migration::maybe_add_group_id_column(
+			array(
+				'pp_roster_data_sources',
+				'pp_roster_raw',
+				'pp_roster_mods',
+				'pp_roster_for_display',
+				'pp_roster_stats',
+				'pp_roster_goalie_stats',
+			),
+			'roster_id'
+		);
+
+		update_option( 'pp_db_version', '3.0' );
+	}
+
 	public static function activate() {
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-cron.php';
 		$cron = new Puck_Press_Cron();

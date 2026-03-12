@@ -14,6 +14,7 @@
             ajaxAction:             'puck_press_update_roster_colors',
             containerSuffix:        '_roster_container',
             fontFieldsContainerId:  '#pp-roster-dynamic-font-fields',
+            extraData:              () => ({ roster_id: (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1 }),
             onFontChange: (templateKey, fontKey, cssValue) => {
                 document.documentElement.style.setProperty('--pp-pd-font-family', cssValue);
             },

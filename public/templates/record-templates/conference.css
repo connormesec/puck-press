@@ -1,0 +1,107 @@
+/* =========================================================
+   Puck Press — Conference Standings Row Template
+   ========================================================= */
+
+.pp-conference-wrapper {
+  font-family: var(--pp-conference-table_font, inherit);
+  background: var(--pp-conference-table_bg, #ffffff);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ── Scroll wrapper (horizontal scroll on mobile) ───────── */
+
+.pp-conference-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+
+.pp-conference-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+/* ── Header row ─────────────────────────────────────────── */
+
+.pp-conference-header-row {
+  background: var(--pp-conference-header_bg, #1a1a2e);
+}
+
+.pp-conference-th {
+  padding: 8px 14px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pp-conference-header_text, #ffffff);
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--pp-conference-border, #e5e7eb);
+}
+
+.pp-conference-th--team {
+  text-align: left;
+  padding-left: 16px;
+}
+
+.pp-conference-th--pts {
+  background: color-mix(in srgb, var(--pp-conference-pts_bg, #dbeafe) 60%, var(--pp-conference-header_bg, #1a1a2e) 40%);
+}
+
+/* ── Data row ───────────────────────────────────────────── */
+
+.pp-conference-row {
+  border-bottom: 1px solid var(--pp-conference-border, #e5e7eb);
+}
+
+.pp-conference-td {
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pp-conference-row_text, #111827);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pp-conference-td--team {
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.pp-conference-team-logo {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pp-conference-team-name {
+  white-space: nowrap;
+}
+
+.pp-conference-td--pts {
+  background: var(--pp-conference-pts_bg, #dbeafe);
+  color: var(--pp-conference-pts_text, #1a1a2e);
+  font-weight: 800;
+}
+
+/* ── Diff coloring ──────────────────────────────────────── */
+
+.pp-conference-diff--pos {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.pp-conference-diff--neg {
+  color: #dc2626;
+  font-weight: 700;
+}

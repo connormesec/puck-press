@@ -105,6 +105,176 @@ class Puck_Press_Record_Wpdb_Utils {
 		return $stats;
 	}
 
+	public function get_multi_source_stats( int $schedule_id = 1 ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'pp_game_schedule_for_display';
+
+		$games = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT target_team_id, target_team_name, target_team_logo,
+                        opponent_team_id, opponent_team_name, opponent_team_logo,
+                        target_score, opponent_score, home_or_away, game_status
+                   FROM {$table}
+                  WHERE schedule_id = %d
+                    AND target_score IS NOT NULL
+                    AND opponent_score IS NOT NULL
+                    AND game_status IS NOT NULL
+                    AND game_status NOT IN ('', 'null')",
+				$schedule_id
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $games ) ) {
+			return array();
+		}
+
+		$teams       = array();
+		$target_keys = array();
+
+		foreach ( $games as $game ) {
+			$ts      = (int) $game['target_score'];
+			$os      = (int) $game['opponent_score'];
+			$is_home = ( $game['home_or_away'] === 'home' );
+			$status  = strtoupper( trim( $game['game_status'] ?? '' ) );
+
+			if ( empty( $status ) || $status === 'NULL' ) {
+				continue;
+			}
+
+			$status_tokens = preg_split( '/[\s\/\-_]+/', $status );
+			$is_ot_so      = in_array( 'OT', $status_tokens, true ) || in_array( 'SO', $status_tokens, true );
+
+			$target_id  = $game['target_team_id'] ?? '';
+			$target_key = ( $target_id && $target_id !== '0' )
+				? "id:{$target_id}"
+				: 'name:' . strtolower( trim( $game['target_team_name'] ) );
+			$target_keys[ $target_key ] = true;
+
+			// Process from both perspectives so a game stored under one team's source
+			// is still counted for the opponent team (avoids undercounting GP due to
+			// the unique (schedule_id, game_id) constraint blocking duplicate imports).
+			$this->apply_game_to_team(
+				$teams,
+				$target_id,
+				$game['target_team_name'],
+				$game['target_team_logo'] ?? null,
+				$ts,
+				$os,
+				$is_home,
+				$is_ot_so,
+				$status,
+				false
+			);
+
+			$this->apply_game_to_team(
+				$teams,
+				$game['opponent_team_id'] ?? '',
+				$game['opponent_team_name'],
+				$game['opponent_team_logo'] ?? null,
+				$os,
+				$ts,
+				! $is_home,
+				$is_ot_so,
+				$status,
+				true
+			);
+		}
+
+		// Only show teams that have their own data source (appeared as target_team).
+		// Opponent-side data was computed above to ensure accurate GP/GF/GA splits,
+		// but external (non-conference) teams should not appear as standings rows.
+		$teams = array_intersect_key( $teams, $target_keys );
+
+		foreach ( $teams as &$team ) {
+			$team['diff'] = $team['gf'] - $team['ga'];
+		}
+		unset( $team );
+
+		usort(
+			$teams,
+			function ( $a, $b ) {
+				$pts_a = ( $a['wins'] * 2 ) + $a['otl'] + $a['ties'];
+				$pts_b = ( $b['wins'] * 2 ) + $b['otl'] + $b['ties'];
+				if ( $pts_b !== $pts_a ) {
+					return $pts_b <=> $pts_a;
+				}
+				return $b['wins'] <=> $a['wins'];
+			}
+		);
+
+		return array_values( $teams );
+	}
+
+	private function apply_game_to_team(
+		array &$teams,
+		string $team_id,
+		string $team_name,
+		?string $team_logo,
+		int $team_score,
+		int $opp_score,
+		bool $is_home,
+		bool $is_ot_so,
+		string $status,
+		bool $is_opponent_perspective
+	): void {
+		$key = ( $team_id && $team_id !== '0' )
+			? "id:{$team_id}"
+			: 'name:' . strtolower( trim( $team_name ) );
+
+		if ( ! isset( $teams[ $key ] ) ) {
+			$teams[ $key ]              = $this->empty_stats();
+			$teams[ $key ]['team_name'] = $team_name;
+			$teams[ $key ]['team_logo'] = $team_logo;
+		}
+
+		if ( empty( $teams[ $key ]['team_logo'] ) && ! empty( $team_logo ) ) {
+			$teams[ $key ]['team_logo'] = $team_logo;
+		}
+
+		$teams[ $key ]['gf'] += $team_score;
+		$teams[ $key ]['ga'] += $opp_score;
+
+		if ( $is_home ) {
+			$teams[ $key ]['home_gf'] += $team_score;
+			$teams[ $key ]['home_ga'] += $opp_score;
+		} else {
+			$teams[ $key ]['away_gf'] += $team_score;
+			$teams[ $key ]['away_ga'] += $opp_score;
+		}
+
+		if ( $team_score > $opp_score ) {
+			++$teams[ $key ]['wins'];
+			$is_home ? $teams[ $key ]['home_wins']++ : $teams[ $key ]['away_wins']++;
+		} elseif ( $team_score < $opp_score ) {
+			if ( $is_ot_so ) {
+				++$teams[ $key ]['otl'];
+				$is_home ? $teams[ $key ]['home_otl']++ : $teams[ $key ]['away_otl']++;
+			} else {
+				++$teams[ $key ]['losses'];
+				$is_home ? $teams[ $key ]['home_losses']++ : $teams[ $key ]['away_losses']++;
+			}
+		} else {
+			if ( $is_ot_so ) {
+				// The "W" prefix in status always refers to the TARGET team's result.
+				// When processing from the opponent's perspective, W = they lost (OTL).
+				$target_won   = (bool) preg_match( '/^W\b/i', $status );
+				$this_team_won = $is_opponent_perspective ? ! $target_won : $target_won;
+
+				if ( $this_team_won ) {
+					++$teams[ $key ]['wins'];
+					$is_home ? $teams[ $key ]['home_wins']++ : $teams[ $key ]['away_wins']++;
+				} else {
+					++$teams[ $key ]['otl'];
+					$is_home ? $teams[ $key ]['home_otl']++ : $teams[ $key ]['away_otl']++;
+				}
+			} else {
+				++$teams[ $key ]['ties'];
+				$is_home ? $teams[ $key ]['home_ties']++ : $teams[ $key ]['away_ties']++;
+			}
+		}
+	}
+
 	private function empty_stats(): array {
 		return array(
 			'wins'        => 0,

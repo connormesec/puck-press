@@ -1,17 +1,5 @@
 <?php
 
-/**
- * Provide a admin area view for the plugin
- *
- * This file is used to markup the admin-facing aspects of the plugin.
- *
- * @link       https://https://github.com/connormesec/
- * @since      1.0.0
- *
- * @package    Puck_Press
- * @subpackage Puck_Press/admin/partials/roster
- */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -22,29 +10,63 @@ class Puck_Press_Roster_Admin_Display {
 	private $roster_edits_table;
 	private $roster_preview_card;
 	private $roster_archive_card;
+	private $groups_card;
 	private $last_run;
+	private array $roster_groups;
+	private int $active_roster_id;
+	private string $active_roster_slug;
 
 	public function __construct() {
+		$wpdb_utils              = new Puck_Press_Roster_Wpdb_Utils();
+		$this->roster_groups     = $wpdb_utils->get_all_groups();
+		$this->active_roster_id  = (int) get_option( 'pp_admin_active_roster_id', 1 );
+
+		$valid_ids = array_column( $this->roster_groups, 'id' );
+		if ( ! in_array( (string) $this->active_roster_id, $valid_ids, false ) ) {
+			$this->active_roster_id = 1;
+		}
+
+		$active_group             = array_values(
+			array_filter(
+				$this->roster_groups,
+				fn( $g ) => (int) $g['id'] === $this->active_roster_id
+			)
+		);
+		$this->active_roster_slug = $active_group[0]['slug'] ?? 'default';
+
+		$rid = $this->active_roster_id;
+
+		$this->groups_card = new Puck_Press_Roster_Admin_Groups_Card(
+			array(
+				'title'    => 'Roster Groups',
+				'subtitle' => 'Manage multiple roster groups',
+				'id'       => 'roster-groups',
+			)
+		);
+
 		$this->roster_data_sources = new Puck_Press_Roster_Admin_Data_Sources_Card(
 			array(
 				'title'    => 'Data Sources',
 				'subtitle' => 'Manage external data sources for the roster',
 				'id'       => 'data-sources-table',
-			)
+			),
+			$rid
 		);
 		$this->roster_edits_table  = new Puck_Press_Roster_Admin_Edits_Table_Card(
 			array(
 				'title'    => 'Roster Edits',
 				'subtitle' => 'Manage your roster edits',
 				'id'       => 'roster-edits-table',
-			)
+			),
+			$rid
 		);
 		$this->roster_preview_card = new Puck_Press_Roster_Admin_Preview_Card(
 			array(
 				'title'    => 'Roster Preview',
 				'subtitle' => 'Preview your roster before publishing',
 				'id'       => 'roster-preview',
-			)
+			),
+			$rid
 		);
 		$this->roster_archive_card = new Puck_Press_Roster_Admin_Archive_Card(
 			array(
@@ -60,6 +82,7 @@ class Puck_Press_Roster_Admin_Display {
 
 	public function render() {
 		ob_start();
+		$roster_sc = '[pp-roster' . ( $this->active_roster_slug !== 'default' ? ' roster="' . esc_attr( $this->active_roster_slug ) . '"' : '' ) . ']';
 		?>
 		<div class="pp-container">
 			<main class="pp-main">
@@ -77,8 +100,8 @@ class Puck_Press_Roster_Admin_Display {
 								id="pp-roster-shortcode"
 								name="pp-roster-shortcode"
 								class="pp-shortcode-input"
-								value="[pp-roster]"
-								size="11"
+								value="<?php echo esc_attr( $roster_sc ); ?>"
+								size="<?php echo strlen( $roster_sc ); ?>"
 								spellcheck="false"
 								aria-label="shortcode"
 								onfocus="this.select();"
@@ -124,6 +147,28 @@ class Puck_Press_Roster_Admin_Display {
 				</div>
 
 				<p class="pp-refresh-info">Last refreshed: <?php echo esc_html( $this->last_run ); ?></p>
+
+				<?php echo $this->groups_card->render(); ?>
+
+				<div class="pp-card" style="margin-bottom: 16px;">
+					<div class="pp-card-content" style="padding: 16px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+						<label for="pp-roster-group-selector"><strong>Editing roster:</strong></label>
+						<select id="pp-roster-group-selector" class="pp-select">
+							<?php foreach ( $this->roster_groups as $group ) : ?>
+								<option value="<?php echo esc_attr( $group['id'] ); ?>"
+									data-slug="<?php echo esc_attr( $group['slug'] ); ?>"
+									<?php selected( (int) $group['id'], $this->active_roster_id ); ?>>
+									<?php echo esc_html( $group['name'] ); ?> (<?php echo esc_html( $group['slug'] ); ?>)
+								</option>
+							<?php endforeach; ?>
+						</select>
+						<span style="color: #666; font-size: 0.85rem;">
+							Shortcode: <code>[pp-roster<?php echo $this->active_roster_slug !== 'default' ? ' roster="' . esc_attr( $this->active_roster_slug ) . '"' : ''; ?>]</code>
+						</span>
+					</div>
+				</div>
+
+				<input type="hidden" id="pp-active-roster-id" value="<?php echo esc_attr( $this->active_roster_id ); ?>">
 
 				<?php echo $this->roster_data_sources->render(); ?>
 

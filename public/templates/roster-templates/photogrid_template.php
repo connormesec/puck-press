@@ -73,12 +73,21 @@ class PhotoGridTemplate extends PuckPressTemplate {
 	 */
 	public function render_with_options( array $players, array $options ): string {
 		global $wpdb;
+		$roster_id                = isset( $options['roster_id'] ) ? (int) $options['roster_id'] : 1;
+		$colors                   = self::get_roster_colors( $roster_id );
+		$fonts                    = self::get_roster_fonts( $roster_id );
+		$inline_css               = self::get_inline_css( ':root', $colors, $fonts );
+		$css_block                = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 		$ids                      = $wpdb->get_col(
-			"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats"
+			$wpdb->prepare(
+				"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats WHERE roster_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats WHERE roster_id = %d",
+				$roster_id,
+				$roster_id
+			)
 		);
-		$this->players_with_stats = array_flip( $ids ?: array() );
+		$this->players_with_stats = array_flip( array_filter( $ids ?: array(), 'is_scalar' ) );
 
-		$output = '<div class="photogrid_roster_container">';
+		$output = $css_block . '<div class="photogrid_roster_container">';
 
 		// Players with no recognized position
 		$skaters = $this->getPlayersWithoutPositions( $players );

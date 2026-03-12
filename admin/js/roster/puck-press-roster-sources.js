@@ -1,4 +1,6 @@
 (function ($) {
+    const getRosterId = () => (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
+
     jQuery(document).ready(function ($) {
         const dimGameListStyles = () => $('#pp-card-roster-preview, #pp-card-roster-edits-table, .pp-modal').css({
             'opacity': '0.5',
@@ -62,7 +64,8 @@
                     const data = {
                         name: $('#pp-source-name').val(),
                         type,
-                        active: $('#pp-new-source-active').is(':checked') ? 1 : 0
+                        active: $('#pp-new-source-active').is(':checked') ? 1 : 0,
+                        roster_id: getRosterId()
                     };
 
                     if (type === 'achaRosterUrl') {
@@ -180,6 +183,7 @@
                     action: 'pp_update_roster_source_status',
                     source_id: sourceId,
                     status: status,
+                    roster_id: getRosterId(),
                 },
                 success: (response) => {
                     if (response.success) {
@@ -248,6 +252,7 @@
                 data: {
                     action: 'pp_delete_roster_data_source', // The action hook
                     source_id: dataSourceId, // The ID of the data source to delete
+                    roster_id: getRosterId(),
                 },
                 success: (response) => {
                     if (response.success) {

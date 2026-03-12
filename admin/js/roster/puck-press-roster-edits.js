@@ -1,4 +1,6 @@
 (function ($) {
+    const getRosterId = () => (window.ppRosterAdmin && window.ppRosterAdmin.activeRosterId) ? parseInt(window.ppRosterAdmin.activeRosterId, 10) : 1;
+
 
     let currentEditingPlayerId = null;
     let originalPlayerValues   = {};
@@ -103,7 +105,7 @@
             $.ajax({
                 url: ajaxurl,
                 method: 'POST',
-                data: { action: 'pp_get_player_data', player_id: playerId },
+                data: { action: 'pp_get_player_data', player_id: playerId, roster_id: getRosterId() },
                 success: (response) => {
                     if (response.success && response.data && response.data.player) {
                         prefillEditPlayerForm(response.data.player);
@@ -215,6 +217,7 @@
             const formData = new FormData();
             formData.append('action', 'pp_update_player_edits');
             formData.append('edit_data', JSON.stringify(editData));
+            formData.append('roster_id', getRosterId());
 
             doWithRosterUpdate({ data: formData, processData: false, contentType: false });
         });
@@ -226,7 +229,7 @@
             e.stopPropagation();
             const modId  = $(this).data('mod-id');
             const fields = String($(this).data('fields')).split(',');
-            doWithRosterUpdate({ data: { action: 'pp_revert_player_field', mod_id: modId, fields: fields } });
+            doWithRosterUpdate({ data: { action: 'pp_revert_player_field', mod_id: modId, fields: fields, roster_id: getRosterId() } });
         });
 
         //============================================================//
@@ -235,7 +238,7 @@
         $(document).on('click', '.pp-restore-player-btn', function () {
             const deleteModId = $(this).data('delete-mod-id');
             withRefresh(
-                { data: { action: 'ajax_delete_player_edit', id: deleteModId } },
+                { data: { action: 'ajax_delete_player_edit', id: deleteModId, roster_id: getRosterId() } },
                 {
                     dim: dimEditListStyles,
                     restore: restoreEditListStyles,
@@ -262,7 +265,7 @@
 
             if (sourceType === 'manual') {
                 // Delete the insert mod row entirely
-                doWithRosterUpdate({ data: { action: 'pp_delete_manual_player', player_id: playerId } });
+                doWithRosterUpdate({ data: { action: 'pp_delete_manual_player', player_id: playerId, roster_id: getRosterId() } });
             } else {
                 // Sourced player — add a delete mod
                 const editData = {
@@ -272,6 +275,7 @@
                 const formData = new FormData();
                 formData.append('action', 'pp_update_player_edits');
                 formData.append('edit_data', JSON.stringify(editData));
+                formData.append('roster_id', getRosterId());
                 doWithRosterUpdate({ data: formData, processData: false, contentType: false });
             }
         });
@@ -305,7 +309,7 @@
             if (!confirm('Reset all roster edits? This will remove every override, deletion, and manual player. This cannot be undone.')) {
                 return;
             }
-            doWithRosterUpdate({ data: { action: 'pp_reset_all_roster_edits' } });
+            doWithRosterUpdate({ data: { action: 'pp_reset_all_roster_edits', roster_id: getRosterId() } });
         });
 
         function enableClickOutsideToClose($modal, closeCallback) {

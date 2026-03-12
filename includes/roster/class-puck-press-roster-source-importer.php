@@ -19,11 +19,12 @@
  */
 class Puck_Press_Roster_Source_Importer {
 
-
+	private int $roster_id;
 	private $roster_db_utils;
 	private $results = array();
 
-	public function __construct() {
+	public function __construct( int $roster_id = 1 ) {
+		$this->roster_id = $roster_id;
 		$this->load_dependencies();
 		$this->roster_db_utils = new Puck_Press_Roster_Wpdb_Utils();
 	}
@@ -46,7 +47,11 @@ class Puck_Press_Roster_Source_Importer {
 			'messages'      => array(),
 		);
 
-		$active_sources = $this->roster_db_utils->get_active_roster_sources();
+		$this->roster_db_utils->delete_rows_for_roster( 'pp_roster_raw', $this->roster_id );
+		$this->roster_db_utils->delete_rows_for_roster( 'pp_roster_stats', $this->roster_id );
+		$this->roster_db_utils->delete_rows_for_roster( 'pp_roster_goalie_stats', $this->roster_id );
+
+		$active_sources = $this->roster_db_utils->get_active_roster_sources( $this->roster_id );
 
 		if ( empty( $active_sources ) ) {
 			$this->results['messages'][] = 'No active sources to import.';
@@ -58,18 +63,16 @@ class Puck_Press_Roster_Source_Importer {
 				if ( $source->type === 'achaRosterUrl' ) {
 
 					$raw_acha_data = new Puck_Press_Roster_Process_Acha_Url( $source->source_url_or_path );
-					// append source name to each row
 					foreach ( $raw_acha_data->raw_roster_data as &$row ) {
 						$row['source'] = $source->name;
 					}
 
-					$inserted = $this->roster_db_utils->insert_multiple_roster_rows( $raw_acha_data->raw_roster_data );
+					$inserted = $this->roster_db_utils->insert_multiple_roster_rows( $raw_acha_data->raw_roster_data, $this->roster_id );
 
 					++$this->results['success_count'];
 					$this->results['messages'][] = "Imported source: {$source->name}";
 					$this->results['messages'][] = $inserted;
 
-					// Import skater stats if a stats URL is configured
 					if ( ! empty( $source->stats_url ) ) {
 						$acha_stats = new Puck_Press_Roster_Process_Acha_Stats( $source->stats_url );
 						if ( is_array( $acha_stats->raw_stats_data ) && ! isset( $acha_stats->raw_stats_data['error'] ) && ! empty( $acha_stats->raw_stats_data ) ) {
@@ -77,7 +80,7 @@ class Puck_Press_Roster_Source_Importer {
 								$stat_row['source'] = $source->name;
 							}
 							unset( $stat_row );
-							$stats_inserted              = $this->roster_db_utils->insert_stats_rows( $acha_stats->raw_stats_data );
+							$stats_inserted              = $this->roster_db_utils->insert_stats_rows( $acha_stats->raw_stats_data, $this->roster_id );
 							$this->results['messages'][] = "Imported skater stats for source: {$source->name}";
 							$this->results['messages'][] = $stats_inserted;
 						} else {
@@ -85,7 +88,6 @@ class Puck_Press_Roster_Source_Importer {
 						}
 					}
 
-					// Import goalie stats if a goalie stats URL is configured
 					if ( empty( $source->goalie_stats_url ) ) {
 						$this->results['messages'][] = "Goalie stats skipped for source: {$source->name} — no Goalie Stats URL configured.";
 					} else {
@@ -95,7 +97,7 @@ class Puck_Press_Roster_Source_Importer {
 								$stat_row['source'] = $source->name;
 							}
 							unset( $stat_row );
-							$goalie_stats_inserted       = $this->roster_db_utils->insert_goalie_stats_rows( $acha_goalie_stats->raw_goalie_stats_data );
+							$goalie_stats_inserted       = $this->roster_db_utils->insert_goalie_stats_rows( $acha_goalie_stats->raw_goalie_stats_data, $this->roster_id );
 							$this->results['messages'][] = "Imported goalie stats for source: {$source->name}";
 							$this->results['messages'][] = $goalie_stats_inserted;
 						} else {
@@ -109,7 +111,6 @@ class Puck_Press_Roster_Source_Importer {
 						$usphl_other['season_id'] ?? ''
 					);
 
-					// Log any fetch errors so they surface in the refresh response.
 					if ( ! empty( $raw_usphl_data->fetch_errors ) ) {
 						foreach ( $raw_usphl_data->fetch_errors as $endpoint => $error ) {
 							$this->results['errors'][]   = array(
@@ -120,38 +121,35 @@ class Puck_Press_Roster_Source_Importer {
 						}
 					}
 
-					// append source name to each row
 					foreach ( $raw_usphl_data->raw_roster_data as &$row ) {
 						$row['source'] = $source->name;
 					}
 					unset( $row );
 
-					$inserted = $this->roster_db_utils->insert_multiple_roster_rows( $raw_usphl_data->raw_roster_data );
+					$inserted = $this->roster_db_utils->insert_multiple_roster_rows( $raw_usphl_data->raw_roster_data, $this->roster_id );
 
 					++$this->results['success_count'];
 					$this->results['messages'][] = "Imported source: {$source->name}";
 					$this->results['messages'][] = $inserted;
 
-					// Skater stats from /get_skaters (or inline fallback from /get_roster).
 					if ( ! empty( $raw_usphl_data->raw_stats_data ) ) {
 						foreach ( $raw_usphl_data->raw_stats_data as &$stat_row ) {
 							$stat_row['source'] = $source->name;
 						}
 						unset( $stat_row );
-						$stats_inserted              = $this->roster_db_utils->insert_stats_rows( $raw_usphl_data->raw_stats_data );
+						$stats_inserted              = $this->roster_db_utils->insert_stats_rows( $raw_usphl_data->raw_stats_data, $this->roster_id );
 						$this->results['messages'][] = "Imported skater stats for source: {$source->name} (" . count( $raw_usphl_data->raw_stats_data ) . ' players)';
 						$this->results['messages'][] = $stats_inserted;
 					} else {
 						$this->results['messages'][] = "No skater stats returned for source: {$source->name}";
 					}
 
-					// Goalie stats from /get_goalies endpoint.
 					if ( ! empty( $raw_usphl_data->raw_goalie_stats_data ) ) {
 						foreach ( $raw_usphl_data->raw_goalie_stats_data as &$stat_row ) {
 							$stat_row['source'] = $source->name;
 						}
 						unset( $stat_row );
-						$goalie_stats_inserted       = $this->roster_db_utils->insert_goalie_stats_rows( $raw_usphl_data->raw_goalie_stats_data );
+						$goalie_stats_inserted       = $this->roster_db_utils->insert_goalie_stats_rows( $raw_usphl_data->raw_goalie_stats_data, $this->roster_id );
 						$this->results['messages'][] = "Imported goalie stats for source: {$source->name} (" . count( $raw_usphl_data->raw_goalie_stats_data ) . ' goalies)';
 						$this->results['messages'][] = $goalie_stats_inserted;
 					} else {
@@ -161,7 +159,7 @@ class Puck_Press_Roster_Source_Importer {
 					$csv_data    = $source->csv_data ?? null;
 					$process_csv = new Puck_Press_Roster_Process_Csv_Data( $csv_data, $source->name );
 					$players     = $process_csv->parse();
-					$inserted    = $this->roster_db_utils->insert_multiple_roster_rows( $players );
+					$inserted    = $this->roster_db_utils->insert_multiple_roster_rows( $players, $this->roster_id );
 					++$this->results['success_count'];
 					$this->results['messages'][] = "Imported source: {$source->name}";
 					$this->results['messages'][] = $inserted;
@@ -187,25 +185,30 @@ class Puck_Press_Roster_Source_Importer {
 	}
 
 	function apply_edits_and_save_to_display_table() {
+		global $wpdb;
 
 		$table_a = 'pp_roster_raw';
-		$table_b = 'pp_roster_mods'; // Edits
-		$table_c = 'pp_roster_for_display'; // Result
+		$table_b = 'pp_roster_mods';
+		$table_c = 'pp_roster_for_display';
 
-		// Clear display table for a clean rebuild
-		$this->roster_db_utils->truncate_table( $table_c );
+		$this->roster_db_utils->delete_rows_for_roster( $table_c, $this->roster_id );
 
-		// Fetch all base data
-		$originals = $this->roster_db_utils->get_all_table_data( $table_a, 'ARRAY_A' ) ?? array();
+		$prefix    = $wpdb->prefix;
+		$originals = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM {$prefix}{$table_a} WHERE roster_id = %d", $this->roster_id ),
+			ARRAY_A
+		) ?? array();
 		$originals = $this->deduplicate_by_player_id( $originals );
 
-		// Fetch all edits
-		$edits      = $this->roster_db_utils->get_all_table_data( $table_b, 'ARRAY_A' );
+		$edits_raw  = $wpdb->get_results(
+			$wpdb->prepare( "SELECT * FROM {$prefix}{$table_b} WHERE roster_id = %d", $this->roster_id ),
+			ARRAY_A
+		) ?? array();
 		$edit_map   = array();
 		$delete_ids = array();
 		$results    = array();
 
-		foreach ( $edits as $edit ) {
+		foreach ( $edits_raw as $edit ) {
 			$player_id = $edit['external_id'];
 			$action    = strtolower( $edit['edit_action'] ?? 'update' );
 
@@ -218,36 +221,32 @@ class Puck_Press_Roster_Source_Importer {
 				}
 			}
 		}
-		// Merge and insert into table_c
+
 		foreach ( $originals as $row ) {
 			$player_id = $row['player_id'];
 
-			// Skip this row if it's marked for deletion
 			if ( in_array( $player_id, $delete_ids, true ) ) {
-				// Optionally delete it from table_c if already exists
 				$this->roster_db_utils->delete_row_by_player_id( $table_c, $player_id );
 				$results[] = "Deleted player ID: $player_id";
 				continue;
 			}
 
-			// Apply edits if available
 			if ( isset( $edit_map[ $player_id ] ) ) {
 				$row       = array_merge( $row, $edit_map[ $player_id ] );
 				$results[] = "Updated player ID: $player_id";
 			}
 
-			// Insert or update into table_c
+			$row['roster_id'] = $this->roster_id;
 			$this->roster_db_utils->insert_or_replace_row( $table_c, $row );
 		}
 
-		// Handle manual (insert) players — they don't exist in raw data
-		foreach ( $edits as $edit ) {
+		foreach ( $edits_raw as $edit ) {
 			if ( strtolower( $edit['edit_action'] ?? '' ) === 'insert' ) {
 				$edit_data = json_decode( $edit['edit_data'], true );
 				if ( json_last_error() === JSON_ERROR_NONE && is_array( $edit_data ) ) {
-					$edit_data['source'] = $edit_data['source'] ?? 'Manual';
-					// Apply any subsequent edits saved for this manual player
-					$manual_id = $edit_data['player_id'] ?? null;
+					$edit_data['source']    = $edit_data['source'] ?? 'Manual';
+					$edit_data['roster_id'] = $this->roster_id;
+					$manual_id              = $edit_data['player_id'] ?? null;
 					if ( $manual_id && isset( $edit_map[ $manual_id ] ) ) {
 						$edit_data = array_merge( $edit_data, $edit_map[ $manual_id ] );
 					}
@@ -286,7 +285,6 @@ class Puck_Press_Roster_Source_Importer {
 						++$score;
 					}
 				}
-				// >= so that on a tie the last duplicate wins
 				if ( $score >= $best_score ) {
 					$best       = $candidate;
 					$best_score = $score;
@@ -311,7 +309,10 @@ class Puck_Press_Roster_Source_Importer {
 
 		$table = "{$wpdb->prefix}pp_roster_for_display";
 
-		$rows = $wpdb->get_results( "SELECT id, pos, shoots, ht, wt FROM $table", ARRAY_A );
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT id, pos, shoots, ht, wt FROM $table WHERE roster_id = %d", $this->roster_id ),
+			ARRAY_A
+		);
 
 		foreach ( $rows as $row ) {
 			$id = (int) $row['id'];
@@ -329,7 +330,6 @@ class Puck_Press_Roster_Source_Importer {
 			foreach ( $normalized as $field => $value ) {
 				$current = (string) ( $row[ $field ] ?? '' );
 				if ( $value === null && $current !== '' ) {
-					// Explicit NULL — handled via direct query below
 					$null_fields[] = esc_sql( $field );
 				} elseif ( $value !== null && $value !== $current ) {
 					$updates[ $field ] = $value;

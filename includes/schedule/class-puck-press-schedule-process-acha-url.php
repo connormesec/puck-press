@@ -232,7 +232,7 @@ class Puck_Press_Schedule_Process_Acha_Url {
 		// date_with_day is a partial string like "Fri, Sep 13" — no year included.
 		// We infer the year from the season string (e.g. "2024-2025") and which half
 		// of the season the month falls in.
-		$game_timestamp = $this->build_wp_datetime_from_year_and_date( $row['date_with_day'] );
+		$game_timestamp = $this->build_wp_datetime_from_year_and_date( $row['date_with_day'], $parsed['game_time'] );
 
 		return array(
 			'game_id'                => $row['game_id'],
@@ -320,13 +320,20 @@ class Puck_Press_Schedule_Process_Acha_Url {
 	 * season string (e.g. "2024-2025"): months Sep–Dec belong to the first year,
 	 * months Jan–Aug belong to the second year.
 	 *
-	 * @param string $date_str Partial date from ACHA API (e.g. "Fri, Sep 13").
-	 * @return string|null     MySQL datetime (Y-m-d H:i:s) or null on failure.
+	 * @param string      $date_str  Partial date from ACHA API (e.g. "Fri, Sep 13").
+	 * @param string|null $game_time Optional game time string (e.g. "5:15 PM", "19:30").
+	 *                               When provided, it is included in the timestamp so
+	 *                               split_games_by_time flips the game at the correct time
+	 *                               rather than at midnight on the game date.
+	 * @return string|null           MySQL datetime (Y-m-d H:i:s) or null on failure.
 	 */
-	private function build_wp_datetime_from_year_and_date( string $date_str ): ?string {
+	private function build_wp_datetime_from_year_and_date( string $date_str, ?string $game_time = null ): ?string {
 		$year          = $this->get_season_year_for_date( $date_str );
 		$full_date_str = $date_str . ' ' . $year;
-		$timestamp     = strtotime( $full_date_str );
+		if ( ! empty( $game_time ) ) {
+			$full_date_str .= ' ' . $game_time;
+		}
+		$timestamp = strtotime( $full_date_str );
 
 		if ( $timestamp === false ) {
 			return null;

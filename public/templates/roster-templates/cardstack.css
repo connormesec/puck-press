@@ -133,6 +133,10 @@ a.pp-player-link:hover .player_item {
 .player_name {
   text-transform: uppercase;
   font-weight: 700;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  font-size: 18px;
 }
 
 .position {
@@ -140,6 +144,7 @@ a.pp-player-link:hover .player_item {
   font-weight: 700;
   text-transform: uppercase;
   padding-bottom: 10px;
+  line-height: 1;
 }
 
 .player_data {
