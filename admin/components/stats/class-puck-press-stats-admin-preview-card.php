@@ -32,7 +32,8 @@ class Puck_Press_Stats_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card_
 	 * instead of fetching a flat table.
 	 */
 	public function init() {
-		$this->data                  = $this->wpdb_utils->get_stats_data();
+		$this->data                                    = $this->wpdb_utils->get_stats_data();
+		$this->data['column_settings']['show_team']    = true;
 		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
 		$this->template_manager->enqueue_all_template_assets();

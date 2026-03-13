@@ -3,23 +3,23 @@
 /**
  * Fetches and parses player stats from the ACHA/HockeyTech stats API.
  *
- * Accepts either an ACHA skater stats URL (e.g. achahockey.org/stats/player-stats/...)
- * or an ACHA goalie stats URL (e.g. achahockey.org/stats/goalie-stats/...) and translates
- * it into an lscluster.hockeytech.com API call.
+ * Accepts a team_id and season_id (extracted from the ACHA roster URL) and
+ * constructs the lscluster.hockeytech.com API call directly.
  *
- * For skater URLs: $raw_stats_data is populated (for pp_roster_stats).
- * For goalie URLs: $raw_goalie_stats_data is populated (for pp_roster_goalie_stats).
+ * For skater stats: $raw_stats_data is populated (for pp_roster_stats).
+ * For goalie stats: $raw_goalie_stats_data is populated (for pp_roster_goalie_stats).
  *
  * @package    Puck_Press
  * @subpackage Puck_Press/includes/roster
  */
 class Puck_Press_Roster_Process_Acha_Stats {
 
-	private $raw_stats_url;
+	public $team_id;
+	public $season_id;
 
 	/**
 	 * Skater stat rows ready for pp_roster_stats.
-	 * Populated only when the URL is a skater stats URL.
+	 * Populated only when $is_goalie is false.
 	 *
 	 * @var array
 	 */
@@ -27,76 +27,56 @@ class Puck_Press_Roster_Process_Acha_Stats {
 
 	/**
 	 * Goalie stat rows ready for pp_roster_goalie_stats.
-	 * Populated only when the URL is a goalie stats URL.
+	 * Populated only when $is_goalie is true.
 	 *
 	 * @var array
 	 */
 	public $raw_goalie_stats_data = array();
 
-	public function __construct( $raw_stats_url, bool $force_goalie = false ) {
-		$this->raw_stats_url = $raw_stats_url;
-		$is_goalie_url       = $force_goalie || $this->is_goalie_url( $raw_stats_url );
-		$json_data           = $this->fetch_stats_data( $is_goalie_url );
+	public function __construct( string $team_id, string $season_id, bool $is_goalie = false ) {
+		$this->team_id   = $team_id;
+		$this->season_id = $season_id;
+		$json_data       = $this->fetch_stats_data( $is_goalie );
 
-		if ( $is_goalie_url ) {
+		if ( $is_goalie ) {
 			$this->raw_goalie_stats_data = $this->extract_goalie_stats( $json_data );
 		} else {
 			$this->raw_stats_data = $this->extract_skater_stats( $json_data );
 		}
 	}
 
-	/**
-	 * Returns true if the URL is an ACHA goalie stats page URL
-	 * (path contains /goalie-stats/ rather than /player-stats/).
-	 */
-	private function is_goalie_url( string $url ): bool {
-		$parsed = parse_url( $url );
-		$path   = $parsed['path'] ?? '';
-		return strpos( $path, '/goalie-stats/' ) !== false;
-	}
-
-	private function fetch_stats_data( bool $is_goalie ) {
-		$parsed = parse_url( $this->raw_stats_url );
-
-		// Path looks like: /stats/player-stats/{team_id}/{season_id}
-		// or: /stats/goalie-stats/{team_id}/{season_id}
+	public static function from_url( string $raw_stats_url, bool $force_goalie = false ): self {
+		$parsed     = parse_url( $raw_stats_url );
 		$path_parts = explode( '/', trim( $parsed['path'] ?? '', '/' ) );
 		$season_id  = array_pop( $path_parts );
 		$team_id    = array_pop( $path_parts );
+		$is_goalie  = $force_goalie || strpos( $parsed['path'] ?? '', '/goalie-stats/' ) !== false;
+		return new self( $team_id, $season_id, $is_goalie );
+	}
 
-		parse_str( $parsed['query'] ?? '', $query_params );
-
-		$conference = $query_params['conference'] ?? '-1';
-		$division   = $query_params['division'] ?? '-1';
-		$rookie_raw = strtolower( $query_params['rookie'] ?? 'no' );
-		$rookies    = ( $rookie_raw === 'yes' ) ? 1 : 0;
-		$sort       = $query_params['sort'] ?? ( $is_goalie ? 'wins' : 'points' );
-		$stats_type = $query_params['statstype'] ?? 'standard';
-		$league_id  = $query_params['league'] ?? '1';
-		$qualified  = $query_params['qualified'] ?? 'all';
-
-		// Goalie URLs use position=goalies; skater URLs use the position query param (default: skaters).
-		$position = $is_goalie ? 'goalies' : ( $query_params['position'] ?? 'skaters' );
+	private function fetch_stats_data( bool $is_goalie ) {
+		$position = $is_goalie ? 'goalies' : 'skaters';
+		$sort     = $is_goalie ? 'wins' : 'points';
 
 		$api_url = 'https://lscluster.hockeytech.com/feed/index.php?' . http_build_query(
 			array(
 				'feed'         => 'statviewfeed',
 				'view'         => 'players',
-				'season'       => $season_id,
-				'team'         => $team_id,
+				'season'       => $this->season_id,
+				'team'         => $this->team_id,
 				'position'     => $position,
-				'rookies'      => $rookies,
-				'statsType'    => $stats_type,
+				'rookies'      => 0,
+				'statsType'    => 'standard',
 				'rosterstatus' => 'undefined',
 				'site_id'      => '2',
 				'first'        => '0',
 				'limit'        => '200',
 				'sort'         => $sort,
-				'league_id'    => $league_id,
+				'league_id'    => '1',
 				'lang'         => 'en',
-				'division'     => $division,
-				'conference'   => $conference,
-				'qualified'    => $qualified,
+				'division'     => '-1',
+				'conference'   => '-1',
+				'qualified'    => 'all',
 				'key'          => 'e6867b36742a0c9d',
 				'client_code'  => 'acha',
 			)

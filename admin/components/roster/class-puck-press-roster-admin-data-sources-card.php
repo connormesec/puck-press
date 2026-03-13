@@ -105,11 +105,16 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 						<td class="pp-td" id="pp-sched-source-name"><?php echo esc_html( $source->name ); ?></td>
 						<td class="pp-td">
 							<span class="pp-tag pp-tag-<?php echo esc_html( $source->type ); ?>"><?php echo esc_html( $source->type ); ?></span>
-							<?php if ( ! empty( $source->stats_url ) ) : ?>
-								<span class="pp-tag" style="background:#e8f4fd;color:#1a6fa8;margin-left:4px;" title="<?php echo esc_attr( $source->stats_url ); ?>">Skater Stats</span>
+							<?php
+							$source_other = ! empty( $source->other_data ) ? json_decode( $source->other_data, true ) : array();
+							$has_stats    = ! empty( $source_other['include_stats'] ) || ! empty( $source->stats_url );
+							$has_goalie   = ! empty( $source_other['include_stats'] ) || ! empty( $source->goalie_stats_url );
+							if ( $has_stats ) :
+								?>
+								<span class="pp-tag" style="background:#e8f4fd;color:#1a6fa8;margin-left:4px;">Skater Stats</span>
 							<?php endif; ?>
-							<?php if ( ! empty( $source->goalie_stats_url ) ) : ?>
-								<span class="pp-tag" style="background:#fde8f4;color:#a81a6f;margin-left:4px;" title="<?php echo esc_attr( $source->goalie_stats_url ); ?>">Goalie Stats</span>
+							<?php if ( $has_goalie ) : ?>
+								<span class="pp-tag" style="background:#fde8f4;color:#a81a6f;margin-left:4px;">Goalie Stats</span>
 							<?php endif; ?>
 						</td>
 						<td class="pp-td">
@@ -245,9 +250,9 @@ class Puck_Press_Roster_Admin_Data_Sources_Card extends Puck_Press_Admin_Card_Ab
 
 		switch ( $type ) {
 			case 'achaRosterUrl':
-				$url              = esc_url_raw( $post['url'] ?? '' );
-				$stats_url        = ! empty( $post['stats_url'] ) ? esc_url_raw( $post['stats_url'] ) : null;
-				$goalie_stats_url = ! empty( $post['goalie_stats_url'] ) ? esc_url_raw( $post['goalie_stats_url'] ) : null;
+				$url           = esc_url_raw( $post['url'] ?? '' );
+				$include_stats = isset( $post['include_stats'] ) && '1' === $post['include_stats'];
+				$other_data    = wp_json_encode( array( 'include_stats' => $include_stats ) );
 				break;
 
 			case 'usphlRosterUrl':

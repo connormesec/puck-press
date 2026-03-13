@@ -22,8 +22,9 @@ class Puck_Press_Roster_Admin_Display {
 		$this->active_roster_id  = (int) get_option( 'pp_admin_active_roster_id', 1 );
 
 		$valid_ids = array_column( $this->roster_groups, 'id' );
-		if ( ! in_array( (string) $this->active_roster_id, $valid_ids, false ) ) {
-			$this->active_roster_id = 1;
+		if ( ! empty( $valid_ids ) && ! in_array( (string) $this->active_roster_id, $valid_ids, false ) ) {
+			$this->active_roster_id = (int) $valid_ids[0];
+			update_option( 'pp_admin_active_roster_id', $this->active_roster_id );
 		}
 
 		$active_group             = array_values(

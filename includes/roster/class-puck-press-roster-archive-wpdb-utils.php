@@ -31,6 +31,12 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 			archive_key VARCHAR(150) NOT NULL,
 			season VARCHAR(50) NOT NULL,
 			player_id VARCHAR(50) NOT NULL,
+			roster_id BIGINT(20) UNSIGNED DEFAULT 1,
+			name VARCHAR(100) DEFAULT NULL,
+			pos VARCHAR(10) DEFAULT NULL,
+			headshot_link TEXT DEFAULT NULL,
+			team_id VARCHAR(20) DEFAULT NULL,
+			team_name VARCHAR(200) DEFAULT NULL,
 			source VARCHAR(100) NOT NULL,
 			games_played SMALLINT DEFAULT NULL,
 			goals SMALLINT DEFAULT NULL,
@@ -53,6 +59,12 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 			archive_key VARCHAR(150) NOT NULL,
 			season VARCHAR(50) NOT NULL,
 			player_id VARCHAR(50) NOT NULL,
+			roster_id BIGINT(20) UNSIGNED DEFAULT 1,
+			name VARCHAR(100) DEFAULT NULL,
+			pos VARCHAR(10) DEFAULT NULL,
+			headshot_link TEXT DEFAULT NULL,
+			team_id VARCHAR(20) DEFAULT NULL,
+			team_name VARCHAR(200) DEFAULT NULL,
 			source VARCHAR(100) NOT NULL,
 			games_played SMALLINT DEFAULT NULL,
 			wins SMALLINT DEFAULT NULL,
@@ -90,13 +102,20 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 	public function create_stats_archive( string $archive_key, string $season ): bool {
 		global $wpdb;
 
-		$skater_src = $wpdb->prefix . 'pp_roster_stats';
-		$goalie_src = $wpdb->prefix . 'pp_roster_goalie_stats';
-		$skater_dst = $this->get_full_table_name( 'pp_roster_stats_archive' );
-		$goalie_dst = $this->get_full_table_name( 'pp_roster_goalie_stats_archive' );
-		$meta_table = $this->get_full_table_name( 'pp_roster_archives' );
+		$skater_src   = $wpdb->prefix . 'pp_roster_stats';
+		$goalie_src   = $wpdb->prefix . 'pp_roster_goalie_stats';
+		$display_src  = $wpdb->prefix . 'pp_roster_for_display';
+		$skater_dst   = $this->get_full_table_name( 'pp_roster_stats_archive' );
+		$goalie_dst   = $this->get_full_table_name( 'pp_roster_goalie_stats_archive' );
+		$meta_table   = $this->get_full_table_name( 'pp_roster_archives' );
 
-		$skaters = $wpdb->get_results( "SELECT * FROM $skater_src", ARRAY_A );
+		$skaters = $wpdb->get_results(
+			"SELECT s.*, d.name, d.pos, d.headshot_link, d.team_id, d.team_name
+			FROM {$skater_src} s
+			INNER JOIN {$display_src} d ON d.player_id = s.player_id AND d.roster_id = s.roster_id
+			WHERE s.roster_id = 1",
+			ARRAY_A
+		);
 		foreach ( $skaters as $row ) {
 			unset( $row['id'] );
 			$row['archive_key'] = $archive_key;
@@ -104,7 +123,13 @@ class Puck_Press_Roster_Archive_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 			$wpdb->insert( $skater_dst, $row, $this->get_format_array_for_insert( $row ) );
 		}
 
-		$goalies = $wpdb->get_results( "SELECT * FROM $goalie_src", ARRAY_A );
+		$goalies = $wpdb->get_results(
+			"SELECT g.*, d.name, d.pos, d.headshot_link, d.team_id, d.team_name
+			FROM {$goalie_src} g
+			INNER JOIN {$display_src} d ON d.player_id = g.player_id AND d.roster_id = g.roster_id
+			WHERE g.roster_id = 1",
+			ARRAY_A
+		);
 		foreach ( $goalies as $row ) {
 			unset( $row['id'] );
 			$row['archive_key'] = $archive_key;

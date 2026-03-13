@@ -24,8 +24,9 @@ class Puck_Press_Roster_Process_Acha_Url {
 
 	private $raw_acha_roster_url;
 	public $raw_roster_data;
-	private $team_id   = '';
-	private $season_id = '';
+	public $team_id   = '';
+	public $season_id = '';
+	public $team_name = '';
 
 	public function __construct( $raw_acha_roster_url ) {
 		$this->raw_acha_roster_url = $raw_acha_roster_url;
@@ -48,6 +49,7 @@ class Puck_Press_Roster_Process_Acha_Url {
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			return array( 'error' => 'Failed to parse JSON: ' . json_last_error_msg() );
 		}
+		$this->team_name = $jsonData['teamName'] ?? '';
 		return $jsonData;
 	}
 
@@ -88,6 +90,8 @@ class Puck_Press_Roster_Process_Acha_Url {
 					'wt'             => $player['row']['w'],
 					'name'           => $player['row']['name'],
 					'headshot_link'  => 'https://assets.leaguestat.com/acha/240x240/' . $player['row']['player_id'] . '.jpg',
+					'team_id'        => $this->team_id,
+					'team_name'      => $this->team_name,
 					'last_team'      => '',
 					'year_in_school' => '',
 					'major'          => '',

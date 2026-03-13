@@ -32,8 +32,9 @@
             $msg.hide();
 
             const data = {
-                action:              'pp_save_stats_column_settings',
-                nonce:               ppStatsTemplates.columns_nonce,
+                action:                 'pp_save_stats_column_settings',
+                nonce:                  ppStatsTemplates.columns_nonce,
+                current_season_label:   $('#pp-stats-current-season-label').val().trim(),
                 show_pim:            $('input[name="show_pim"]').is(':checked') ? 1 : 0,
                 show_ppg:            $('input[name="show_ppg"]').is(':checked') ? 1 : 0,
                 show_shg:            $('input[name="show_shg"]').is(':checked') ? 1 : 0,

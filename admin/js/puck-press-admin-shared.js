@@ -43,6 +43,9 @@ function refreshGamesTable(successCallback, errorCallback) {
                             applyEditHighlights();
                         }
                     }
+                    if (response.data.refreshed_sources_html) {
+                        (jQuery)('#pp-data-sources-table').html(response.data.refreshed_sources_html);
+                    }
                     for (let key in ppRosterTemplates.rosterTemplates) {
                         (jQuery)(`.${key}_roster_container`).hide();
                     }

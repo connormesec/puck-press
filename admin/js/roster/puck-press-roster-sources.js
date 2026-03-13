@@ -44,6 +44,7 @@
         const closeModal = () => {
             $modal.css('display', 'none');
             $addSourceForm[0].reset();
+            $('#pp-include-stats').prop('checked', false);
         };
 
         $closeBtn.on('click', closeModal);
@@ -70,14 +71,7 @@
 
                     if (type === 'achaRosterUrl') {
                         data.url = $('#pp-source-url').val();
-                        const statsUrl = $('#pp-stats-url').val();
-                        if (statsUrl) {
-                            data.stats_url = statsUrl;
-                        }
-                        const goalieStatsUrl = $('#pp-goalie-stats-url').val();
-                        if (goalieStatsUrl) {
-                            data.goalie_stats_url = goalieStatsUrl;
-                        }
+                        data.include_stats = $('#pp-include-stats').is(':checked') ? '1' : '0';
                     } else if (type === 'usphlRosterUrl') {
                         data.team_id = $('#pp-usphl-team-id').val();
                         const seasonId = $('#pp-usphl-season-id').val();
@@ -308,7 +302,7 @@
             const config = {
                 achaRosterUrl: {
                     required: ['#pp-source-url'],
-                    optional: ['#pp-stats-url', '#pp-goalie-stats-url']
+                    optional: []
                 },
                 usphlRosterUrl: {
                     required: ['#pp-usphl-team-id', '#pp-usphl-season-id']

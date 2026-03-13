@@ -16,18 +16,15 @@
 	<div class="pp-dynamic-source-group-achaRosterUrl">
 		<div class="pp-form-group">
 			<label for="pp-source-url" class="pp-form-label">URL</label>
-			<input type="url" id="pp-source-url" class="pp-form-input" placeholder="https://example.com/data.csv" required>
-			<span class="pp-form-help">URL to the ACHA Roster</span>
+			<input type="url" id="pp-source-url" class="pp-form-input" placeholder="https://www.achahockey.org/stats/roster/883/46?division=58&league=1" required>
+			<span class="pp-form-help">URL to the ACHA Roster page</span>
 		</div>
 		<div class="pp-form-group">
-			<label for="pp-stats-url" class="pp-form-label">Skater Stats URL <span style="font-weight:normal;color:#888;">(optional)</span></label>
-			<input type="url" id="pp-stats-url" class="pp-form-input" placeholder="https://www.achahockey.org/stats/player-stats/51/60?...">
-			<span class="pp-form-help">ACHA skater stats page URL — used to import skater stats</span>
-		</div>
-		<div class="pp-form-group">
-			<label for="pp-goalie-stats-url" class="pp-form-label">Goalie Stats URL <span style="font-weight:normal;color:#888;">(optional)</span></label>
-			<input type="url" id="pp-goalie-stats-url" class="pp-form-input" placeholder="https://www.achahockey.org/stats/goalie-stats/51/60?...">
-			<span class="pp-form-help">ACHA goalie stats page URL — used to import goalie stats</span>
+			<label class="pp-form-label pp-checkbox-label">
+				<input type="checkbox" id="pp-include-stats" value="1">
+				Include Stats
+			</label>
+			<span class="pp-form-help">Automatically imports skater and goalie stats using the team and season from the roster URL above. No separate stats URL needed.</span>
 		</div>
 	</div>
 	<div class="pp-dynamic-source-group-usphlRosterUrl">

@@ -62,6 +62,43 @@ class Puck_Press_Stats_Admin_Display {
 					</div>
 				</div>
 
+
+				<!-- ── Shortcode Reference ── -->
+				<div class="pp-card" style="margin-bottom: 16px;">
+					<div class="pp-card-header">
+						<div>
+							<h2 class="pp-card-title">Shortcode Reference</h2>
+							<p class="pp-card-subtitle">All supported attributes for the <code>[pp-stats]</code> shortcode</p>
+						</div>
+					</div>
+					<div class="pp-card-content" style="padding: 16px 24px;">
+						<table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+							<thead>
+								<tr style="background:#f5f5f5;">
+									<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Attribute</th>
+									<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Default</th>
+									<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Description</th>
+									<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Example</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>roster</code></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><em>(all players)</em></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Filter to a specific roster group by its slug. Omit to show all players across all groups.</td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stats roster=&quot;varsity&quot;]</code></td>
+								</tr>
+								<tr>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>show_team</code></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>true</code></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Show or hide the Team column. Set to <code>false</code> to hide it (e.g. single-team rosters).</td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stats show_team=&quot;false&quot;]</code></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
 				<!-- ── Column Settings ── -->
 				<div class="pp-card" style="margin-bottom: 16px;">
 					<div class="pp-card-header">
@@ -124,6 +161,18 @@ class Puck_Press_Stats_Admin_Display {
 									Saves
 								</label>
 							</div>
+						</div>
+
+						<div style="margin-top:20px;border-top:1px solid #e0e0e0;padding-top:16px;">
+							<p style="font-weight:600; margin-bottom:8px; margin-top:0;">Season Label</p>
+							<p style="font-size:0.8rem;color:#5f6368;margin:0 0 10px;">Label shown in the season dropdown for the current (live) season, e.g. <strong>2025-2026</strong>.</p>
+							<input
+								type="text"
+								id="pp-stats-current-season-label"
+								name="current_season_label"
+								value="<?php echo esc_attr( get_option( 'puck_press_current_season_label', '' ) ); ?>"
+								placeholder="e.g. 2025-2026"
+								style="width:200px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
 						</div>
 
 						<div style="margin-top:16px;display:flex;align-items:center;gap:12px;">

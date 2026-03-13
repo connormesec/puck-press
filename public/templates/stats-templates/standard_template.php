@@ -72,20 +72,65 @@ class StandardTemplate extends PuckPressTemplate {
 		return $css_block . $this->buildStats( $data );
 	}
 
-	private function buildStats( array $data ): string {
-		$skaters = $data['skaters'] ?? array();
-		$goalies = $data['goalies'] ?? array();
-		$col     = $data['column_settings'] ?? array();
+	/**
+	 * Render only the skater + goalie sections for archive swapping via AJAX.
+	 * Returns HTML for both .pp-stats-section elements (no container).
+	 */
+	public function build_archive_sections( array $skaters, array $goalies, array $col ): string {
+		return $this->buildSkatersSection( $skaters, $col )
+			. $this->buildGoaliesSection( $goalies, $col );
+	}
 
-		$html  = '<div class="standard_stats_container"'
+	private function buildStats( array $data ): string {
+		$skaters      = $data['skaters'] ?? array();
+		$goalies      = $data['goalies'] ?? array();
+		$col          = $data['column_settings'] ?? array();
+		$team_names   = $data['team_names'] ?? array();
+		$archives     = $data['archives'] ?? array();
+		$season_label = $data['current_season_label'] ?? '';
+		$instance     = 'pp-stats-' . substr( md5( uniqid( '', true ) ), 0, 8 );
+
+		$html  = '<div class="standard_stats_container" id="' . esc_attr( $instance ) . '"'
 			. ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
 			. ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
 			. '>';
 		$html .= '<h2 class="pp-stats-heading">Statistics</h2>';
+		$show_team = ! empty( $col['show_team'] );
+		$html .= $this->buildFilterToolbar( $team_names, $archives, $season_label, $show_team );
+		$html .= '<div class="pp-stats-sections">';
 		$html .= $this->buildSkatersSection( $skaters, $col );
 		$html .= $this->buildGoaliesSection( $goalies, $col );
 		$html .= '</div>';
+		$html .= '</div>';
 
+		return $html;
+	}
+
+	private function buildFilterToolbar( array $team_names, array $archives, string $season_label, bool $show_team = true ): string {
+		$html  = '<div class="pp-stats-filter-toolbar">';
+
+		$html .= '<div class="pp-stats-toolbar-left">';
+		if ( $show_team && ! empty( $team_names ) ) {
+			$html .= '<select class="pp-stats-team-select" name="pp_stats_team" autocomplete="off">';
+			$html .= '<option value="all">All Teams</option>';
+			foreach ( $team_names as $team ) {
+				$html .= '<option value="' . esc_attr( $team ) . '">' . esc_html( $team ) . '</option>';
+			}
+			$html .= '</select>';
+		}
+		$html .= '</div>';
+
+		$html .= '<div class="pp-stats-toolbar-right">';
+		$html .= '<select class="pp-stats-season-select" name="pp_stats_season" autocomplete="off">';
+		$html .= '<option value="current">' . esc_html( $season_label ?: 'Current Season' ) . '</option>';
+		foreach ( $archives as $archive ) {
+			$html .= '<option value="' . esc_attr( $archive['archive_key'] ) . '">'
+				. esc_html( $archive['season'] ) . '</option>';
+		}
+		$html .= '</select>';
+		$html .= '</div>';
+
+		$html .= '</div>';
 		return $html;
 	}
 
@@ -103,30 +148,33 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<table class="pp-stats-table">';
 		$html .= '<thead><tr>';
 		$html .= '<th class="pp-stats-col-rank"></th>';
-		$html .= '<th class="pp-stats-col-player">Player</th>';
-		$html .= '<th class="pp-stats-col-pos" data-tip="Position">Pos</th>';
-		$html .= '<th data-tip="Games Played">GP</th>';
-		$html .= '<th data-tip="Goals">G</th>';
-		$html .= '<th data-tip="Assists">A</th>';
-		$html .= '<th data-tip="Points">Pts</th>';
+		$html .= '<th class="pp-stats-col-player pp-stats-th-sortable" data-col="name" data-type="str">Player</th>';
+		if ( ! empty( $col['show_team'] ) ) {
+			$html .= '<th class="pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
+		}
+		$html .= '<th class="pp-stats-col-pos pp-stats-th-sortable" data-tip="Position" data-col="pos" data-type="str">Pos</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Games Played" data-col="gp" data-type="num">GP</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Goals" data-col="g" data-type="num">G</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Assists" data-col="a" data-type="num">A</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Points" data-col="pts" data-type="num">Pts</th>';
 
 		if ( ! empty( $col['show_pts_per_game'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Points Per Game">Pts/GP</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Points Per Game" data-col="ptsgp" data-type="num">Pts/GP</th>';
 		}
 		if ( ! empty( $col['show_pim'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Penalty Minutes">PIM</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Penalty Minutes" data-col="pim" data-type="num">PIM</th>';
 		}
 		if ( ! empty( $col['show_ppg'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Power Play Goals">PPG</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Power Play Goals" data-col="ppg" data-type="num">PPG</th>';
 		}
 		if ( ! empty( $col['show_shg'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Short-Handed Goals">SHG</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Short-Handed Goals" data-col="shg" data-type="num">SHG</th>';
 		}
 		if ( ! empty( $col['show_gwg'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Game-Winning Goals">GWG</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Game-Winning Goals" data-col="gwg" data-type="num">GWG</th>';
 		}
 		if ( ! empty( $col['show_sh_pct'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Shooting Percentage">SH%</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Shooting Percentage" data-col="shpct" data-type="num">SH%</th>';
 		}
 
 		$html .= '</tr></thead>';
@@ -156,9 +204,18 @@ class StandardTemplate extends PuckPressTemplate {
 				. ' class="pp-stats-headshot" />';
 
 			$slug  = sanitize_title( $name );
-			$html .= '<tr>';
+			$html .= '<tr'
+				. ' data-source="' . esc_attr( $s['source'] ?? '' ) . '"'
+				. ' data-roster-id="' . esc_attr( $s['roster_id'] ?? '' ) . '"'
+				. ' data-team-name="' . esc_attr( $s['team_name'] ?? '' ) . '"'
+				. ' data-team-group="' . esc_attr( $s['group_name'] ?? '' ) . '"'
+				. ' data-team-id="' . esc_attr( $s['team_id'] ?? '' ) . '"'
+				. '>';
 			$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-			$html .= '<td class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></td>';
+			$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
+			if ( ! empty( $col['show_team'] ) ) {
+				$html .= '<td class="pp-stats-team">' . esc_html( $s['team_name'] ?? '' ) . '</td>';
+			}
 			$html .= '<td class="pp-stats-pos">' . $pos . '</td>';
 			$html .= '<td>' . $gp . '</td>';
 			$html .= '<td>' . $goals . '</td>';
@@ -207,25 +264,28 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<table class="pp-stats-table">';
 		$html .= '<thead><tr>';
 		$html .= '<th class="pp-stats-col-rank"></th>';
-		$html .= '<th class="pp-stats-col-player">Player</th>';
-		$html .= '<th data-tip="Games Played">GP</th>';
-		$html .= '<th data-tip="Wins">W</th>';
-		$html .= '<th data-tip="Losses">L</th>';
+		$html .= '<th class="pp-stats-col-player pp-stats-th-sortable" data-col="name" data-type="str">Player</th>';
+		if ( ! empty( $col['show_team'] ) ) {
+			$html .= '<th class="pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
+		}
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Games Played" data-col="gp" data-type="num">GP</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Wins" data-col="w" data-type="num">W</th>';
+		$html .= '<th class="pp-stats-th-sortable" data-tip="Losses" data-col="l" data-type="num">L</th>';
 
 		if ( ! empty( $col['show_goalie_otl'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Overtime Losses">OTL</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Overtime Losses" data-col="otl" data-type="num">OTL</th>';
 		}
 		if ( ! empty( $col['show_goalie_gaa'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Goals Against Average">GAA</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Goals Against Average" data-col="gaa" data-type="num">GAA</th>';
 		}
 		if ( ! empty( $col['show_goalie_svpct'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Save Percentage">SV%</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Save Percentage" data-col="svpct" data-type="num">SV%</th>';
 		}
 		if ( ! empty( $col['show_goalie_sa'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Shots Against">SA</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Shots Against" data-col="sa" data-type="num">SA</th>';
 		}
 		if ( ! empty( $col['show_goalie_saves'] ) ) {
-			$html .= '<th class="pp-stats-col-opt" data-tip="Total Saves">Saves</th>';
+			$html .= '<th class="pp-stats-col-opt pp-stats-th-sortable" data-tip="Total Saves" data-col="saves" data-type="num">Saves</th>';
 		}
 
 		$html .= '</tr></thead>';
@@ -253,9 +313,18 @@ class StandardTemplate extends PuckPressTemplate {
 				. ' class="pp-stats-headshot" />';
 
 			$slug  = sanitize_title( $name );
-			$html .= '<tr>';
+			$html .= '<tr'
+				. ' data-source="' . esc_attr( $g['source'] ?? '' ) . '"'
+				. ' data-roster-id="' . esc_attr( $g['roster_id'] ?? '' ) . '"'
+				. ' data-team-name="' . esc_attr( $g['team_name'] ?? '' ) . '"'
+				. ' data-team-group="' . esc_attr( $g['group_name'] ?? '' ) . '"'
+				. ' data-team-id="' . esc_attr( $g['team_id'] ?? '' ) . '"'
+				. '>';
 			$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-			$html .= '<td class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></td>';
+			$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
+			if ( ! empty( $col['show_team'] ) ) {
+				$html .= '<td class="pp-stats-team">' . esc_html( $g['team_name'] ?? '' ) . '</td>';
+			}
 			$html .= '<td>' . $gp . '</td>';
 			$html .= '<td>' . $wins . '</td>';
 			$html .= '<td>' . $losses . '</td>';

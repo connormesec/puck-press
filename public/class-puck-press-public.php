@@ -100,9 +100,22 @@ class Puck_Press_Public {
 		return $render->get_current_template_html();
 	}
 
-	public function stats_builder_shortcode() {
+	public function stats_builder_shortcode( $atts = array() ) {
+		$atts = shortcode_atts(
+			array(
+				'roster'    => '',
+				'show_team' => 'true',
+			),
+			$atts
+		);
+		$slug      = sanitize_title( $atts['roster'] );
+		$show_team = filter_var( $atts['show_team'], FILTER_VALIDATE_BOOLEAN );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
-		$render = new Puck_Press_Stats_Render_Utils();
+
+		$roster_id = $slug !== '' ? Puck_Press_Group_Resolver::resolve( $slug, 'pp_rosters' ) : 0;
+		$render    = new Puck_Press_Stats_Render_Utils( $roster_id, $show_team );
 		return $render->get_current_template_html();
 	}
 

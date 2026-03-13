@@ -172,11 +172,15 @@ class Puck_Press_Admin {
 		$refresh_edits_table        = new Puck_Press_Roster_Admin_Edits_Table_Card( array(), $roster_id );
 		$refreshed_edits_table_html = $refresh_edits_table->render_edits_table();
 
+		$refresh_sources_card        = new Puck_Press_Roster_Admin_Data_Sources_Card( array(), $roster_id );
+		$refreshed_sources_html      = $refresh_sources_card->render_game_roster_data_sources();
+
 		$response_data = array(
 			'raw_roster_table_results'      => $raw_table_results,
 			'display_roster_table_results'  => $display_roster_table_results,
 			'refreshed_roster_preview_html' => $refresh_roster_preview_html,
 			'refreshed_edits_table_html'    => $refreshed_edits_table_html,
+			'refreshed_sources_html'        => $refreshed_sources_html,
 		);
 
 		// "No active sources" is a valid state. Send success so the JS updates
@@ -440,6 +444,10 @@ class Puck_Press_Admin {
 		$wpdb_utils = new Puck_Press_Roster_Wpdb_Utils();
 		$wpdb_utils->delete_group( $group_id );
 
+		if ( (int) get_option( 'pp_admin_active_roster_id', 1 ) === $group_id ) {
+			update_option( 'pp_admin_active_roster_id', 1 );
+		}
+
 		wp_send_json_success( array( 'message' => 'Roster group deleted.' ) );
 	}
 
@@ -506,6 +514,9 @@ class Puck_Press_Admin {
 
 		update_option( 'pp_stats_column_settings', $settings );
 
+		$season_label = sanitize_text_field( wp_unslash( $_POST['current_season_label'] ?? '' ) );
+		update_option( 'puck_press_current_season_label', $season_label );
+
 		$preview_card = new Puck_Press_Stats_Admin_Preview_Card();
 		$preview_card->init();
 
@@ -515,6 +526,23 @@ class Puck_Press_Admin {
 				'preview_html' => $preview_card->get_current_template_html(),
 			)
 		);
+	}
+
+	public static function pp_ajax_get_archive_stats(): void {
+		check_ajax_referer( 'pp_player_detail_nonce', 'nonce' );
+
+		$archive_key = sanitize_text_field( wp_unslash( $_POST['archive_key'] ?? '' ) );
+		if ( ! $archive_key ) {
+			wp_send_json_error( array( 'message' => 'Missing archive_key.' ) );
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
+
+		$render        = new Puck_Press_Stats_Render_Utils();
+		$sections_html = $render->get_archive_sections_html( $archive_key );
+
+		wp_send_json_success( array( 'sections_html' => $sections_html ) );
 	}
 
 	/**
@@ -978,6 +1006,8 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_puck_press_update_record_colors', array( self::class, 'pp_ajax_update_record_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_stats_colors', array( self::class, 'pp_ajax_update_stats_template_colors' ) );
 		add_action( 'wp_ajax_pp_save_stats_column_settings', array( self::class, 'pp_ajax_save_stats_column_settings' ) );
+		add_action( 'wp_ajax_pp_get_archive_stats', array( self::class, 'pp_ajax_get_archive_stats' ) );
+		add_action( 'wp_ajax_nopriv_pp_get_archive_stats', array( self::class, 'pp_ajax_get_archive_stats' ) );
 		add_action( 'wp_ajax_puck_press_update_player_detail_colors', array( self::class, 'pp_ajax_update_player_detail_colors' ) );
 	}
 }
