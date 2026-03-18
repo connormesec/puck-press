@@ -14,139 +14,20 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Group_Aware_Wpdb_Utils {
 	}
 
 	protected function get_domain_tables(): array {
-		return array(
-			'pp_roster_data_sources',
-			'pp_roster_raw',
-			'pp_roster_mods',
-			'pp_roster_for_display',
-			'pp_roster_stats',
-			'pp_roster_goalie_stats',
-		);
+		return array();
 	}
 
 	// no inline comments in this array, as it is used to create the tables in the database
 	protected $table_schemas = array(
-		'pp_rosters'             => '
+		'pp_rosters' => '
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
             slug VARCHAR(100) NOT NULL,
             name VARCHAR(200) NOT NULL,
             description TEXT DEFAULT NULL,
+            is_main TINYINT(1) NOT NULL DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY slug (slug)
-        ',
-		'pp_roster_data_sources' => "
-            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            name VARCHAR(100) NOT NULL,
-            type TEXT NOT NULL,
-            source_url_or_path TEXT DEFAULT NULL,
-            stats_url TEXT DEFAULT NULL,
-            goalie_stats_url TEXT DEFAULT NULL,
-            last_updated DATETIME DEFAULT NULL,
-            status ENUM('active', 'inactive') DEFAULT 'active',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            csv_data LONGTEXT NULL,
-            other_data LONGTEXT NULL,
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
-        ",
-		'pp_roster_raw'          => '
-            id MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            source VARCHAR(100) NOT NULL,
-            player_id VARCHAR(50) NOT NULL,
-            headshot_link TEXT,
-            number SMALLINT(3) NOT NULL,
-            name VARCHAR(100) NOT NULL,
-            pos VARCHAR(10),
-            ht VARCHAR(10),
-            wt SMALLINT(3),
-            shoots VARCHAR(5),
-            hometown VARCHAR(100),
-            team_id VARCHAR(20) DEFAULT NULL,
-            team_name VARCHAR(200) DEFAULT NULL,
-            last_team VARCHAR(100),
-            year_in_school VARCHAR(50),
-            major VARCHAR(100),
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
-        ',
-		'pp_roster_mods'         => '
-            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            external_id VARCHAR(50) DEFAULT NULL,
-            edit_action VARCHAR(50),
-            edit_data LONGTEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
-        ',
-		'pp_roster_for_display'  => '
-            id MEDIUMINT(9) NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            source VARCHAR(100) NOT NULL,
-            player_id VARCHAR(50) NOT NULL,
-            headshot_link TEXT,
-            number SMALLINT(3) NOT NULL,
-            name VARCHAR(100) NOT NULL,
-            pos VARCHAR(10),
-            ht VARCHAR(10),
-            wt SMALLINT(3),
-            shoots VARCHAR(5),
-            hometown VARCHAR(100),
-            team_id VARCHAR(20) DEFAULT NULL,
-            team_name VARCHAR(200) DEFAULT NULL,
-            last_team VARCHAR(100),
-            year_in_school VARCHAR(50),
-            major VARCHAR(100),
-            hero_image_url TEXT,
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
-        ',
-		'pp_roster_stats'        => '
-            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            player_id VARCHAR(50) NOT NULL,
-            source VARCHAR(100) NOT NULL,
-            games_played SMALLINT DEFAULT NULL,
-            goals SMALLINT DEFAULT NULL,
-            assists SMALLINT DEFAULT NULL,
-            points SMALLINT DEFAULT NULL,
-            points_per_game DECIMAL(5,2) DEFAULT NULL,
-            power_play_goals SMALLINT DEFAULT NULL,
-            short_handed_goals SMALLINT DEFAULT NULL,
-            game_winning_goals SMALLINT DEFAULT NULL,
-            shootout_winning_goals SMALLINT DEFAULT NULL,
-            penalty_minutes SMALLINT DEFAULT NULL,
-            shooting_percentage DECIMAL(5,2) DEFAULT NULL,
-            stat_rank SMALLINT DEFAULT NULL,
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
-        ',
-		'pp_roster_goalie_stats' => '
-            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            roster_id BIGINT(20) UNSIGNED NOT NULL DEFAULT 1,
-            player_id VARCHAR(50) NOT NULL,
-            source VARCHAR(100) NOT NULL,
-            games_played SMALLINT DEFAULT NULL,
-            wins SMALLINT DEFAULT NULL,
-            losses SMALLINT DEFAULT NULL,
-            overtime_losses SMALLINT DEFAULT NULL,
-            shootout_losses SMALLINT DEFAULT NULL,
-            shootout_wins SMALLINT DEFAULT NULL,
-            shots_against SMALLINT DEFAULT NULL,
-            saves SMALLINT DEFAULT NULL,
-            save_percentage DECIMAL(6,3) DEFAULT NULL,
-            goals_against_average DECIMAL(5,2) DEFAULT NULL,
-            goals_against SMALLINT DEFAULT NULL,
-            goals SMALLINT DEFAULT NULL,
-            assists SMALLINT DEFAULT NULL,
-            penalty_minutes SMALLINT DEFAULT NULL,
-            stat_rank SMALLINT DEFAULT NULL,
-            PRIMARY KEY (id),
-            KEY roster_id (roster_id)
         ',
 	);
 
@@ -211,6 +92,65 @@ class Puck_Press_Roster_Wpdb_Utils extends Puck_Press_Group_Aware_Wpdb_Utils {
 		}
 		unset( $row );
 		return $this->insert_stats_rows_into( 'pp_roster_stats', $stats_rows );
+	}
+
+	public function aggregate_roster_into_group( int $target_id, array $source_ids ): void {
+		global $wpdb;
+
+		if ( empty( $source_ids ) ) {
+			return;
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $source_ids ), '%d' ) );
+
+		$tfd = $wpdb->prefix . 'pp_roster_for_display';
+		$wpdb->delete( $tfd, array( 'roster_id' => $target_id ), array( '%d' ) );
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$tfd}
+                    (roster_id, source, player_id, headshot_link, number, name, pos, ht, wt,
+                     shoots, hometown, team_id, team_name, last_team, year_in_school, major, hero_image_url)
+                SELECT %d, source, player_id, headshot_link, number, name, pos, ht, wt,
+                       shoots, hometown, team_id, team_name, last_team, year_in_school, major, hero_image_url
+                FROM {$tfd}
+                WHERE roster_id IN ({$placeholders})",
+				array_merge( array( $target_id ), $source_ids )
+			)
+		);
+
+		$ts = $wpdb->prefix . 'pp_roster_stats';
+		$wpdb->delete( $ts, array( 'roster_id' => $target_id ), array( '%d' ) );
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$ts}
+                    (roster_id, player_id, source, games_played, goals, assists, points,
+                     points_per_game, power_play_goals, short_handed_goals, game_winning_goals,
+                     shootout_winning_goals, penalty_minutes, shooting_percentage, stat_rank)
+                SELECT %d, player_id, source, games_played, goals, assists, points,
+                       points_per_game, power_play_goals, short_handed_goals, game_winning_goals,
+                       shootout_winning_goals, penalty_minutes, shooting_percentage, stat_rank
+                FROM {$ts}
+                WHERE roster_id IN ({$placeholders})",
+				array_merge( array( $target_id ), $source_ids )
+			)
+		);
+
+		$tg = $wpdb->prefix . 'pp_roster_goalie_stats';
+		$wpdb->delete( $tg, array( 'roster_id' => $target_id ), array( '%d' ) );
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$tg}
+                    (roster_id, player_id, source, games_played, wins, losses, overtime_losses,
+                     shootout_losses, shootout_wins, shots_against, saves, save_percentage,
+                     goals_against_average, goals_against, goals, assists, penalty_minutes, stat_rank)
+                SELECT %d, player_id, source, games_played, wins, losses, overtime_losses,
+                       shootout_losses, shootout_wins, shots_against, saves, save_percentage,
+                       goals_against_average, goals_against, goals, assists, penalty_minutes, stat_rank
+                FROM {$tg}
+                WHERE roster_id IN ({$placeholders})",
+				array_merge( array( $target_id ), $source_ids )
+			)
+		);
 	}
 
 	private function insert_stats_rows_into( string $table_name, array $stats_rows ) {

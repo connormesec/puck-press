@@ -116,12 +116,16 @@ class Puck_Press_Roster_Process_Acha_Stats {
 			foreach ( $section['data'] as $player ) {
 				$row = $player['row'];
 
+				if ( empty( $row['player_id'] ) ) {
+					continue;
+				}
+
 				$pm = isset( $row['penalty_minutes'] ) && $row['penalty_minutes'] !== ''
 					? intval( $row['penalty_minutes'] )
 					: null;
 
 				$stats[] = array(
-					'player_id'              => $row['player_id'] ?? '',
+					'player_id'              => $row['player_id'],
 					'games_played'           => isset( $row['games_played'] ) ? intval( $row['games_played'] ) : null,
 					'goals'                  => isset( $row['goals'] ) ? intval( $row['goals'] ) : null,
 					'assists'                => isset( $row['assists'] ) ? intval( $row['assists'] ) : null,
@@ -156,8 +160,12 @@ class Puck_Press_Roster_Process_Acha_Stats {
 			foreach ( $section['data'] as $player ) {
 				$row = $player['row'];
 
+				if ( empty( $row['player_id'] ) ) {
+					continue;
+				}
+
 				$stats[] = array(
-					'player_id'             => $row['player_id'] ?? '',
+					'player_id'             => $row['player_id'],
 					'games_played'          => isset( $row['games_played'] ) ? intval( $row['games_played'] ) : null,
 					'wins'                  => isset( $row['wins'] ) ? intval( $row['wins'] ) : null,
 					'losses'                => isset( $row['losses'] ) ? intval( $row['losses'] ) : null,

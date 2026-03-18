@@ -6,61 +6,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Puck_Press_Roster_Admin_Display {
 
-	private $roster_data_sources;
-	private $roster_edits_table;
 	private $roster_preview_card;
-	private $roster_archive_card;
-	private $groups_card;
 	private $last_run;
-	private array $roster_groups;
 	private int $active_roster_id;
-	private string $active_roster_slug;
 
 	public function __construct() {
-		$wpdb_utils              = new Puck_Press_Roster_Wpdb_Utils();
-		$this->roster_groups     = $wpdb_utils->get_all_groups();
-		$this->active_roster_id  = (int) get_option( 'pp_admin_active_roster_id', 1 );
+		$registry                = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$main_id                 = $registry->get_main_roster_id() ?? 1;
+		$this->active_roster_id  = (int) get_option( 'pp_admin_active_new_roster_id', $main_id );
 
-		$valid_ids = array_column( $this->roster_groups, 'id' );
+		$all_rosters = $registry->get_all_rosters();
+		$valid_ids   = array_column( $all_rosters, 'id' );
 		if ( ! empty( $valid_ids ) && ! in_array( (string) $this->active_roster_id, $valid_ids, false ) ) {
 			$this->active_roster_id = (int) $valid_ids[0];
-			update_option( 'pp_admin_active_roster_id', $this->active_roster_id );
+			update_option( 'pp_admin_active_new_roster_id', $this->active_roster_id );
 		}
-
-		$active_group             = array_values(
-			array_filter(
-				$this->roster_groups,
-				fn( $g ) => (int) $g['id'] === $this->active_roster_id
-			)
-		);
-		$this->active_roster_slug = $active_group[0]['slug'] ?? 'default';
 
 		$rid = $this->active_roster_id;
 
-		$this->groups_card = new Puck_Press_Roster_Admin_Groups_Card(
-			array(
-				'title'    => 'Roster Groups',
-				'subtitle' => 'Manage multiple roster groups',
-				'id'       => 'roster-groups',
-			)
-		);
-
-		$this->roster_data_sources = new Puck_Press_Roster_Admin_Data_Sources_Card(
-			array(
-				'title'    => 'Data Sources',
-				'subtitle' => 'Manage external data sources for the roster',
-				'id'       => 'data-sources-table',
-			),
-			$rid
-		);
-		$this->roster_edits_table  = new Puck_Press_Roster_Admin_Edits_Table_Card(
-			array(
-				'title'    => 'Roster Edits',
-				'subtitle' => 'Manage your roster edits',
-				'id'       => 'roster-edits-table',
-			),
-			$rid
-		);
 		$this->roster_preview_card = new Puck_Press_Roster_Admin_Preview_Card(
 			array(
 				'title'    => 'Roster Preview',
@@ -69,21 +32,12 @@ class Puck_Press_Roster_Admin_Display {
 			),
 			$rid
 		);
-		$this->roster_archive_card = new Puck_Press_Roster_Admin_Archive_Card(
-			array(
-				'title'    => 'Roster Archives',
-				'subtitle' => 'Snapshots of past season stats',
-				'id'       => 'roster-archives',
-			)
-		);
 		$this->roster_preview_card->init();
-		$this->roster_archive_card->init();
 		$this->last_run = get_option( 'puck_press_cron_last_run', 'Never' );
 	}
 
 	public function render() {
 		ob_start();
-		$roster_sc = '[pp-roster' . ( $this->active_roster_slug !== 'default' ? ' roster="' . esc_attr( $this->active_roster_slug ) . '"' : '' ) . ']';
 		?>
 		<div class="pp-container">
 			<main class="pp-main">
@@ -93,32 +47,9 @@ class Puck_Press_Roster_Admin_Display {
 						<p class="pp-section-description">Manage your team's roster.</p>
 					</div>
 
-					<div class="pp-shortcode-container">
-						<div class="pp-shortcode-label">Roster Shortcode</div>
-						<div class="pp-shortcode-input-group">
-							<input
-								type="text"
-								id="pp-roster-shortcode"
-								name="pp-roster-shortcode"
-								class="pp-shortcode-input"
-								value="<?php echo esc_attr( $roster_sc ); ?>"
-								size="<?php echo strlen( $roster_sc ); ?>"
-								spellcheck="false"
-								aria-label="shortcode"
-								onfocus="this.select();"
-								readonly>
-							<button class="pp-shortcode-copy-btn" aria-label="Copy URL">
-								<svg class="pp-shortcode-copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-								</svg>
-							</button>
-							<div class="pp-shortcode-tooltip">Copied!</div>
-						</div>
-					</div>
-
 					<div class="pp-flex-row">
 
-						<button class="pp-button pp-button-secondary" id="pp-refresh-button">
+						<button class="pp-button pp-button-secondary" id="pp-roster-refresh-all-btn">
 							<i>🔄</i>
 							Refresh All Sources
 						</button>
@@ -132,68 +63,161 @@ class Puck_Press_Roster_Admin_Display {
 								Advanced
 							</button>
 							<div class="pp-dropdown-menu" id="pp-advancedDropdown">
-								<div class="pp-dropdown-header">Sources</div>
-								<div class="pp-dropdown-item">Reset Game Data</div>
-								<div class="pp-dropdown-item">Reset Data Sources</div>
-								<div class="pp-dropdown-item danger">Reset Everything</div>
-								<div class="pp-dropdown-header">Edits</div>
-								<div class="pp-dropdown-item danger" id="pp-reset-all-roster-edits">Reset All Edits</div>
-								<div class="pp-dropdown-header">Archives</div>
-								<div class="pp-dropdown-item" id="pp-archive-roster-btn">Archive Roster</div>
 								<div class="pp-dropdown-header">Database</div>
-								<div class="pp-dropdown-item" id="pp-fix-databases-btn">Fix Database Tables</div>
+								<div class="pp-dropdown-item danger" id="pp-wipe-and-recreate-db-btn">Wipe &amp; Recreate Database</div>
 							</div>
 						</div>
+
 					</div>
 				</div>
 
 				<p class="pp-refresh-info">Last refreshed: <?php echo esc_html( $this->last_run ); ?></p>
 
-				<?php echo $this->groups_card->render(); ?>
-
-				<div class="pp-card" style="margin-bottom: 16px;">
-					<div class="pp-card-content" style="padding: 16px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-						<label for="pp-roster-group-selector"><strong>Editing roster:</strong></label>
-						<select id="pp-roster-group-selector" class="pp-select">
-							<?php foreach ( $this->roster_groups as $group ) : ?>
-								<option value="<?php echo esc_attr( $group['id'] ); ?>"
-									data-slug="<?php echo esc_attr( $group['slug'] ); ?>"
-									<?php selected( (int) $group['id'], $this->active_roster_id ); ?>>
-									<?php echo esc_html( $group['name'] ); ?> (<?php echo esc_html( $group['slug'] ); ?>)
-								</option>
-							<?php endforeach; ?>
-						</select>
-						<span style="color: #666; font-size: 0.85rem;">
-							Shortcode: <code>[pp-roster<?php echo $this->active_roster_slug !== 'default' ? ' roster="' . esc_attr( $this->active_roster_slug ) . '"' : ''; ?>]</code>
-						</span>
-					</div>
-				</div>
-
-				<input type="hidden" id="pp-active-roster-id" value="<?php echo esc_attr( $this->active_roster_id ); ?>">
-
-				<?php echo $this->roster_data_sources->render(); ?>
-
-				<?php echo $this->roster_edits_table->render(); ?>
-
-				<?php echo $this->roster_preview_card->render(); ?>
-
-				<?php echo $this->roster_archive_card->render(); ?>
+				<?php echo $this->render_roster_content(); ?>
 
 			</main>
 			<?php
-			include plugin_dir_path( __DIR__ ) . 'roster/roster-add-source-modal.php';
-			$source_modal = new Puck_Press_Roster_Add_Source_Modal( 'pp-add-source-modal' );
-			echo $source_modal->render();
-			include plugin_dir_path( __DIR__ ) . 'roster/roster-edit-player-modal.php';
-			include plugin_dir_path( __DIR__ ) . 'roster/roster-bulk-edit-modal.php';
-			include plugin_dir_path( __DIR__ ) . 'roster/roster-add-player-modal.php';
-			include plugin_dir_path( __DIR__ ) . 'roster/roster-color-palette-modal.php';
-			$archive_modal = new Puck_Press_Roster_Archive_Modal( 'pp-roster-archive-modal' );
-			echo $archive_modal->render();
+			include plugin_dir_path( __FILE__ ) . 'roster-add-roster-modal.php';
+			include plugin_dir_path( __FILE__ ) . 'roster-color-palette-modal.php';
 			?>
 
 		</div>
 		<?php
+		return ob_get_clean();
+	}
+
+	private function render_roster_content(): string {
+		ob_start();
+		echo $this->render_rosters_section();
+		echo $this->roster_preview_card->render();
+		return ob_get_clean();
+	}
+
+	private function render_rosters_section(): string {
+		ob_start();
+
+		$registry        = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$all_rosters     = $registry->get_all_rosters();
+		$active_id       = $this->active_roster_id;
+		$active_roster   = $active_id ? $registry->get_roster_by_id( $active_id ) : null;
+		$is_main         = $active_roster ? (int) $active_roster['is_main'] === 1 : false;
+		$roster_teams    = $active_id ? $registry->get_roster_teams( $active_id ) : array();
+		$available_teams = $active_id ? $registry->get_available_teams_for_roster( $active_id ) : array();
+
+		$active_slug = $active_roster['slug'] ?? 'default';
+		$shortcode   = '[pp-roster' . ( $active_slug !== 'default' ? ' roster="' . esc_attr( $active_slug ) . '"' : '' ) . ']';
+
+		?>
+		<input type="hidden" id="pp-active-new-roster-id" value="<?php echo esc_attr( $active_id ); ?>">
+
+		<?php if ( ! empty( $all_rosters ) ) : ?>
+		<div class="pp-card pp-membership-card">
+			<div class="pp-card-header">
+				<div>
+					<h2 class="pp-card-title">Roster</h2>
+					<p class="pp-card-subtitle" id="pp-roster-membership-subtitle">
+						<?php if ( $is_main ) : ?>
+							Main roster — auto-includes all teams.
+						<?php else : ?>
+							Teams assigned to this roster
+						<?php endif; ?>
+					</p>
+				</div>
+				<div class="pp-card-header-actions">
+					<select id="pp-roster-selector" class="pp-select pp-select-lg">
+						<?php foreach ( $all_rosters as $roster ) : ?>
+							<option value="<?php echo esc_attr( $roster['id'] ); ?>"
+								<?php selected( (int) $roster['id'], $active_id ); ?>>
+								<?php echo esc_html( $roster['name'] ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<button class="pp-button pp-button-secondary" id="pp-add-roster-btn">+ New Roster</button>
+				</div>
+			</div>
+			<div class="pp-card-toolbar" id="pp-roster-membership-toolbar">
+				<div class="pp-shortcode-input-group">
+					<input
+						type="text"
+						id="pp-new-roster-shortcode"
+						class="pp-shortcode-input"
+						value="<?php echo esc_attr( $shortcode ); ?>"
+						size="<?php echo strlen( $shortcode ); ?>"
+						spellcheck="false"
+						aria-label="shortcode"
+						onfocus="this.select();"
+						readonly>
+					<button class="pp-shortcode-copy-btn" aria-label="Copy shortcode">
+						<svg class="pp-shortcode-copy-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+						</svg>
+					</button>
+					<div class="pp-shortcode-tooltip">Copied!</div>
+				</div>
+				<?php if ( ! $is_main && ! empty( $available_teams ) ) : ?>
+				<select id="pp-add-team-select" class="pp-select">
+					<option value="">— Add team —</option>
+					<?php foreach ( $available_teams as $team ) : ?>
+						<option value="<?php echo esc_attr( $team['id'] ); ?>">
+							<?php echo esc_html( $team['name'] ); ?>
+						</option>
+					<?php endforeach; ?>
+				</select>
+				<button class="pp-button pp-button-primary" id="pp-add-team-to-roster-btn">+ Add Team</button>
+				<?php endif; ?>
+			</div>
+			<div class="pp-card-content" id="pp-roster-teams-content">
+				<?php echo $this->render_roster_teams_table( $roster_teams, $is_main, $active_id ); ?>
+			</div>
+			<div id="pp-roster-delete-footer" class="pp-card-footer" style="padding: 12px 24px; border-top: 1px solid #e0e0e0;<?php echo $is_main ? ' display:none;' : ''; ?>">
+				<button class="pp-button pp-button-danger pp-delete-new-roster-btn"
+					data-roster-id="<?php echo esc_attr( $active_id ); ?>">
+					Delete Roster
+				</button>
+			</div>
+		</div>
+		<?php endif; ?>
+		<?php
+		return ob_get_clean();
+	}
+
+	private function render_roster_teams_table( array $teams, bool $is_main, int $roster_id ): string {
+		ob_start();
+		if ( empty( $teams ) ) :
+			?>
+			<p style="color:#888;"><?php echo $is_main ? 'All teams are auto-included in the main roster.' : 'No teams in this roster yet.'; ?></p>
+			<?php
+		else :
+			?>
+			<table class="pp-table" id="pp-roster-teams-table">
+				<thead class="pp-thead">
+					<tr>
+						<th class="pp-th">Name</th>
+						<th class="pp-th">Slug</th>
+						<?php if ( ! $is_main ) : ?>
+							<th class="pp-th">Actions</th>
+						<?php endif; ?>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $teams as $team ) : ?>
+						<tr data-team-id="<?php echo esc_attr( $team['id'] ); ?>">
+							<td class="pp-td"><?php echo esc_html( $team['name'] ); ?></td>
+							<td class="pp-td"><code><?php echo esc_html( $team['slug'] ); ?></code></td>
+							<?php if ( ! $is_main ) : ?>
+								<td class="pp-td">
+									<button class="pp-button-icon pp-remove-team-from-roster-btn"
+										data-team-id="<?php echo esc_attr( $team['id'] ); ?>">
+										✕
+									</button>
+								</td>
+							<?php endif; ?>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<?php
+		endif;
 		return ob_get_clean();
 	}
 }

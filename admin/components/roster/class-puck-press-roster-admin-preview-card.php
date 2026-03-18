@@ -17,7 +17,7 @@ class Puck_Press_Roster_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card
 	}
 
 	protected function get_data_table_name(): string {
-		return 'pp_roster_for_display';
+		return 'pp_team_players_display';
 	}
 
 	protected function get_outer_wrapper_id(): string {
@@ -30,23 +30,43 @@ class Puck_Press_Roster_Admin_Preview_Card extends Puck_Press_Admin_Preview_Card
 
 	public function init() {
 		global $wpdb;
-		$this->data = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}pp_roster_for_display WHERE roster_id = %d",
-				$this->roster_id
-			),
-			ARRAY_A
-		) ?? array();
+		$registry = new Puck_Press_Roster_Registry_Wpdb_Utils();
+
+		// Step 1: resolve team IDs for this roster.
+		$team_ids = $registry->get_roster_team_ids( $this->roster_id );
+		error_log( '[PP Roster Preview] init() step 1 — roster_id=' . $this->roster_id . ' team_ids=[' . implode( ', ', $team_ids ) . '] count=' . count( $team_ids ) );
+
+		// Step 2: query players from display table.
+		if ( ! empty( $team_ids ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+			$this->data   = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}pp_team_players_display WHERE team_id IN ($placeholders)",
+					$team_ids
+				),
+				ARRAY_A
+			) ?? array();
+		} else {
+			$this->data = array();
+		}
+		error_log( '[PP Roster Preview] init() step 2 — players fetched from pp_team_players_display: ' . count( $this->data ) );
+
+		// Step 3: load templates.
 		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
 		$this->template_manager->enqueue_all_template_assets();
+		$template_keys = array_map( fn( $t ) => $t->get_key(), $this->templates );
+		error_log( '[PP Roster Preview] init() step 3 — templates=[' . implode( ', ', $template_keys ) . '] selected=' . $this->selected_template_key );
 	}
 
 	public function get_all_templates_html() {
 		$output = '';
 		foreach ( $this->templates as $template ) {
-			$output .= $template->render_with_options( $this->data, array( 'roster_id' => $this->roster_id ) );
+			$html    = $template->render_with_options( $this->data, array( 'roster_id' => $this->roster_id ) );
+			error_log( '[PP Roster Preview] get_all_templates_html() — template=' . $template->get_key() . ' html_length=' . strlen( $html ) );
+			$output .= $html;
 		}
+		error_log( '[PP Roster Preview] get_all_templates_html() — total html_length=' . strlen( $output ) );
 		return $output;
 	}
 

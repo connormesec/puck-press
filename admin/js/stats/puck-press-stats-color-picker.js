@@ -35,6 +35,7 @@
                 action:                 'pp_save_stats_column_settings',
                 nonce:                  ppStatsTemplates.columns_nonce,
                 current_season_label:   $('#pp-stats-current-season-label').val().trim(),
+                show_team:           $('input[name="show_team"]').is(':checked') ? 1 : 0,
                 show_pim:            $('input[name="show_pim"]').is(':checked') ? 1 : 0,
                 show_ppg:            $('input[name="show_ppg"]').is(':checked') ? 1 : 0,
                 show_shg:            $('input[name="show_shg"]').is(':checked') ? 1 : 0,
@@ -62,6 +63,13 @@
                             .fadeOut();
                         if (response.data.preview_html) {
                             $('#pp-stats-preview').html(response.data.preview_html);
+                            // Re-initialize stats containers in the replaced HTML so
+                            // season select, sorting, and filtering continue to work.
+                            if (typeof window.ppStatsInitContainer === 'function') {
+                                $('#pp-stats-preview .standard_stats_container').each(function () {
+                                    window.ppStatsInitContainer(this);
+                                });
+                            }
                         }
                     } else {
                         $msg

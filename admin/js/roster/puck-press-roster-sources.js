@@ -23,7 +23,7 @@
         const $closeBtn = $('#pp-modal-close');
         const $cancelBtn = $('#pp-cancel-add-source');
         const $confirmBtn = $('#pp-confirm-roster-add-source');
-        const $addSourceForm = $('#pp-add-source-form');
+
 
         // Open modal
         $addSourceBtn.on('click', () => {
@@ -43,8 +43,11 @@
         // Close modal function
         const closeModal = () => {
             $modal.css('display', 'none');
-            $addSourceForm[0].reset();
-            $('#pp-include-stats').prop('checked', false);
+            const form = document.getElementById('pp-add-source-form');
+            if (form) form.reset();
+            $('#pp-include-stats').prop('checked', true);
+            $('#pp-source-name-other').hide().val('');
+            toggleInputs();
         };
 
         $closeBtn.on('click', closeModal);
@@ -56,14 +59,16 @@
         $confirmBtn.on('click', () => {
             dimGameListStyles();
             PPDataSourceUtils.handleFormSubmit({
-                $form: $('#pp-add-source-form'),
+                $form: $(document.getElementById('pp-add-source-form')),
                 confirmButton: '#pp-confirm-roster-add-source',
                 action: 'pp_add_roster_source',
 
                 fieldExtractors: () => {
                     const type = $('#pp-source-type').val();
+                    const rawName = $('#pp-source-name').val();
+                    const resolvedName = rawName === '__other__' ? $('#pp-source-name-other').val().trim() : rawName;
                     const data = {
-                        name: $('#pp-source-name').val(),
+                        name: resolvedName,
                         type,
                         active: $('#pp-new-source-active').is(':checked') ? 1 : 0,
                         roster_id: getRosterId()
@@ -89,7 +94,8 @@
 
 
                     const type = $('#pp-source-type').val();
-                    const name = $('#pp-source-name').val();
+                    const rawName = $('#pp-source-name').val();
+                    const name = rawName === '__other__' ? $('#pp-source-name-other').val().trim() : rawName;
                     const url = $('#pp-source-url').val();
                     const csvInput = $('#pp-schedule-fileInput')[0];
                     const csvFile = csvInput ? csvInput.files[0] : null;
@@ -205,7 +211,7 @@
                         restoreToggleStyles();
                     }
                 },
-                error: (error) => {
+                error: (err) => {
                     console.error('Error:', err);
                     alert('Failed to update status.');
                     restoreGameListStyles();
@@ -293,6 +299,16 @@
         // When the selection changes, toggle the visibility of the inputs
         $(document).on('change', '#pp-source-type', () => {
             toggleInputs();
+        });
+
+        // Show/hide the "Other" text input when "Other..." is selected
+        $(document).on('change', '#pp-source-name', function () {
+            const $otherInput = $('#pp-source-name-other');
+            if ($(this).val() === '__other__') {
+                $otherInput.show().focus();
+            } else {
+                $otherInput.hide().val('');
+            }
         });
 
         function toggleInputs() {

@@ -28,31 +28,6 @@ class Puck_Press_Activator {
 			return;
 		}
 
-		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
-		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
-		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-migration.php';
-		require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-schedule-wpdb-utils.php';
-
-		$schedule_utils = new Puck_Press_Schedule_Wpdb_Utils();
-		$schedule_utils->maybe_create_or_update_table( 'pp_schedules' );
-		$schedule_utils->seed_default_group( 'Main Schedule' );
-
-		Puck_Press_Group_Migration::maybe_add_group_id_column(
-			array(
-				'pp_schedule_data_sources',
-				'pp_game_schedule_raw',
-				'pp_game_schedule_mods',
-				'pp_game_schedule_for_display',
-			),
-			'schedule_id',
-			array(
-				'table'   => 'pp_game_schedule_raw',
-				'old_key' => 'game_id',
-				'new_key' => 'schedule_game',
-				'columns' => '(schedule_id, game_id)',
-			)
-		);
-
 		update_option( 'pp_db_version', '2.0' );
 	}
 
@@ -84,6 +59,145 @@ class Puck_Press_Activator {
 		);
 
 		update_option( 'pp_db_version', '3.0' );
+	}
+
+	public static function maybe_run_teams_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '4.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-schedules-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'archive/class-puck-press-archive-manager.php';
+
+		global $wpdb;
+
+		$legacy_table = $wpdb->prefix . 'pp_schedules_legacy';
+		$old_table    = $wpdb->prefix . 'pp_schedules';
+
+		$legacy_exists = $wpdb->get_var( "SHOW TABLES LIKE '$legacy_table'" ) === $legacy_table;
+		$old_exists    = $wpdb->get_var( "SHOW TABLES LIKE '$old_table'" ) === $old_table;
+
+		if ( ! $legacy_exists && $old_exists ) {
+			$wpdb->query( "RENAME TABLE $old_table TO $legacy_table" );
+		}
+
+		$teams_utils    = new Puck_Press_Teams_Wpdb_Utils();
+		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
+		$archive_manager = new Puck_Press_Archive_Manager();
+
+		$teams_utils->maybe_create_or_update_tables();
+		$schedules_utils->maybe_create_or_update_tables();
+		$archive_manager->maybe_create_or_update_tables();
+
+		update_option( 'pp_db_version', '4.0' );
+	}
+
+	public static function wipe_and_recreate_tables(): array {
+		global $wpdb;
+		$log = array();
+
+		$like    = $wpdb->prefix . 'pp_%';
+		$tables  = $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+
+		foreach ( $tables as $table ) {
+			$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
+			$log[] = "Dropped: {$table}";
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-schedules-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'archive/class-puck-press-archive-manager.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'roster/class-puck-press-roster-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'roster/class-puck-press-roster-registry-wpdb-utils.php';
+
+		$teams_utils     = new Puck_Press_Teams_Wpdb_Utils();
+		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
+		$archive_manager = new Puck_Press_Archive_Manager();
+		$roster_utils    = new Puck_Press_Roster_Wpdb_Utils();
+		$registry_utils  = new Puck_Press_Roster_Registry_Wpdb_Utils();
+
+		$teams_utils->maybe_create_or_update_tables();
+		$log[] = 'Created: pp_teams, pp_team_sources, pp_team_games_raw, pp_team_game_mods, pp_team_games_display, pp_team_roster_sources, pp_team_players_raw, pp_team_player_mods, pp_team_players_display, pp_team_player_stats, pp_team_player_goalie_stats';
+
+		$schedules_utils->maybe_create_or_update_tables();
+		$log[] = 'Created: pp_schedules, pp_schedule_teams, pp_schedule_games_display';
+
+		$archive_manager->maybe_create_or_update_tables();
+		$log[] = 'Created: pp_archive_seasons, pp_team_games_archive';
+
+		$roster_utils->maybe_create_or_update_table( 'pp_rosters' );
+		$log[] = 'Created: pp_rosters';
+
+		$registry_utils->maybe_create_or_update_tables();
+		$log[] = 'Created: pp_roster_teams';
+
+		$schedules_utils->seed_main_schedule( 'default', 'Main Schedule' );
+		$log[] = 'Seeded default Main Schedule';
+
+		$registry_utils->seed_main_roster();
+		$log[] = 'Seeded default Main Roster';
+
+		update_option( 'pp_db_version', '6.0' );
+		$log[] = 'Set pp_db_version to 6.0';
+
+		return $log;
+	}
+
+	public static function maybe_run_roster_registry_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '5.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-group-aware-wpdb-utils-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'roster/class-puck-press-roster-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'roster/class-puck-press-roster-registry-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'teams/class-puck-press-teams-wpdb-utils.php';
+
+		$roster_utils   = new Puck_Press_Roster_Wpdb_Utils();
+		$registry_utils = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$teams_utils    = new Puck_Press_Teams_Wpdb_Utils();
+
+		$roster_utils->maybe_create_or_update_table( 'pp_rosters' );
+		$registry_utils->maybe_create_or_update_tables();
+		$teams_utils->maybe_create_or_update_table( 'pp_team_roster_sources' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_players_raw' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_player_mods' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_players_display' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_player_stats' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_player_goalie_stats' );
+
+		$registry_utils->seed_main_roster();
+
+		update_option( 'pp_db_version', '5.0' );
+	}
+
+	public static function maybe_run_cleanup_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '6.0', '>=' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pp_roster_player_stats" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pp_roster_player_goalie_stats" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pp_roster_archives" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pp_roster_stats_archive" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pp_roster_goalie_stats_archive" );
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'archive/class-puck-press-archive-manager.php';
+
+		$archive_manager = new Puck_Press_Archive_Manager();
+		$archive_manager->maybe_create_or_update_tables();
+
+		update_option( 'pp_db_version', '6.0' );
 	}
 
 	public static function activate() {

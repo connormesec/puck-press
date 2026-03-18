@@ -1,15 +1,15 @@
 <?php
-class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_Abstract {
+class Puck_Press_Teams_Admin_Games_Table_Card extends Puck_Press_Admin_Card_Abstract {
 
-	private int $schedule_id;
+	private int $team_id;
 
-	public function __construct( array $args = array(), int $schedule_id = 1 ) {
+	public function __construct( array $args = array(), int $team_id = 0 ) {
 		parent::__construct( $args );
-		$this->schedule_id = $schedule_id;
+		$this->team_id = $team_id;
 	}
 
 	public function render_content() {
-		return $this->render_game_schedule_admin_preview();
+		return $this->render_team_games_admin_preview();
 	}
 
 	public function render_header_button_content() {
@@ -19,34 +19,34 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
         ';
 	}
 
-	public function render_game_schedule_admin_preview() {
+	public function render_team_games_admin_preview() {
 		global $wpdb;
-		$display_table = $wpdb->prefix . 'pp_game_schedule_for_display';
-		$mods_table    = $wpdb->prefix . 'pp_game_schedule_mods';
-		$raw_table     = $wpdb->prefix . 'pp_game_schedule_raw';
+		$display_table = $wpdb->prefix . 'pp_team_games_display';
+		$mods_table    = $wpdb->prefix . 'pp_team_game_mods';
+		$raw_table     = $wpdb->prefix . 'pp_team_games_raw';
 
-		// Active games: from for_display, LEFT JOIN update mods for override highlighting
+		// Active games: from display table, LEFT JOIN update mods for override highlighting
 		$active_games = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT f.*, m.edit_data AS override_data, m.id AS mod_id
                  FROM $display_table f
-                 LEFT JOIN $mods_table m ON f.game_id COLLATE utf8mb4_unicode_ci = m.external_id COLLATE utf8mb4_unicode_ci AND m.edit_action = 'update' AND m.schedule_id = %d
-                 WHERE f.schedule_id = %d",
-				$this->schedule_id,
-				$this->schedule_id
+                 LEFT JOIN $mods_table m ON f.game_id COLLATE utf8mb4_unicode_ci = m.external_id COLLATE utf8mb4_unicode_ci AND m.edit_action = 'update' AND m.team_id = %d
+                 WHERE f.team_id = %d",
+				$this->team_id,
+				$this->team_id
 			),
 			ARRAY_A
 		) ?: array();
 
-		// Deleted sourced games: in raw but have a delete mod (not in for_display)
+		// Deleted sourced games: in raw but have a delete mod
 		$deleted_games = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT r.*, dm.id AS delete_mod_id
                  FROM $raw_table r
-                 INNER JOIN $mods_table dm ON r.game_id COLLATE utf8mb4_unicode_ci = dm.external_id COLLATE utf8mb4_unicode_ci AND dm.edit_action = 'delete' AND dm.schedule_id = %d
-                 WHERE r.schedule_id = %d",
-				$this->schedule_id,
-				$this->schedule_id
+                 INNER JOIN $mods_table dm ON r.game_id COLLATE utf8mb4_unicode_ci = dm.external_id COLLATE utf8mb4_unicode_ci AND dm.edit_action = 'delete' AND dm.team_id = %d
+                 WHERE r.team_id = %d",
+				$this->team_id,
+				$this->team_id
 			),
 			ARRAY_A
 		) ?: array();
@@ -201,170 +201,5 @@ class Puck_Press_Schedule_Admin_Games_Table_Card extends Puck_Press_Admin_Card_A
 		</table>
 		<?php
 		return ob_get_clean();
-	}
-
-	public function ajax_add_manual_game_callback() {
-		global $wpdb;
-
-		$table_mods = $wpdb->prefix . 'pp_game_schedule_mods';
-
-		// Sanitize required inputs
-		$game_date          = sanitize_text_field( $_POST['game_date'] ?? '' );
-		$target_team_name   = sanitize_text_field( $_POST['target_team_name'] ?? '' );
-		$opponent_team_name = sanitize_text_field( $_POST['opponent_team_name'] ?? '' );
-
-		if ( empty( $game_date ) || empty( $target_team_name ) || empty( $opponent_team_name ) ) {
-			wp_send_json_error( array( 'message' => 'Missing required fields: date, target team, and opponent team.' ) );
-			wp_die();
-		}
-
-		// Sanitize optional inputs
-		$game_time              = sanitize_text_field( $_POST['game_time'] ?? '' );
-		$target_team_id         = sanitize_text_field( $_POST['target_team_id'] ?? '0' );
-		$target_team_nickname   = sanitize_text_field( $_POST['target_team_nickname'] ?? '' );
-		$target_team_logo       = esc_url_raw( $_POST['target_team_logo'] ?? '' );
-		$target_score           = sanitize_text_field( $_POST['target_score'] ?? '' );
-		$opponent_team_id       = sanitize_text_field( $_POST['opponent_team_id'] ?? '0' );
-		$opponent_team_nickname = sanitize_text_field( $_POST['opponent_team_nickname'] ?? '' );
-		$opponent_team_logo     = esc_url_raw( $_POST['opponent_team_logo'] ?? '' );
-		$opponent_score         = sanitize_text_field( $_POST['opponent_score'] ?? '' );
-		$home_or_away           = sanitize_text_field( $_POST['home_or_away'] ?? 'home' );
-		$raw_status             = sanitize_text_field( $_POST['game_status'] ?? 'none' );
-		$venue                  = sanitize_text_field( $_POST['venue'] ?? '' );
-
-		// Derive computed fields
-		$game_timestamp = Puck_Press_Schedule_Source_Importer::get_game_timestamp( $game_date, $game_time );
-		$game_date_day  = Puck_Press_Schedule_Source_Importer::format_game_date_day( $game_date, $game_time );
-
-		// Resolve status and time
-		if ( $raw_status === 'none' ) {
-			$game_status_val = null;
-			$game_time_val   = ! empty( $game_time ) ? date( 'g:i A', strtotime( $game_time ) ) : null;
-		} else {
-			$game_status_val = Puck_Press_Schedule_Source_Importer::format_game_status( $raw_status, null );
-			$game_time_val   = null;
-		}
-
-		$current_time = current_time( 'mysql' );
-
-		// Build initial game data with placeholder game_id
-		$game_data = array(
-			'game_id'                => 'manual_placeholder',
-			'target_team_id'         => $target_team_id,
-			'target_team_name'       => $target_team_name,
-			'target_team_nickname'   => $target_team_nickname ?: null,
-			'target_team_logo'       => $target_team_logo ?: null,
-			'target_score'           => $target_score !== '' ? $target_score : null,
-			'opponent_team_id'       => $opponent_team_id,
-			'opponent_team_name'     => $opponent_team_name,
-			'opponent_team_nickname' => $opponent_team_nickname ?: null,
-			'opponent_team_logo'     => $opponent_team_logo ?: null,
-			'opponent_score'         => $opponent_score !== '' ? $opponent_score : null,
-			'game_status'            => $game_status_val,
-			'game_date_day'          => $game_date_day,
-			'game_time'              => $game_time_val,
-			'game_timestamp'         => $game_timestamp,
-			'home_or_away'           => $home_or_away,
-			'venue'                  => $venue ?: null,
-			'source'                 => 'Manual',
-			'source_type'            => 'manual',
-		);
-
-		$manual_game_schedule_id = (int) ( $_POST['schedule_id'] ?? 1 );
-
-		// Insert the mod row with placeholder game_id
-		$inserted = $wpdb->insert(
-			$table_mods,
-			array(
-				'schedule_id' => $manual_game_schedule_id,
-				'external_id' => null,
-				'edit_action' => 'insert',
-				'edit_data'   => wp_json_encode( $game_data ),
-				'created_at'  => $current_time,
-				'updated_at'  => $current_time,
-			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s' )
-		);
-
-		if ( ! $inserted ) {
-			wp_send_json_error( array( 'message' => 'Failed to insert manual game mod.' ) );
-			wp_die();
-		}
-
-		// Now we have the real mod ID — update game_id to 'manual_{id}'
-		$mod_id               = $wpdb->insert_id;
-		$game_data['game_id'] = 'manual_' . $mod_id;
-
-		$wpdb->update(
-			$table_mods,
-			array( 'edit_data' => wp_json_encode( $game_data ) ),
-			array( 'id' => $mod_id )
-		);
-
-		// Rebuild the for_display table
-		$manual_schedule_id = (int) ( $_POST['schedule_id'] ?? 1 );
-		$utils              = new Puck_Press_Schedule_Wpdb_Utils();
-		$utils->delete_rows_for_schedule( 'pp_game_schedule_for_display', $manual_schedule_id );
-		$importer = new Puck_Press_Schedule_Source_Importer( $manual_schedule_id );
-		$importer->apply_edits_and_save_to_display_table();
-
-		// Return refreshed UI
-		$games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card( array(), $manual_schedule_id );
-		$games_table_html = $games_table_card->render_game_schedule_admin_preview();
-
-		wp_send_json_success(
-			array(
-				'message'          => 'Manual game added.',
-				'game_id'          => $game_data['game_id'],
-				'games_table_html' => $games_table_html,
-			)
-		);
-		wp_die();
-	}
-
-	public function ajax_delete_manual_game_callback() {
-		global $wpdb;
-
-		$table_mods = $wpdb->prefix . 'pp_game_schedule_mods';
-
-		$game_id = sanitize_text_field( $_POST['game_id'] ?? '' );
-
-		if ( empty( $game_id ) || strpos( $game_id, 'manual_' ) !== 0 ) {
-			wp_send_json_error( array( 'message' => 'Invalid game_id for manual game deletion.' ) );
-			wp_die();
-		}
-
-		$mod_id = intval( str_replace( 'manual_', '', $game_id ) );
-
-		if ( $mod_id <= 0 ) {
-			wp_send_json_error( array( 'message' => 'Could not parse mod ID from game_id.' ) );
-			wp_die();
-		}
-
-		$deleted = $wpdb->delete( $table_mods, array( 'id' => $mod_id ), array( '%d' ) );
-
-		if ( $deleted === false ) {
-			wp_send_json_error( array( 'message' => 'Failed to delete manual game mod.' ) );
-			wp_die();
-		}
-
-		// Rebuild the for_display table
-		$delete_schedule_id = (int) ( $_POST['schedule_id'] ?? 1 );
-		$utils              = new Puck_Press_Schedule_Wpdb_Utils();
-		$utils->delete_rows_for_schedule( 'pp_game_schedule_for_display', $delete_schedule_id );
-		$importer = new Puck_Press_Schedule_Source_Importer( $delete_schedule_id );
-		$importer->apply_edits_and_save_to_display_table();
-
-		// Return refreshed UI
-		$games_table_card = new Puck_Press_Schedule_Admin_Games_Table_Card( array(), $delete_schedule_id );
-		$games_table_html = $games_table_card->render_game_schedule_admin_preview();
-
-		wp_send_json_success(
-			array(
-				'message'          => 'Manual game deleted.',
-				'games_table_html' => $games_table_html,
-			)
-		);
-		wp_die();
 	}
 }

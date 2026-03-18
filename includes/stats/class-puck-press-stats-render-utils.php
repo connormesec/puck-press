@@ -8,11 +8,11 @@ class Puck_Press_Stats_Render_Utils {
 
 	private $template_manager;
 	private $wpdb_utils;
-	private int $roster_id;
-	private bool $show_team;
+	private array $teams;
+	private ?bool $show_team;
 
-	public function __construct( int $roster_id = 0, bool $show_team = true ) {
-		$this->roster_id = $roster_id;
+	public function __construct( array $teams = array(), ?bool $show_team = null ) {
+		$this->teams     = $teams;
 		$this->show_team = $show_team;
 		$this->load_dependencies();
 		$this->template_manager = new Puck_Press_Stats_Template_Manager();
@@ -36,8 +36,10 @@ class Puck_Press_Stats_Render_Utils {
 			return '';
 		}
 
-		$data = $this->wpdb_utils->get_stats_data( $this->roster_id );
-		$data['column_settings']['show_team'] = $this->show_team;
+		$data = $this->wpdb_utils->get_stats_data( $this->teams );
+		if ( $this->show_team !== null ) {
+			$data['column_settings']['show_team'] = $this->show_team;
+		}
 		return $template->render( $data );
 	}
 
@@ -53,13 +55,22 @@ class Puck_Press_Stats_Render_Utils {
 			return '';
 		}
 
-		$defaults = Puck_Press_Stats_Wpdb_Utils::get_default_column_settings();
-		$saved    = get_option( 'pp_stats_column_settings', array() );
-		$col      = array_merge( $defaults, is_array( $saved ) ? $saved : array() );
+		$defaults         = Puck_Press_Stats_Wpdb_Utils::get_default_column_settings();
+		$saved            = get_option( 'pp_stats_column_settings', array() );
+		$col = array_merge( $defaults, is_array( $saved ) ? $saved : array() );
+		if ( $this->show_team !== null ) {
+			$col['show_team'] = $this->show_team ? 1 : 0;
+		}
 
-		$skaters = $this->wpdb_utils->get_archive_skater_stats( $archive_key );
-		$goalies = $this->wpdb_utils->get_archive_goalie_stats( $archive_key );
+		$skaters     = $this->wpdb_utils->get_archive_skater_stats( $archive_key, $this->teams );
+		$skaters_agg = $this->wpdb_utils->get_archive_skater_stats_aggregated( $archive_key, $this->teams );
+		$goalies     = $this->wpdb_utils->get_archive_goalie_stats( $archive_key, $this->teams );
+		$goalies_agg = $this->wpdb_utils->get_archive_goalie_stats_aggregated( $archive_key, $this->teams );
 
-		return $template->build_archive_sections( $skaters, $goalies, $col );
+		return $template->build_archive_sections( $skaters_agg, $skaters, $goalies_agg, $goalies, $col );
+	}
+
+	public function get_archive_sources( string $archive_key ): array {
+		return $this->wpdb_utils->get_archive_distinct_sources( $archive_key, $this->teams );
 	}
 }

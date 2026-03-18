@@ -10,7 +10,9 @@ abstract class Puck_Press_Admin_Preview_Card_Abstract extends Puck_Press_Admin_C
 	// --- Factory methods (subclass provides the concrete class to instantiate) ---
 
 	abstract protected function make_template_manager();
-	abstract protected function make_wpdb_utils();
+	protected function make_wpdb_utils() {
+		return null;
+	}
 
 	// --- Template IDs (subclass provides the CSS element IDs) ---
 

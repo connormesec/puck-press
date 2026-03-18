@@ -107,11 +107,6 @@ class Puck_Press_Record_Admin_Display {
 									<td style="padding: 8px 12px;"><code>true</code></td>
 									<td style="padding: 8px 12px;">Show goal differential (+/-) — requires show_goals=true</td>
 								</tr>
-								<tr style="border-bottom: 1px solid #f0f0f0;">
-									<td style="padding: 8px 12px;"><code>title</code></td>
-									<td style="padding: 8px 12px;"><code>Team Record</code></td>
-									<td style="padding: 8px 12px;">Card heading text</td>
-								</tr>
 								<tr>
 									<td style="padding: 8px 12px;"><code>schedule</code></td>
 									<td style="padding: 8px 12px;"><code>(default)</code></td>
@@ -120,7 +115,7 @@ class Puck_Press_Record_Admin_Display {
 							</tbody>
 						</table>
 						<p style="margin: 12px 0 0; color: #666; font-size: 0.8rem;">
-							Examples: <code>[pp-record show_home_away="false" title="2024–25 Season"]</code> &nbsp;|&nbsp; <code>[pp-record schedule="eagles" title="Eagles Record"]</code>
+							Examples: <code>[pp-record show_home_away="false"]</code> &nbsp;|&nbsp; <code>[pp-record schedule="eagles"]</code>
 						</p>
 					</div>
 				</div>

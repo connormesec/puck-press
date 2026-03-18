@@ -11,6 +11,7 @@ class Puck_Press_Stats_Wpdb_Utils {
 	 */
 	public static function get_default_column_settings(): array {
 		return array(
+			'show_team'         => 1,
 			'show_pim'          => 1,
 			'show_ppg'          => 1,
 			'show_shg'          => 1,
@@ -25,181 +26,462 @@ class Puck_Press_Stats_Wpdb_Utils {
 		);
 	}
 
-	/**
-	 * Get skater stats joined with display roster data.
-	 * When $roster_id > 0, filters to that group only.
-	 * Returns one row per player × source (multiple rows per player when multiple sources exist).
-	 */
-	public function get_skater_stats( int $roster_id = 0 ): array {
+	public function get_skater_stats( array $teams = array() ): array {
 		global $wpdb;
 
-		$roster_table  = $wpdb->prefix . 'pp_roster_for_display';
-		$stats_table   = $wpdb->prefix . 'pp_roster_stats';
-		$rosters_table = $wpdb->prefix . 'pp_rosters';
+		$stats_table  = $wpdb->prefix . 'pp_team_player_stats';
+		$roster_table = $wpdb->prefix . 'pp_team_players_display';
+		$teams_table  = $wpdb->prefix . 'pp_teams';
 
-		$where = $roster_id > 0
-			? $wpdb->prepare( 'WHERE s.roster_id = %d', $roster_id )
-			: '';
+		$where_parts = array();
+		if ( ! empty( $teams ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "COALESCE(d.api_team_name, t.name) IN ($placeholders)", ...$teams );
+		}
+		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
 
 		$results = $wpdb->get_results(
 			"SELECT
-                d.name,
-                d.pos,
-                d.headshot_link,
-                d.player_id,
-                d.team_id,
-                d.team_name,
-                s.roster_id,
+                MAX(d.name) AS name,
+                MAX(d.pos) AS pos,
+                MAX(d.headshot_link) AS headshot_link,
+                s.player_id,
+                s.team_id,
+                COALESCE(MAX(d.api_team_name), MAX(t.name)) AS team_name,
+                MIN(s.source) AS source,
+                MIN(s.stat_rank) AS stat_rank,
+                SUM(s.games_played) AS games_played,
+                SUM(s.goals) AS goals,
+                SUM(s.assists) AS assists,
+                SUM(s.points) AS points,
+                SUM(s.penalty_minutes) AS penalty_minutes,
+                SUM(s.power_play_goals) AS power_play_goals,
+                SUM(s.short_handed_goals) AS short_handed_goals,
+                SUM(s.game_winning_goals) AS game_winning_goals,
+                ROUND(SUM(s.points) / NULLIF(SUM(s.games_played), 0), 2) AS points_per_game,
+                AVG(s.shooting_percentage) AS shooting_percentage,
+                '' AS group_name
+            FROM {$stats_table} s
+            INNER JOIN {$roster_table} d ON d.player_id = s.player_id AND d.team_id = s.team_id
+            INNER JOIN {$teams_table} t ON t.id = s.team_id
+            {$where}
+            GROUP BY s.player_id, s.team_id
+            ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
+			ARRAY_A
+		);
+
+		return $results ?: array();
+	}
+
+	public function get_skater_stats_per_source( array $teams = array() ): array {
+		global $wpdb;
+
+		$stats_table  = $wpdb->prefix . 'pp_team_player_stats';
+		$roster_table = $wpdb->prefix . 'pp_team_players_display';
+		$teams_table  = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array();
+		if ( ! empty( $teams ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "COALESCE(d.api_team_name, t.name) IN ($placeholders)", ...$teams );
+		}
+		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+
+		$results = $wpdb->get_results(
+			"SELECT
+                MAX(d.name) AS name,
+                MAX(d.pos) AS pos,
+                MAX(d.headshot_link) AS headshot_link,
+                s.player_id,
+                s.team_id,
+                COALESCE(MAX(d.api_team_name), MAX(t.name)) AS team_name,
                 s.source,
-                s.stat_rank,
-                s.games_played,
-                s.goals,
-                s.assists,
-                s.points,
-                s.penalty_minutes,
-                s.power_play_goals,
-                s.short_handed_goals,
-                s.game_winning_goals,
-                s.points_per_game,
-                s.shooting_percentage,
-                r.name AS group_name
-            FROM {$roster_table} d
-            INNER JOIN {$stats_table} s
-                ON d.player_id = s.player_id
-                AND d.roster_id = s.roster_id
-            LEFT JOIN {$rosters_table} r ON r.id = s.roster_id
+                MIN(s.stat_rank) AS stat_rank,
+                SUM(s.games_played) AS games_played,
+                SUM(s.goals) AS goals,
+                SUM(s.assists) AS assists,
+                SUM(s.points) AS points,
+                SUM(s.penalty_minutes) AS penalty_minutes,
+                SUM(s.power_play_goals) AS power_play_goals,
+                SUM(s.short_handed_goals) AS short_handed_goals,
+                SUM(s.game_winning_goals) AS game_winning_goals,
+                ROUND(SUM(s.points) / NULLIF(SUM(s.games_played), 0), 2) AS points_per_game,
+                AVG(s.shooting_percentage) AS shooting_percentage,
+                '' AS group_name
+            FROM {$stats_table} s
+            INNER JOIN {$roster_table} d ON d.player_id = s.player_id AND d.team_id = s.team_id
+            INNER JOIN {$teams_table} t ON t.id = s.team_id
             {$where}
-            ORDER BY COALESCE(s.stat_rank, 9999) ASC, s.points DESC, s.goals DESC",
+            GROUP BY s.player_id, s.team_id, s.source
+            ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
 			ARRAY_A
 		);
 
 		return $results ?: array();
 	}
 
-	/**
-	 * Get goalie stats joined with display roster data.
-	 * When $roster_id > 0, filters to that group only.
-	 * Returns one row per player × source.
-	 */
-	public function get_goalie_stats( int $roster_id = 0 ): array {
+	public function get_goalie_stats( array $teams = array() ): array {
 		global $wpdb;
 
-		$roster_table  = $wpdb->prefix . 'pp_roster_for_display';
-		$goalie_table  = $wpdb->prefix . 'pp_roster_goalie_stats';
-		$rosters_table = $wpdb->prefix . 'pp_rosters';
+		$goalie_table = $wpdb->prefix . 'pp_team_player_goalie_stats';
+		$roster_table = $wpdb->prefix . 'pp_team_players_display';
+		$teams_table  = $wpdb->prefix . 'pp_teams';
 
-		$where = $roster_id > 0
-			? $wpdb->prepare( 'WHERE g.roster_id = %d', $roster_id )
-			: '';
+		$where_parts = array();
+		if ( ! empty( $teams ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "COALESCE(d.api_team_name, t.name) IN ($placeholders)", ...$teams );
+		}
+		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
 
 		$results = $wpdb->get_results(
 			"SELECT
-                d.name,
-                d.pos,
-                d.headshot_link,
-                d.player_id,
-                d.team_id,
-                d.team_name,
-                g.roster_id,
-                g.source,
-                g.stat_rank,
-                g.games_played,
-                g.wins,
-                g.losses,
-                g.overtime_losses,
-                g.goals_against_average,
-                g.save_percentage,
-                g.shots_against,
-                g.saves,
-                r.name AS group_name
-            FROM {$roster_table} d
-            INNER JOIN {$goalie_table} g
-                ON d.player_id = g.player_id
-                AND d.roster_id = g.roster_id
-            LEFT JOIN {$rosters_table} r ON r.id = g.roster_id
+                MAX(d.name) AS name,
+                MAX(d.pos) AS pos,
+                MAX(d.headshot_link) AS headshot_link,
+                g.player_id,
+                g.team_id,
+                COALESCE(MAX(d.api_team_name), MAX(t.name)) AS team_name,
+                MIN(g.source) AS source,
+                MIN(g.stat_rank) AS stat_rank,
+                SUM(g.games_played) AS games_played,
+                SUM(g.wins) AS wins,
+                SUM(g.losses) AS losses,
+                SUM(g.overtime_losses) AS overtime_losses,
+                COALESCE(
+                    ROUND(SUM(g.saves) / NULLIF(SUM(g.shots_against), 0), 3),
+                    ROUND(SUM(g.save_percentage * g.games_played) / NULLIF(SUM(g.games_played), 0), 3)
+                ) AS save_percentage,
+                ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
+                SUM(g.shots_against) AS shots_against,
+                SUM(g.saves) AS saves,
+                '' AS group_name
+            FROM {$goalie_table} g
+            INNER JOIN {$roster_table} d ON d.player_id = g.player_id AND d.team_id = g.team_id
+            INNER JOIN {$teams_table} t ON t.id = g.team_id
             {$where}
-            ORDER BY g.games_played DESC, COALESCE(g.stat_rank, 9999) ASC, g.wins DESC",
+            GROUP BY g.player_id, g.team_id
+            ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
 			ARRAY_A
 		);
 
 		return $results ?: array();
 	}
 
-	/**
-	 * Get archived skater stats for a given archive_key.
-	 * Archive rows are denormalized and self-contained.
-	 */
-	public function get_archive_skater_stats( string $archive_key ): array {
+	public function get_goalie_stats_per_source( array $teams = array() ): array {
 		global $wpdb;
 
-		$table   = $wpdb->prefix . 'pp_roster_stats_archive';
+		$goalie_table = $wpdb->prefix . 'pp_team_player_goalie_stats';
+		$roster_table = $wpdb->prefix . 'pp_team_players_display';
+		$teams_table  = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array();
+		if ( ! empty( $teams ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "COALESCE(d.api_team_name, t.name) IN ($placeholders)", ...$teams );
+		}
+		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+
 		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT name, pos, headshot_link, player_id, team_id, team_name, roster_id, source, stat_rank,
-                    games_played, goals, assists, points, penalty_minutes, power_play_goals,
-                    short_handed_goals, game_winning_goals, points_per_game, shooting_percentage,
-                    '' AS group_name
-                FROM {$table}
-                WHERE archive_key = %s
-                ORDER BY COALESCE(stat_rank, 9999) ASC, points DESC, goals DESC",
-				$archive_key
-			),
+			"SELECT
+                MAX(d.name) AS name,
+                MAX(d.pos) AS pos,
+                MAX(d.headshot_link) AS headshot_link,
+                g.player_id,
+                g.team_id,
+                COALESCE(MAX(d.api_team_name), MAX(t.name)) AS team_name,
+                g.source,
+                MIN(g.stat_rank) AS stat_rank,
+                SUM(g.games_played) AS games_played,
+                SUM(g.wins) AS wins,
+                SUM(g.losses) AS losses,
+                SUM(g.overtime_losses) AS overtime_losses,
+                COALESCE(
+                    ROUND(SUM(g.saves) / NULLIF(SUM(g.shots_against), 0), 3),
+                    ROUND(SUM(g.save_percentage * g.games_played) / NULLIF(SUM(g.games_played), 0), 3)
+                ) AS save_percentage,
+                ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
+                SUM(g.shots_against) AS shots_against,
+                SUM(g.saves) AS saves,
+                '' AS group_name
+            FROM {$goalie_table} g
+            INNER JOIN {$roster_table} d ON d.player_id = g.player_id AND d.team_id = g.team_id
+            INNER JOIN {$teams_table} t ON t.id = g.team_id
+            {$where}
+            GROUP BY g.player_id, g.team_id, g.source
+            ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
 			ARRAY_A
 		);
 
 		return $results ?: array();
 	}
 
-	/**
-	 * Get archived goalie stats for a given archive_key.
-	 */
-	public function get_archive_goalie_stats( string $archive_key ): array {
+	public function get_distinct_sources( array $teams = array() ): array {
 		global $wpdb;
 
-		$table   = $wpdb->prefix . 'pp_roster_goalie_stats_archive';
+		$stats_table = $wpdb->prefix . 'pp_team_player_stats';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array();
+		if ( ! empty( $teams ) ) {
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+
+		$join = ! empty( $teams )
+			? "INNER JOIN {$teams_table} t ON t.id = s.team_id"
+			: '';
+
 		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT name, pos, headshot_link, player_id, team_id, team_name, roster_id, source, stat_rank,
-                    games_played, wins, losses, overtime_losses, goals_against_average,
-                    save_percentage, shots_against, saves,
-                    '' AS group_name
-                FROM {$table}
-                WHERE archive_key = %s
-                ORDER BY games_played DESC, COALESCE(stat_rank, 9999) ASC, wins DESC",
-				$archive_key
-			),
+			"SELECT DISTINCT s.source FROM {$stats_table} s {$join} {$where} ORDER BY s.source ASC",
 			ARRAY_A
 		);
 
-		return $results ?: array();
+		if ( ! $results ) {
+			return array();
+		}
+
+		return array_values( array_filter( array_column( $results, 'source' ) ) );
 	}
 
-	/**
-	 * Returns list of all archived seasons ordered newest first.
-	 */
-	public function get_archive_list(): array {
+	public function get_archive_skater_stats( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table   = $wpdb->prefix . 'pp_roster_archives';
+		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
+		$join        = '';
+		if ( ! empty( $teams ) ) {
+			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
+
 		$results = $wpdb->get_results(
-			"SELECT archive_key, season FROM {$table} ORDER BY created_at DESC",
+			"SELECT MAX(s.name) AS name, MAX(s.pos) AS pos, MAX(s.headshot_link) AS headshot_link,
+                s.player_id, s.team_id, MAX(s.team_name) AS team_name,
+                s.source, MIN(s.stat_rank) AS stat_rank,
+                SUM(s.games_played) AS games_played,
+                SUM(s.goals) AS goals,
+                SUM(s.assists) AS assists,
+                SUM(s.points) AS points,
+                SUM(s.penalty_minutes) AS penalty_minutes,
+                SUM(s.power_play_goals) AS power_play_goals,
+                SUM(s.short_handed_goals) AS short_handed_goals,
+                SUM(s.game_winning_goals) AS game_winning_goals,
+                ROUND(SUM(s.points) / NULLIF(SUM(s.games_played), 0), 2) AS points_per_game,
+                AVG(s.shooting_percentage) AS shooting_percentage,
+                '' AS group_name
+            FROM {$table} s
+            {$join}
+            {$where}
+            GROUP BY s.player_id, s.team_id, s.source
+            ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
 			ARRAY_A
 		);
 
 		return $results ?: array();
 	}
 
-	/**
-	 * Build the full data array expected by the stats template's render() method.
-	 * $roster_id = 0 means all groups (no WHERE filter).
-	 */
-	public function get_stats_data( int $roster_id = 0 ): array {
+	public function get_archive_skater_stats_aggregated( string $archive_key, array $teams = array() ): array {
+		global $wpdb;
+
+		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
+		$join        = '';
+		if ( ! empty( $teams ) ) {
+			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
+
+		$results = $wpdb->get_results(
+			"SELECT MAX(s.name) AS name, MAX(s.pos) AS pos, MAX(s.headshot_link) AS headshot_link,
+                s.player_id, s.team_id, MAX(s.team_name) AS team_name,
+                MIN(s.source) AS source, MIN(s.stat_rank) AS stat_rank,
+                SUM(s.games_played) AS games_played,
+                SUM(s.goals) AS goals,
+                SUM(s.assists) AS assists,
+                SUM(s.points) AS points,
+                SUM(s.penalty_minutes) AS penalty_minutes,
+                SUM(s.power_play_goals) AS power_play_goals,
+                SUM(s.short_handed_goals) AS short_handed_goals,
+                SUM(s.game_winning_goals) AS game_winning_goals,
+                ROUND(SUM(s.points) / NULLIF(SUM(s.games_played), 0), 2) AS points_per_game,
+                AVG(s.shooting_percentage) AS shooting_percentage,
+                '' AS group_name
+            FROM {$table} s
+            {$join}
+            {$where}
+            GROUP BY s.player_id, s.team_id
+            ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
+			ARRAY_A
+		);
+
+		return $results ?: array();
+	}
+
+	public function get_archive_goalie_stats( string $archive_key, array $teams = array() ): array {
+		global $wpdb;
+
+		$table       = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
+		$join        = '';
+		if ( ! empty( $teams ) ) {
+			$join          = "INNER JOIN {$teams_table} t ON t.id = g.team_id";
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
+
+		$results = $wpdb->get_results(
+			"SELECT MAX(g.name) AS name, MAX(g.pos) AS pos, MAX(g.headshot_link) AS headshot_link,
+                g.player_id, g.team_id, MAX(g.team_name) AS team_name,
+                g.source, MIN(g.stat_rank) AS stat_rank,
+                SUM(g.games_played) AS games_played,
+                SUM(g.wins) AS wins,
+                SUM(g.losses) AS losses,
+                SUM(g.overtime_losses) AS overtime_losses,
+                SUM(g.shots_against) AS shots_against,
+                SUM(g.saves) AS saves,
+                COALESCE(
+                    ROUND(SUM(g.saves) / NULLIF(SUM(g.shots_against), 0), 3),
+                    ROUND(SUM(g.save_percentage * g.games_played) / NULLIF(SUM(g.games_played), 0), 3)
+                ) AS save_percentage,
+                ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
+                '' AS group_name
+            FROM {$table} g
+            {$join}
+            {$where}
+            GROUP BY g.player_id, g.team_id, g.source
+            ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
+			ARRAY_A
+		);
+
+		return $results ?: array();
+	}
+
+	public function get_archive_goalie_stats_aggregated( string $archive_key, array $teams = array() ): array {
+		global $wpdb;
+
+		$table       = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
+		$join        = '';
+		if ( ! empty( $teams ) ) {
+			$join          = "INNER JOIN {$teams_table} t ON t.id = g.team_id";
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
+
+		$results = $wpdb->get_results(
+			"SELECT MAX(g.name) AS name, MAX(g.pos) AS pos, MAX(g.headshot_link) AS headshot_link,
+                g.player_id, g.team_id, MAX(g.team_name) AS team_name,
+                MIN(g.source) AS source, MIN(g.stat_rank) AS stat_rank,
+                SUM(g.games_played) AS games_played,
+                SUM(g.wins) AS wins,
+                SUM(g.losses) AS losses,
+                SUM(g.overtime_losses) AS overtime_losses,
+                SUM(g.shots_against) AS shots_against,
+                SUM(g.saves) AS saves,
+                COALESCE(
+                    ROUND(SUM(g.saves) / NULLIF(SUM(g.shots_against), 0), 3),
+                    ROUND(SUM(g.save_percentage * g.games_played) / NULLIF(SUM(g.games_played), 0), 3)
+                ) AS save_percentage,
+                ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
+                '' AS group_name
+            FROM {$table} g
+            {$join}
+            {$where}
+            GROUP BY g.player_id, g.team_id
+            ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
+			ARRAY_A
+		);
+
+		return $results ?: array();
+	}
+
+	public function get_archive_distinct_sources( string $archive_key, array $teams = array() ): array {
+		global $wpdb;
+
+		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
+		$teams_table = $wpdb->prefix . 'pp_teams';
+
+		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
+		$join        = '';
+		if ( ! empty( $teams ) ) {
+			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
+			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+		}
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
+
+		$results = $wpdb->get_results(
+			"SELECT DISTINCT s.source FROM {$table} s {$join} {$where} ORDER BY s.source ASC",
+			ARRAY_A
+		);
+
+		if ( ! $results ) {
+			return array();
+		}
+
+		return array_values( array_filter( array_column( $results, 'source' ) ) );
+	}
+
+	public function get_archive_list( array $teams = array() ): array {
+		global $wpdb;
+
+		$seasons_table = $wpdb->prefix . 'pp_archive_seasons';
+		$stats_table   = $wpdb->prefix . 'pp_team_player_stats_archive';
+		$teams_table   = $wpdb->prefix . 'pp_teams';
+
+		if ( ! empty( $teams ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
+			$results      = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT DISTINCT a.season_key AS archive_key, COALESCE(a.label, a.season_key) AS season
+                     FROM {$seasons_table} a
+                     INNER JOIN {$stats_table} s ON s.season_key = a.season_key
+                     INNER JOIN {$teams_table} t ON t.id = s.team_id
+                     WHERE t.name IN ($placeholders)
+                     ORDER BY a.archived_at DESC",
+					...$teams
+				),
+				ARRAY_A
+			);
+		} else {
+			$results = $wpdb->get_results(
+				"SELECT DISTINCT a.season_key AS archive_key, COALESCE(a.label, a.season_key) AS season
+                 FROM {$seasons_table} a
+                 INNER JOIN {$stats_table} s ON s.season_key = a.season_key
+                 ORDER BY a.archived_at DESC",
+				ARRAY_A
+			);
+		}
+
+		return $results ?: array();
+	}
+
+	public function get_stats_data( array $teams = array() ): array {
 		$defaults = self::get_default_column_settings();
 		$saved    = get_option( 'pp_stats_column_settings', array() );
 		$col      = array_merge( $defaults, is_array( $saved ) ? $saved : array() );
 
-		$skaters = $this->get_skater_stats( $roster_id );
-		$goalies = $this->get_goalie_stats( $roster_id );
+		$skaters     = $this->get_skater_stats( $teams );
+		$goalies     = $this->get_goalie_stats( $teams );
+		$skaters_raw = $this->get_skater_stats_per_source( $teams );
+		$goalies_raw = $this->get_goalie_stats_per_source( $teams );
+		$sources     = $this->get_distinct_sources( $teams );
 
 		$team_names = array_values( array_filter( array_unique( array_merge(
 			array_column( $skaters, 'team_name' ),
@@ -209,11 +491,14 @@ class Puck_Press_Stats_Wpdb_Utils {
 		return array(
 			'skaters'              => $skaters,
 			'goalies'              => $goalies,
+			'skaters_raw'          => $skaters_raw,
+			'goalies_raw'          => $goalies_raw,
+			'sources'              => $sources,
 			'column_settings'      => $col,
 			'team_names'           => $team_names,
-			'archives'             => $this->get_archive_list(),
+			'archives'             => $this->get_archive_list( $teams ),
 			'current_season_label' => get_option( 'puck_press_current_season_label', '' ),
-			'roster_id'            => $roster_id,
+			'teams'                => $teams,
 		);
 	}
 }

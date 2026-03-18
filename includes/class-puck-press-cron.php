@@ -29,10 +29,17 @@ class Puck_Press_Cron {
 
 	private function load_dependencies() {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-source-importer.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-wpdb-utils.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-source-importer.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedules-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-registry-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-normalizer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
 	}
 
 	public function maybe_schedule_cron() {
@@ -138,91 +145,59 @@ class Puck_Press_Cron {
 		$no_active_roster   = false;
 
 		try {
-			// Check if required classes exist
-			if ( ! class_exists( 'Puck_Press_Schedule_Source_Importer' ) ) {
-				$this->log_error( 'Puck Press Cron: Puck_Press_Schedule_Source_Importer class not found' );
-				throw new Exception( 'Puck_Press_Schedule_Source_Importer class not found' );
-			}
+			$teams_utils         = new Puck_Press_Teams_Wpdb_Utils();
+			$all_teams           = $teams_utils->get_all_teams();
+			$all_sched_no_active = true;
+			$all_roster_no_active = true;
 
-			if ( ! class_exists( 'Puck_Press_Schedule_Wpdb_Utils' ) ) {
-				$this->log_error( 'Puck Press Cron: Puck_Press_Schedule_Wpdb_Utils class not found' );
-				throw new Exception( 'Puck_Press_Schedule_Wpdb_Utils class not found' );
-			}
+			foreach ( $all_teams as $team ) {
+				$team_id   = (int) $team['id'];
+				$team_name = $team['name'] ?? "Team {$team_id}";
 
-			if ( ! class_exists( 'Puck_Press_Roster_Source_Importer' ) ) {
-				$this->log_error( 'Puck Press Cron: Puck_Press_Roster_Source_Importer class not found' );
-				throw new Exception( 'Puck_Press_Roster_Source_Importer class not found' );
-			}
+				// Schedule refresh
+				$t_importer = new Puck_Press_Team_Source_Importer( $team_id );
+				$results    = $t_importer->rebuild_team_and_cascade();
 
-			if ( ! class_exists( 'Puck_Press_Roster_Wpdb_Utils' ) ) {
-				$this->log_error( 'Puck Press Cron: Puck_Press_Roster_Wpdb_Utils class not found' );
-				throw new Exception( 'Puck_Press_Roster_Wpdb_Utils class not found' );
-			}
+				$team_sched_no_active = in_array( 'No active sources to import.', $results['messages'] ?? array(), true );
+				$team_sched_ok        = ( $results['success_count'] ?? 0 ) > 0 || $team_sched_no_active;
 
-			$utils = new Puck_Press_Schedule_Wpdb_Utils();
-
-			// Reset and repopulate the raw schedule table.
-			$utils->reset_table( 'pp_game_schedule_raw' );
-
-			$importer          = new Puck_Press_Schedule_Source_Importer();
-			$raw_table_results = $importer->populate_raw_schedule_table_from_sources();
-
-			// Only wipe and rebuild the display table when the import actually produced
-			// data (or when sources are intentionally disabled). If all sources returned
-			// errors, preserve the existing display data so the frontend continues to
-			// show the last-known schedule instead of going blank.
-			$no_active_schedule = in_array( 'No active sources to import.', $raw_table_results['messages'] ?? array() );
-			$schedule_import_ok = ( $raw_table_results['success_count'] ?? 0 ) > 0 || $no_active_schedule;
-
-			if ( $schedule_import_ok ) {
-				$utils->reset_table( 'pp_game_schedule_for_display' );
-				$importer->apply_edits_and_save_to_display_table();
-				$this->log_message( 'Puck Press Cron: Schedule display table rebuilt.' );
-				$schedule_ok = true;
-			} else {
-				$this->log_error( 'Puck Press Cron: Schedule import returned no data — preserving existing display table.' );
-				foreach ( $raw_table_results['errors'] ?? array() as $err ) {
-					$source = is_array( $err ) ? ( $err['source'] ?? 'unknown' ) : 'unknown';
-					$msg    = is_array( $err ) ? ( $err['message'] ?? print_r( $err, true ) ) : (string) $err;
-					$this->log_error( "Puck Press Cron: Schedule source '{$source}' error — {$msg}" );
-				}
-			}
-
-			// Roster: loop over all roster groups and refresh each one.
-			$r_utils       = new Puck_Press_Roster_Wpdb_Utils();
-			$roster_groups = $r_utils->get_all_groups();
-			$all_no_active = true;
-
-			foreach ( $roster_groups as $group ) {
-				$group_id   = (int) $group['id'];
-				$group_name = $group['name'] ?? "Group {$group_id}";
-
-				$r_importer         = new Puck_Press_Roster_Source_Importer( $group_id );
-				$raw_roster_results = $r_importer->populate_raw_roster_table_from_sources();
-
-				$group_no_active = in_array( 'No active sources to import.', $raw_roster_results['messages'] ?? array() );
-				$roster_import_ok = ( $raw_roster_results['success_count'] ?? 0 ) > 0 || $group_no_active;
-
-				if ( ! $group_no_active ) {
-					$all_no_active = false;
+				if ( ! $team_sched_no_active ) {
+					$all_sched_no_active = false;
 				}
 
-				if ( $roster_import_ok ) {
-					$r_importer->apply_edits_and_save_to_display_table();
-					$r_importer->sanitize_roster_display_table();
-					$this->log_message( "Puck Press Cron: Roster '{$group_name}' display table rebuilt." );
-					$roster_ok = true;
+				if ( $team_sched_ok ) {
+					$this->log_message( "Puck Press Cron: Team '{$team_name}' schedule refreshed and materialized." );
+					$schedule_ok = true;
 				} else {
-					$this->log_error( "Puck Press Cron: Roster '{$group_name}' import returned no data — preserving existing display table." );
-					foreach ( $raw_roster_results['errors'] ?? array() as $err ) {
+					$this->log_error( "Puck Press Cron: Team '{$team_name}' schedule import returned no data." );
+					foreach ( $results['errors'] ?? array() as $err ) {
 						$source = is_array( $err ) ? ( $err['source'] ?? 'unknown' ) : 'unknown';
 						$msg    = is_array( $err ) ? ( $err['message'] ?? print_r( $err, true ) ) : (string) $err;
-						$this->log_error( "Puck Press Cron: Roster '{$group_name}' source '{$source}' error — {$msg}" );
+						$this->log_error( "Puck Press Cron: Team '{$team_name}' schedule source '{$source}' error — {$msg}" );
 					}
+				}
+
+				// Roster refresh
+				$r_importer     = new Puck_Press_Team_Roster_Importer( $team_id );
+				$roster_results = $r_importer->rebuild_team_and_cascade();
+
+				$team_roster_no_active = isset( $roster_results['message'] ) && strpos( $roster_results['message'], 'No active sources' ) !== false;
+				$team_roster_ok        = ( $roster_results['success'] ?? false ) || $team_roster_no_active;
+
+				if ( ! $team_roster_no_active ) {
+					$all_roster_no_active = false;
+				}
+
+				if ( $team_roster_ok ) {
+					$this->log_message( "Puck Press Cron: Team '{$team_name}' roster refreshed and materialized." );
+					$roster_ok = true;
+				} else {
+					$this->log_error( "Puck Press Cron: Team '{$team_name}' roster import returned no data." );
 				}
 			}
 
-			$no_active_roster = $all_no_active;
+			$no_active_schedule = $all_sched_no_active;
+			$no_active_roster   = $all_roster_no_active;
 
 			$execution_time = round( microtime( true ) - $start_time, 2 );
 			$this->log_message( 'Puck Press Cron: schedule/roster refresh executed in ' . $execution_time . ' seconds' );
@@ -481,15 +456,6 @@ class Puck_Press_Cron {
 		$schedules = wp_get_schedules();
 		if ( ! isset( $schedules[ $status['schedule'] ] ) ) {
 			$issues[] = 'Selected schedule "' . $status['schedule'] . '" does not exist';
-		}
-
-		// Check if required classes exist
-		if ( ! class_exists( 'Puck_Press_Schedule_Source_Importer' ) ) {
-			$issues[] = 'Required class Puck_Press_Schedule_Source_Importer not found';
-		}
-
-		if ( ! class_exists( 'Puck_Press_Schedule_Wpdb_Utils' ) ) {
-			$issues[] = 'Required class Puck_Press_Schedule_Wpdb_Utils not found';
 		}
 
 		return array(

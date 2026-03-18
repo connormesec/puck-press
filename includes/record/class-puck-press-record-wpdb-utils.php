@@ -14,7 +14,7 @@ class Puck_Press_Record_Wpdb_Utils {
 	 */
 	public function get_record_stats( int $schedule_id = 1 ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pp_game_schedule_for_display';
+		$table = $wpdb->prefix . 'pp_schedule_games_display';
 
 		$games = $wpdb->get_results(
 			$wpdb->prepare(
@@ -107,7 +107,7 @@ class Puck_Press_Record_Wpdb_Utils {
 
 	public function get_multi_source_stats( int $schedule_id = 1 ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'pp_game_schedule_for_display';
+		$table = $wpdb->prefix . 'pp_schedule_games_display';
 
 		$games = $wpdb->get_results(
 			$wpdb->prepare(

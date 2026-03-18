@@ -73,11 +73,12 @@
   margin: 0;
 }
 
-.standard_stats_container .pp-stats-table thead tr {
+.standard_stats_container .pp-stats-table-wrapper .pp-stats-table thead tr {
   background: var(--pp-standard-table_header_bg, #1565c0);
 }
 
-.standard_stats_container .pp-stats-table th {
+/* Specificity 0-3-1 — beats Divi's .entry-content thead th (0-1-2) */
+.standard_stats_container .pp-stats-table-wrapper .pp-stats-table th {
   color: var(--pp-standard-table_header_text, #ffffff);
   font-weight: 600;
   font-size: 0.75rem;
@@ -89,21 +90,25 @@
   white-space: nowrap;
 }
 
-.standard_stats_container .pp-stats-table th.pp-stats-col-player {
+.standard_stats_container .pp-stats-table-wrapper .pp-stats-table th.pp-stats-col-player {
   width: 30%;
   text-align: left;
   padding-left: 12px;
 }
 
-.standard_stats_container .pp-stats-table th.pp-stats-col-rank {
+.standard_stats_container .pp-stats-table-wrapper .pp-stats-table th.pp-stats-col-rank {
   width: 36px;
 }
 
-.standard_stats_container .pp-stats-table tbody tr:nth-child(odd) {
+.standard_stats_container .pp-stats-table-wrapper .pp-stats-table th.pp-stats-col-team {
+  width: 18%;
+}
+
+.standard_stats_container .pp-stats-table tbody tr.pp-row-odd {
   background: var(--pp-standard-row_odd_bg, #f8f9fa);
 }
 
-.standard_stats_container .pp-stats-table tbody tr:nth-child(even) {
+.standard_stats_container .pp-stats-table tbody tr.pp-row-even {
   background: var(--pp-standard-row_even_bg, #ffffff);
 }
 
@@ -164,6 +169,11 @@
 
 .standard_stats_container .pp-stats-player-link:hover {
   text-decoration: underline;
+}
+
+/* ── Team cell ───────────────────────────────────────── */
+.standard_stats_container .pp-stats-team {
+  text-align: left;
 }
 
 /* ── Pos cell ────────────────────────────────────────── */
@@ -244,6 +254,7 @@
 }
 
 .standard_stats_container .pp-stats-team-select,
+.standard_stats_container .pp-stats-source-select,
 .standard_stats_container .pp-stats-season-select {
   -webkit-appearance: auto;
   appearance: auto;
@@ -267,7 +278,7 @@
   content: '';
   display: inline-block;
   width: 0.7em;
-  margin-right: 3px;
+  margin-right: 0px;
   opacity: 0.3;
   font-style: normal;
 }
@@ -297,12 +308,12 @@
     padding-left: 8px;
   }
 
-  .standard_stats_container .pp-stats-table th,
+  .standard_stats_container .pp-stats-table-wrapper .pp-stats-table th,
   .standard_stats_container .pp-stats-table td {
     padding: 6px 4px;
   }
 
-  .standard_stats_container .pp-stats-table th.pp-stats-col-player {
+  .standard_stats_container .pp-stats-table-wrapper .pp-stats-table th.pp-stats-col-player {
     padding-left: 8px;
   }
 

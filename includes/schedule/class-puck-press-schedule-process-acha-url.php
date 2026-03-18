@@ -333,13 +333,15 @@ class Puck_Press_Schedule_Process_Acha_Url {
 		if ( ! empty( $game_time ) ) {
 			$full_date_str .= ' ' . $game_time;
 		}
-		$timestamp = strtotime( $full_date_str );
 
-		if ( $timestamp === false ) {
+		try {
+			$tz = new DateTimeZone( wp_timezone_string() );
+			$dt = new DateTime( $full_date_str, $tz );
+		} catch ( Exception $e ) {
 			return null;
 		}
 
-		return date( 'Y-m-d H:i:s', $timestamp );
+		return $dt->format( 'Y-m-d H:i:s' );
 	}
 
 	/**
@@ -354,8 +356,13 @@ class Puck_Press_Schedule_Process_Acha_Url {
 	private function get_season_year_for_date( string $date_str ): string {
 		list( $start_year, $end_year ) = explode( '-', $this->season_year );
 
-		$date  = strtotime( $date_str . ' ' . $start_year );
-		$month = (int) date( 'n', $date );
+		try {
+			$tz    = new DateTimeZone( wp_timezone_string() );
+			$dt    = new DateTime( $date_str . ' ' . $start_year, $tz );
+			$month = (int) $dt->format( 'n' );
+		} catch ( Exception $e ) {
+			return $start_year;
+		}
 
 		// Sep (9) through Dec (12) → first half of season → start year
 		// Jan (1) through Aug (8)  → second half of season → end year

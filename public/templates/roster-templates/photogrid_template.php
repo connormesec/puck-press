@@ -78,13 +78,14 @@ class PhotoGridTemplate extends PuckPressTemplate {
 		$fonts                    = self::get_roster_fonts( $roster_id );
 		$inline_css               = self::get_inline_css( ':root', $colors, $fonts );
 		$css_block                = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-		$ids                      = $wpdb->get_col(
+		$team_id = ! empty( $players ) ? (int) ( $players[0]['team_id'] ?? 0 ) : 0;
+		$ids     = $team_id > 0 ? $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats WHERE roster_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats WHERE roster_id = %d",
-				$roster_id,
-				$roster_id
+				"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id = %d",
+				$team_id,
+				$team_id
 			)
-		);
+		) : array();
 		$this->players_with_stats = array_flip( array_filter( $ids ?: array(), 'is_scalar' ) );
 
 		$output = $css_block . '<div class="photogrid_roster_container">';

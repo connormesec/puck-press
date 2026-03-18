@@ -142,6 +142,9 @@ class Puck_Press {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-activator.php';
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_migrations' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_group_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_teams_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_registry_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_cleanup_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}
@@ -242,6 +245,7 @@ class Puck_Press {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_slider_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_record_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_stats_assets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_stat_leaders_assets' );
 		$this->loader->add_action( 'init', $plugin_public, 'register_ajax_hooks' );
 		$this->loader->add_filter( 'document_title_parts', $plugin_public, 'filter_player_page_title' );
 		$this->loader->add_filter( 'template_include', $plugin_public, 'maybe_load_player_template' );
@@ -252,6 +256,8 @@ class Puck_Press {
 		$this->loader->add_shortcode( 'pp-roster', $plugin_public, 'roster_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-record', $plugin_public, 'record_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-stats', $plugin_public, 'stats_builder_shortcode' );
+		$this->loader->add_shortcode( 'pp-stat-leaders-skaters', $plugin_public, 'stat_leaders_skaters_shortcode' );
+		$this->loader->add_shortcode( 'pp-stat-leaders-goalies', $plugin_public, 'stat_leaders_goalies_shortcode' );
 	}
 
 	/**

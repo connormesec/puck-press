@@ -39,7 +39,8 @@
 #pp-roster-preview-wrapper.loading #pp-roster-preview,
 #pp-game-slider-preview-wrapper.loading #pp-game-slider-preview,
 #pp-record-preview-wrapper.loading #pp-record-preview,
-#pp-stats-preview-wrapper.loading #pp-stats-preview {
+#pp-stats-preview-wrapper.loading #pp-stats-preview,
+#pp-stat-leaders-preview-wrapper.loading #pp-stat-leaders-preview {
   visibility: hidden;
   opacity: 0;
 }
@@ -48,7 +49,8 @@
 #pp-roster-preview-wrapper .spinner-container,
 #pp-game-slider-preview-wrapper .spinner-container,
 #pp-record-preview-wrapper .spinner-container,
-#pp-stats-preview-wrapper .spinner-container {
+#pp-stats-preview-wrapper .spinner-container,
+#pp-stat-leaders-preview-wrapper .spinner-container {
   display: none;
 }
 
@@ -62,7 +64,8 @@
 #pp-roster-preview-wrapper.loading .spinner-container,
 #pp-game-slider-preview-wrapper.loading .spinner-container,
 #pp-record-preview-wrapper.loading .spinner-container,
-#pp-stats-preview-wrapper.loading .spinner-container {
+#pp-stats-preview-wrapper.loading .spinner-container,
+#pp-stat-leaders-preview-wrapper.loading .spinner-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -186,6 +189,44 @@
   margin-bottom: 1.5rem;
 }
 
+.pp-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pp-card-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid var(--pp-border-color);
+  margin-bottom: 12px;
+}
+
+.pp-select {
+  padding: 6px 10px;
+  border: 1px solid var(--pp-border-color);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #fff;
+  color: var(--pp-text-color);
+  cursor: pointer;
+}
+
+.pp-select-lg {
+  padding: 8px 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  min-width: 160px;
+}
+
+.pp-membership-card .pp-card-subtitle {
+  margin-bottom: 0;
+}
+
 .pp-table {
   width: 100%;
   border-collapse: collapse;
@@ -276,14 +317,16 @@
   background-color: var(--pp-secondary-color);
 }
 
-.pp-data-source-toggle-switch {
+.pp-data-source-toggle-switch,
+.pp-roster-source-toggle-switch {
   position: relative;
   display: inline-block;
   width: 50px;
   height: 24px;
 }
 
-.pp-data-source-toggle-switch input {
+.pp-data-source-toggle-switch input,
+.pp-roster-source-toggle-switch input {
   opacity: 0;
   width: 0;
   height: 0;
@@ -313,11 +356,13 @@
   border-radius: 50%;
 }
 
-.pp-data-source-toggle-switch input:checked + .pp-slider {
+.pp-data-source-toggle-switch input:checked + .pp-slider,
+.pp-roster-source-toggle-switch input:checked + .pp-slider {
   background-color: var(--pp-primary-color);
 }
 
-.pp-data-source-toggle-switch input:checked + .pp-slider:before {
+.pp-data-source-toggle-switch input:checked + .pp-slider:before,
+.pp-roster-source-toggle-switch input:checked + .pp-slider:before {
   transform: translateX(26px);
 }
 

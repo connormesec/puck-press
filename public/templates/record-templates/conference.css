@@ -31,7 +31,8 @@
   background: var(--pp-conference-header_bg, #1a1a2e);
 }
 
-.pp-conference-th {
+/* Specificity 0-2-1 — beats Divi's .entry-content thead th (0-1-2) */
+.pp-conference-table .pp-conference-th {
   padding: 8px 14px;
   font-size: 0.65rem;
   font-weight: 700;
@@ -43,12 +44,12 @@
   border-bottom: 2px solid var(--pp-conference-border, #e5e7eb);
 }
 
-.pp-conference-th--team {
+.pp-conference-table .pp-conference-th--team {
   text-align: left;
   padding-left: 16px;
 }
 
-.pp-conference-th--pts {
+.pp-conference-table .pp-conference-th--pts {
   background: color-mix(in srgb, var(--pp-conference-pts_bg, #dbeafe) 60%, var(--pp-conference-header_bg, #1a1a2e) 40%);
 }
 

@@ -18,22 +18,16 @@ class Puck_Press_Schedule_Admin_Slider_Preview_Card extends Puck_Press_Admin_Pre
 
 	protected function make_template_manager() {
 		return new Puck_Press_Slider_Template_Manager(); }
-	protected function make_wpdb_utils() {
-		return new Puck_Press_Schedule_Wpdb_Utils(); }
 	protected function get_data_table_name(): string {
-		return 'pp_game_schedule_for_display'; }
+		return 'pp_schedule_games_display'; }
 	protected function get_outer_wrapper_id(): string {
 		return 'pp-game-slider-preview-wrapper'; }
 	protected function get_inner_preview_id(): string {
 		return 'pp-game-slider-preview'; }
 
 	public function init() {
-		global $wpdb;
-		$table                       = $wpdb->prefix . 'pp_game_schedule_for_display';
-		$this->data                  = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM $table WHERE schedule_id = %d", $this->schedule_id ),
-			ARRAY_A
-		) ?: array();
+		$schedules_utils             = new Puck_Press_Schedules_Wpdb_Utils();
+		$this->data                  = $schedules_utils->get_schedule_games_display( $this->schedule_id );
 		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
 		$this->template_manager->enqueue_all_template_assets();

@@ -2,7 +2,17 @@
 <form id="pp-add-source-form">
 	<div class="pp-form-group">
 		<label for="pp-source-name" class="pp-form-label">Name</label>
-		<input type="text" id="pp-source-name" class="pp-form-input" placeholder="e.g. Regular Season 2023-2024" required>
+		<select id="pp-source-name" class="pp-form-select" required>
+			<option value="">— Select —</option>
+			<option value="Regular Season">Regular Season</option>
+			<option value="Playoffs">Playoffs</option>
+			<option value="Conference Tournament">Conference Tournament</option>
+			<option value="Regionals">Regionals</option>
+			<option value="Nationals">Nationals</option>
+			<option value="Exhibition">Exhibition</option>
+			<option value="__other__">Other...</option>
+		</select>
+		<input type="text" id="pp-source-name-other" class="pp-form-input" style="display:none;" placeholder="Enter custom name">
 	</div>
 
 	<div class="pp-form-group">
@@ -21,7 +31,7 @@
 		</div>
 		<div class="pp-form-group">
 			<label class="pp-form-label pp-checkbox-label">
-				<input type="checkbox" id="pp-include-stats" value="1">
+				<input type="checkbox" id="pp-include-stats" value="1" checked>
 				Include Stats
 			</label>
 			<span class="pp-form-help">Automatically imports skater and goalie stats using the team and season from the roster URL above. No separate stats URL needed.</span>

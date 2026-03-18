@@ -105,7 +105,7 @@ class Puck_Press_Yoast_Sitemap {
 		global $wpdb;
 
 		$players = $wpdb->get_results(
-			"SELECT name FROM {$wpdb->prefix}pp_roster_for_display",
+			"SELECT name FROM {$wpdb->prefix}pp_team_players_display",
 			ARRAY_A
 		);
 

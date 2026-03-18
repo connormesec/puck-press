@@ -10,7 +10,7 @@ abstract class Puck_Press_Admin_Groups_Card_Abstract extends Puck_Press_Admin_Ca
 
 	protected function render_header_button_content(): string {
 		$domain_lc = strtolower( $this->get_domain_label() );
-		return '<button class="pp-button pp-button-primary" id="pp-' . esc_attr( $domain_lc ) . '-new-group-btn">+ New Group</button>';
+		return '<button class="pp-button pp-button-primary" id="pp-' . esc_attr( $domain_lc ) . '-new-group-btn">+ New Schedule</button>';
 	}
 
 	protected function render_content(): string {

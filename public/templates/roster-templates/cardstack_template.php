@@ -90,13 +90,14 @@ class CardStackTemplate extends PuckPressTemplate {
 
 	public function buildCardStack( array $players, int $roster_id = 1 ) {
 		global $wpdb;
-		$player_ids_with_stats = $wpdb->get_col(
+		$team_id               = ! empty( $players ) ? (int) ( $players[0]['team_id'] ?? 0 ) : 0;
+		$player_ids_with_stats = $team_id > 0 ? $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT player_id FROM {$wpdb->prefix}pp_roster_stats WHERE roster_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_roster_goalie_stats WHERE roster_id = %d",
-				$roster_id,
-				$roster_id
+				"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id = %d",
+				$team_id,
+				$team_id
 			)
-		);
+		) : array();
 		$players_with_stats    = array_flip( array_filter( $player_ids_with_stats ?: array(), 'is_scalar' ) );
 
 		$content = '<div class="cardstack_roster_container clearfix">';

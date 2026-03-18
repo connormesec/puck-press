@@ -151,10 +151,12 @@ abstract class Puck_Press_Template_Manager {
 			// Get external script registry
 			$registry = $this->get_external_script_registry();
 
-			// Register (and enqueue) all external dependencies
+			// Register (and enqueue) all external dependencies; filter out
+			// any non-external deps that aren't registered on this page
+			// (e.g. pp-player-detail is only registered on frontend roster pages).
+			$resolved_deps = array();
 			foreach ( $dependencies as $dep ) {
 				if ( isset( $registry[ $dep ] ) ) {
-					// Use wp_enqueue_script instead of wp_register_script for safety
 					wp_enqueue_script(
 						$dep,
 						$registry[ $dep ]['src'],
@@ -162,14 +164,19 @@ abstract class Puck_Press_Template_Manager {
 						$registry[ $dep ]['ver'],
 						$registry[ $dep ]['in_footer']
 					);
+					$resolved_deps[] = $dep;
+				} elseif ( wp_script_is( $dep, 'registered' ) ) {
+					$resolved_deps[] = $dep;
 				}
+				// If not registered and not external, skip it so this template's
+				// JS still loads (e.g. standard.js on admin pages without pp-player-detail).
 			}
 
 			// Enqueue the main JS file, now that all dependencies are registered/enqueued
 			wp_enqueue_script(
 				"$handle_prefix-template-$template_key",
 				$js_url,
-				$dependencies,
+				$resolved_deps,
 				filemtime( $js_path ),
 				true
 			);

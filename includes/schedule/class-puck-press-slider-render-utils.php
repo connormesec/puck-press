@@ -3,7 +3,6 @@
 class Puck_Press_Slider_Render_Utils {
 
 	protected $template_manager;
-	protected $wpdb_utils;
 	protected $games;
 	protected $templates;
 	protected $selected_template_key;
@@ -12,14 +11,9 @@ class Puck_Press_Slider_Render_Utils {
 		$this->load_dependencies();
 
 		$this->template_manager = new Puck_Press_Slider_Template_Manager();
-		$this->wpdb_utils       = new Puck_Press_Schedule_Wpdb_Utils();
 
-		global $wpdb;
-		$table       = $wpdb->prefix . 'pp_game_schedule_for_display';
-		$this->games = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM $table WHERE schedule_id = %d", $schedule_id ),
-			ARRAY_A
-		);
+		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
+		$this->games     = $schedules_utils->get_schedule_games_display( $schedule_id );
 
 		$this->templates = $this->template_manager->get_all_templates();
 
@@ -29,8 +23,7 @@ class Puck_Press_Slider_Render_Utils {
 	public function load_dependencies() {
 		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-slider-template-manager.php';
-		require_once plugin_dir_path( __FILE__ ) . '../class-puck-press-wpdb-utils-base-abstract.php';
-		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-schedule-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-schedules-wpdb-utils.php';
 	}
 
 	// 🔁 Echo all templates

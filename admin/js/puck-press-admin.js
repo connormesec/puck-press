@@ -51,21 +51,24 @@
 			e.stopPropagation();
 		});
 
-		// Add functionality for dropdown items
+		// Close dropdown after clicking any item
 		$(".pp-dropdown-item").click(function () {
-			const action = $(this).text();
-			console.log("Selected action:", action);
-
-			// Close dropdown after selection
 			$("#pp-advancedDropdown").css('display', 'none');
+		});
 
-			// Here you can add specific functionality for each action
-			if (action === "Reset Everything") {
-				if (confirm("Are you sure you want to reset everything? This action cannot be undone.")) {
-					console.log("Resetting everything...");
-					// Add reset functionality here
-				}
+		// Wipe & Recreate Database
+		$("#pp-wipe-and-recreate-db-btn").click(function () {
+			if (!confirm("This will drop ALL Puck Press tables and recreate empty new-architecture tables. All data will be lost. Continue?")) {
+				return;
 			}
+			$.post(ajaxurl, { action: 'pp_wipe_and_recreate_db' }, function (response) {
+				if (response.success) {
+					alert("Done!\n\n" + (response.data.log || []).join("\n"));
+					location.reload();
+				} else {
+					alert("Error: " + (response.data && response.data.message ? response.data.message : "Unknown error"));
+				}
+			});
 		});
 	});
 
@@ -82,6 +85,7 @@
 		$('#pp-game-slider-preview-wrapper').removeClass('loading');
 		$('#pp-record-preview-wrapper').removeClass('loading');
 		$('#pp-stats-preview-wrapper').removeClass('loading');
+		$('#pp-stat-leaders-preview-wrapper').removeClass('loading');
 	});
 })(jQuery);
 

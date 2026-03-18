@@ -16,25 +16,23 @@ class RecordTemplate extends PuckPressTemplate {
 
 	public static function get_default_colors(): array {
 		return array(
-			'card_bg'     => '#1a1a2e',
-			'header_text' => '#ffffff',
-			'label_text'  => '#a0a0b0',
-			'value_text'  => '#ffffff',
-			'border'      => '#0f3460',
-			'accent'      => '#e94560',
-			'split_bg'    => '#0f3460',
+			'card_bg'    => '#1a1a2e',
+			'label_text' => '#a0a0b0',
+			'value_text' => '#ffffff',
+			'border'     => '#0f3460',
+			'accent'     => '#e94560',
+			'split_bg'   => '#0f3460',
 		);
 	}
 
 	public static function get_color_labels(): array {
 		return array(
-			'card_bg'     => 'Card Background',
-			'header_text' => 'Header Text',
-			'label_text'  => 'Label / Secondary Text',
-			'value_text'  => 'Value Text',
-			'border'      => 'Border Color',
-			'accent'      => 'Record Accent Color',
-			'split_bg'    => 'Home / Away Row Background',
+			'card_bg'    => 'Card Background',
+			'label_text' => 'Label / Secondary Text',
+			'value_text' => 'Value Text',
+			'border'     => 'Border Color',
+			'accent'     => 'Record Accent Color',
+			'split_bg'   => 'Home / Away Row Background',
 		);
 	}
 
@@ -77,7 +75,6 @@ class RecordTemplate extends PuckPressTemplate {
 		$show_home_away = ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN );
 		$show_goals     = ! isset( $values['show_goals'] ) || filter_var( $values['show_goals'], FILTER_VALIDATE_BOOLEAN );
 		$show_diff      = ! isset( $values['show_diff'] ) || filter_var( $values['show_diff'], FILTER_VALIDATE_BOOLEAN );
-		$title          = esc_html( $values['title'] ?? 'Team Record' );
 
 		// W-L-OTL (always three segments); append -T only if regulation ties exist
 		$record_str = "{$wins}-{$losses}-{$otl}";
@@ -103,7 +100,6 @@ class RecordTemplate extends PuckPressTemplate {
 		?>
 		<div class="pp-record-card <?php echo esc_attr( $key ); ?>_record_container">
 			<div class="pp-record-header">
-				<span class="pp-record-title"><?php echo $title; ?></span>
 				<div class="pp-record-stat-row pp-record-stat-row--main">
 					<div class="pp-record-stat">
 						<span class="pp-record-stat-value"><?php echo $gp; ?></span>

@@ -103,19 +103,18 @@ class Puck_Press_Public {
 	public function stats_builder_shortcode( $atts = array() ) {
 		$atts = shortcode_atts(
 			array(
-				'roster'    => '',
-				'show_team' => 'true',
+				'team'      => '',
+				'show_team' => '',
 			),
 			$atts
 		);
-		$slug      = sanitize_title( $atts['roster'] );
-		$show_team = filter_var( $atts['show_team'], FILTER_VALIDATE_BOOLEAN );
 
-		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
+		$teams     = array_values( array_filter( array_map( 'trim', explode( ',', $atts['team'] ) ) ) );
+		$show_team = '' !== $atts['show_team'] ? filter_var( $atts['show_team'], FILTER_VALIDATE_BOOLEAN ) : null;
+
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
 
-		$roster_id = $slug !== '' ? Puck_Press_Group_Resolver::resolve( $slug, 'pp_rosters' ) : 0;
-		$render    = new Puck_Press_Stats_Render_Utils( $roster_id, $show_team );
+		$render = new Puck_Press_Stats_Render_Utils( $teams, $show_team );
 		return $render->get_current_template_html();
 	}
 
@@ -191,7 +190,7 @@ class Puck_Press_Public {
 
 		global $wpdb;
 		$all_players = $wpdb->get_results(
-			"SELECT name, pos, number FROM {$wpdb->prefix}pp_roster_for_display",
+			"SELECT name, pos, number FROM {$wpdb->prefix}pp_team_players_display",
 			ARRAY_A
 		);
 		$player      = null;
@@ -291,6 +290,66 @@ class Puck_Press_Public {
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-stats-template-manager.php';
 		new Puck_Press_Stats_Template_Manager();
+	}
+
+	public function stat_leaders_skaters_shortcode( $atts = array() ) {
+		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
+		$slug        = sanitize_title( $atts['roster'] );
+		$show_header = 'false' !== strtolower( trim( $atts['show_header'] ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/stat-leaders/class-puck-press-stat-leaders-render-utils.php';
+
+		$teams  = $this->resolve_stat_leaders_teams( $slug );
+		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'skaters', $teams, $show_header );
+		return $render->get_current_template_html();
+	}
+
+	public function stat_leaders_goalies_shortcode( $atts = array() ) {
+		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
+		$slug        = sanitize_title( $atts['roster'] );
+		$show_header = 'false' !== strtolower( trim( $atts['show_header'] ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/stat-leaders/class-puck-press-stat-leaders-render-utils.php';
+
+		$teams  = $this->resolve_stat_leaders_teams( $slug );
+		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'goalies', $teams, $show_header );
+		return $render->get_current_template_html();
+	}
+
+	private function resolve_stat_leaders_teams( string $slug ): array {
+		if ( $slug === '' ) {
+			return array();
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-registry-wpdb-utils.php';
+		$registry  = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$roster    = $registry->get_roster_by_slug( $slug );
+		$roster_id = $roster ? (int) $roster['id'] : 0;
+		if ( $roster_id <= 0 ) {
+			return array();
+		}
+		$team_ids = $registry->get_roster_team_ids( $roster_id );
+		if ( empty( $team_ids ) ) {
+			return array();
+		}
+		global $wpdb;
+		$placeholders = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+		return $wpdb->get_col(
+			$wpdb->prepare( "SELECT name FROM {$wpdb->prefix}pp_teams WHERE id IN ($placeholders)", $team_ids )
+		) ?: array();
+	}
+
+	public function enqueue_stat_leaders_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) ) {
+			return;
+		}
+		if ( ! has_shortcode( $post->post_content, 'pp-stat-leaders-skaters' )
+			&& ! has_shortcode( $post->post_content, 'pp-stat-leaders-goalies' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-stat-leaders-template-manager.php';
+		new Puck_Press_Stat_Leaders_Template_Manager();
 	}
 
 	public function enqueue_scripts() {

@@ -14,13 +14,20 @@ class Puck_Press_Roster_Render_Utils extends Puck_Press_Render_Utils_Abstract {
 		$this->wpdb_utils       = new Puck_Press_Roster_Wpdb_Utils();
 
 		global $wpdb;
-		$this->games = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM {$wpdb->prefix}pp_roster_for_display WHERE roster_id = %d",
-				$roster_id
-			),
-			ARRAY_A
-		) ?? array();
+		$registry    = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$team_ids    = $registry->get_roster_team_ids( $roster_id );
+		if ( ! empty( $team_ids ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+			$this->games  = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}pp_team_players_display WHERE team_id IN ($placeholders)",
+					$team_ids
+				),
+				ARRAY_A
+			) ?? array();
+		} else {
+			$this->games = array();
+		}
 
 		$this->templates             = $this->template_manager->get_all_templates();
 		$this->selected_template_key = $this->template_manager->get_current_template_key();
@@ -31,6 +38,7 @@ class Puck_Press_Roster_Render_Utils extends Puck_Press_Render_Utils_Abstract {
 		require_once plugin_dir_path( __FILE__ ) . '../../public/templates/class-puck-press-roster-template-manager.php';
 		require_once plugin_dir_path( __FILE__ ) . '../class-puck-press-wpdb-utils-base-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-roster-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-roster-registry-wpdb-utils.php';
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-roster-player-detail.php';
 	}
 

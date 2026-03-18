@@ -76,41 +76,49 @@ class StandardTemplate extends PuckPressTemplate {
 	 * Render only the skater + goalie sections for archive swapping via AJAX.
 	 * Returns HTML for both .pp-stats-section elements (no container).
 	 */
-	public function build_archive_sections( array $skaters, array $goalies, array $col ): string {
-		return $this->buildSkatersSection( $skaters, $col )
-			. $this->buildGoaliesSection( $goalies, $col );
+	public function build_archive_sections( array $skaters_agg, array $skaters_raw, array $goalies_agg, array $goalies_raw, array $col ): string {
+		return $this->buildSkatersSection( $skaters_agg, $skaters_raw, $col )
+			. $this->buildGoaliesSection( $goalies_agg, $goalies_raw, $col );
 	}
 
 	private function buildStats( array $data ): string {
 		$skaters      = $data['skaters'] ?? array();
+		$skaters_raw  = $data['skaters_raw'] ?? array();
 		$goalies      = $data['goalies'] ?? array();
+		$goalies_raw  = $data['goalies_raw'] ?? array();
 		$col          = $data['column_settings'] ?? array();
 		$team_names   = $data['team_names'] ?? array();
 		$archives     = $data['archives'] ?? array();
 		$season_label = $data['current_season_label'] ?? '';
+		$sources      = $data['sources'] ?? array();
 		$instance     = 'pp-stats-' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
+		$teams         = $data['teams'] ?? array();
+		$show_team_val = ! empty( $col['show_team'] ) ? '1' : '0';
 		$html  = '<div class="standard_stats_container" id="' . esc_attr( $instance ) . '"'
 			. ' data-ajaxurl="' . esc_attr( admin_url( 'admin-ajax.php' ) ) . '"'
 			. ' data-nonce="' . esc_attr( wp_create_nonce( 'pp_player_detail_nonce' ) ) . '"'
+			. ' data-show-team="' . esc_attr( $show_team_val ) . '"'
+			. ' data-original-sources="' . esc_attr( wp_json_encode( $sources ) ) . '"'
+			. ' data-teams="' . esc_attr( wp_json_encode( $teams ) ) . '"'
 			. '>';
 		$html .= '<h2 class="pp-stats-heading">Statistics</h2>';
 		$show_team = ! empty( $col['show_team'] );
-		$html .= $this->buildFilterToolbar( $team_names, $archives, $season_label, $show_team );
+		$html .= $this->buildFilterToolbar( $team_names, $archives, $season_label, $sources, $show_team );
 		$html .= '<div class="pp-stats-sections">';
-		$html .= $this->buildSkatersSection( $skaters, $col );
-		$html .= $this->buildGoaliesSection( $goalies, $col );
+		$html .= $this->buildSkatersSection( $skaters, $skaters_raw, $col );
+		$html .= $this->buildGoaliesSection( $goalies, $goalies_raw, $col );
 		$html .= '</div>';
 		$html .= '</div>';
 
 		return $html;
 	}
 
-	private function buildFilterToolbar( array $team_names, array $archives, string $season_label, bool $show_team = true ): string {
+	private function buildFilterToolbar( array $team_names, array $archives, string $season_label, array $sources, bool $show_team = true ): string {
 		$html  = '<div class="pp-stats-filter-toolbar">';
 
 		$html .= '<div class="pp-stats-toolbar-left">';
-		if ( $show_team && ! empty( $team_names ) ) {
+		if ( $show_team && count( $team_names ) > 1 ) {
 			$html .= '<select class="pp-stats-team-select" name="pp_stats_team" autocomplete="off">';
 			$html .= '<option value="all">All Teams</option>';
 			foreach ( $team_names as $team ) {
@@ -118,14 +126,25 @@ class StandardTemplate extends PuckPressTemplate {
 			}
 			$html .= '</select>';
 		}
+		$source_style = count( $sources ) <= 1 ? ' style="display:none;"' : '';
+		$html .= '<select class="pp-stats-source-select" name="pp_stats_source" autocomplete="off"' . $source_style . '>';
+		$html .= '<option value="__all__">All</option>';
+		foreach ( $sources as $src ) {
+			$html .= '<option value="' . esc_attr( $src ) . '">' . esc_html( $src ) . '</option>';
+		}
+		$html .= '</select>';
 		$html .= '</div>';
 
 		$html .= '<div class="pp-stats-toolbar-right">';
 		$html .= '<select class="pp-stats-season-select" name="pp_stats_season" autocomplete="off">';
 		$html .= '<option value="current">' . esc_html( $season_label ?: 'Current Season' ) . '</option>';
-		foreach ( $archives as $archive ) {
-			$html .= '<option value="' . esc_attr( $archive['archive_key'] ) . '">'
-				. esc_html( $archive['season'] ) . '</option>';
+		if ( ! empty( $archives ) ) {
+			$html .= '<optgroup label="' . esc_attr__( 'Past Seasons', 'puck-press' ) . '">';
+			foreach ( $archives as $archive ) {
+				$html .= '<option value="' . esc_attr( $archive['archive_key'] ) . '">'
+					. esc_html( $archive['season'] ) . '</option>';
+			}
+			$html .= '</optgroup>';
 		}
 		$html .= '</select>';
 		$html .= '</div>';
@@ -134,7 +153,7 @@ class StandardTemplate extends PuckPressTemplate {
 		return $html;
 	}
 
-	private function buildSkatersSection( array $skaters, array $col ): string {
+	private function buildSkatersSection( array $skaters, array $skaters_raw, array $col ): string {
 		$html  = '<section class="pp-stats-section">';
 		$html .= '<h2 class="pp-stats-section-title">Skaters</h2>';
 
@@ -150,7 +169,7 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<th class="pp-stats-col-rank"></th>';
 		$html .= '<th class="pp-stats-col-player pp-stats-th-sortable" data-col="name" data-type="str">Player</th>';
 		if ( ! empty( $col['show_team'] ) ) {
-			$html .= '<th class="pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
+			$html .= '<th class="pp-stats-col-team pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
 		}
 		$html .= '<th class="pp-stats-col-pos pp-stats-th-sortable" data-tip="Position" data-col="pos" data-type="str">Pos</th>';
 		$html .= '<th class="pp-stats-th-sortable" data-tip="Games Played" data-col="gp" data-type="num">GP</th>';
@@ -187,70 +206,97 @@ class StandardTemplate extends PuckPressTemplate {
 			. '</svg>'
 		);
 
+		$raw_by_player = array();
+		foreach ( $skaters_raw as $row ) {
+			$pid = (string) ( $row['player_id'] ?? '' );
+			$rid = (string) ( $row['roster_id'] ?? '' );
+			if ( '' !== $pid ) {
+				$raw_by_player[ $pid . '_' . $rid ][] = $row;
+			}
+		}
+
 		foreach ( $skaters as $i => $s ) {
 			$rank    = ! empty( $s['stat_rank'] ) ? (int) $s['stat_rank'] : ( $i + 1 );
 			$name    = esc_html( $s['name'] ?? '' );
 			$pos     = esc_html( $s['pos'] ?? '' );
-			$gp      = esc_html( $s['games_played'] ?? 0 );
-			$goals   = esc_html( $s['goals'] ?? 0 );
-			$assists = esc_html( $s['assists'] ?? 0 );
-			$points  = esc_html( $s['points'] ?? 0 );
-
-			$src = ! empty( $s['headshot_link'] ) ? esc_url( $s['headshot_link'] ) : $fallback;
-			$img = '<img src="' . $src . '" loading="lazy" decoding="async"'
+			$slug    = sanitize_title( $name );
+			$src     = ! empty( $s['headshot_link'] ) ? esc_url( $s['headshot_link'] ) : $fallback;
+			$img     = '<img src="' . $src . '" loading="lazy" decoding="async"'
 				. ' width="32" height="32"'
 				. ' onerror="this.onerror=null;this.src=\'' . $fallback . '\';"'
 				. ' alt="' . esc_attr( $name . ' headshot' ) . '"'
 				. ' class="pp-stats-headshot" />';
 
-			$slug  = sanitize_title( $name );
-			$html .= '<tr'
-				. ' data-source="' . esc_attr( $s['source'] ?? '' ) . '"'
-				. ' data-roster-id="' . esc_attr( $s['roster_id'] ?? '' ) . '"'
-				. ' data-team-name="' . esc_attr( $s['team_name'] ?? '' ) . '"'
-				. ' data-team-group="' . esc_attr( $s['group_name'] ?? '' ) . '"'
-				. ' data-team-id="' . esc_attr( $s['team_id'] ?? '' ) . '"'
-				. '>';
-			$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-			$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
-			if ( ! empty( $col['show_team'] ) ) {
-				$html .= '<td class="pp-stats-team">' . esc_html( $s['team_name'] ?? '' ) . '</td>';
-			}
-			$html .= '<td class="pp-stats-pos">' . $pos . '</td>';
-			$html .= '<td>' . $gp . '</td>';
-			$html .= '<td>' . $goals . '</td>';
-			$html .= '<td>' . $assists . '</td>';
-			$html .= '<td class="pp-stats-pts">' . $points . '</td>';
+			$html .= $this->buildSkaterRow( $s, $rank, $img, $name, $slug, '__all__', $col, false );
 
-			if ( ! empty( $col['show_pts_per_game'] ) ) {
-				$ppg_rate = isset( $s['points_per_game'] ) ? number_format( (float) $s['points_per_game'], 2 ) : '0.00';
-				$html    .= '<td class="pp-stats-col-opt">' . esc_html( $ppg_rate ) . '</td>';
+			$pkey = ( (string) ( $s['player_id'] ?? '' ) ) . '_' . ( (string) ( $s['roster_id'] ?? '' ) );
+			if ( ! empty( $raw_by_player[ $pkey ] ) ) {
+				foreach ( $raw_by_player[ $pkey ] as $rs ) {
+					$rs_rank = ! empty( $rs['stat_rank'] ) ? (int) $rs['stat_rank'] : ( $i + 1 );
+					$rs_name = esc_html( $rs['name'] ?? '' );
+					$rs_slug = sanitize_title( $rs_name );
+					$rs_src  = ! empty( $rs['headshot_link'] ) ? esc_url( $rs['headshot_link'] ) : $fallback;
+					$rs_img  = '<img src="' . $rs_src . '" loading="lazy" decoding="async"'
+						. ' width="32" height="32"'
+						. ' onerror="this.onerror=null;this.src=\'' . $fallback . '\';"'
+						. ' alt="' . esc_attr( $rs_name . ' headshot' ) . '"'
+						. ' class="pp-stats-headshot" />';
+					$html .= $this->buildSkaterRow( $rs, $rs_rank, $rs_img, $rs_name, $rs_slug, $rs['source'] ?? '', $col, true );
+				}
 			}
-			if ( ! empty( $col['show_pim'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['penalty_minutes'] ?? 0 ) . '</td>';
-			}
-			if ( ! empty( $col['show_ppg'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['power_play_goals'] ?? 0 ) . '</td>';
-			}
-			if ( ! empty( $col['show_shg'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['short_handed_goals'] ?? 0 ) . '</td>';
-			}
-			if ( ! empty( $col['show_gwg'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['game_winning_goals'] ?? 0 ) . '</td>';
-			}
-			if ( ! empty( $col['show_sh_pct'] ) ) {
-				$sh_pct = isset( $s['shooting_percentage'] ) ? number_format( (float) $s['shooting_percentage'], 1 ) : '0.0';
-				$html  .= '<td class="pp-stats-col-opt">' . esc_html( $sh_pct ) . '</td>';
-			}
-
-			$html .= '</tr>';
 		}
 
 		$html .= '</tbody></table></div></section>';
 		return $html;
 	}
 
-	private function buildGoaliesSection( array $goalies, array $col ): string {
+	private function buildSkaterRow( array $s, int $rank, string $img, string $name, string $slug, string $source, array $col, bool $hidden ): string {
+		$style = $hidden ? ' style="display:none;"' : '';
+		$html  = '<tr'
+			. ' data-source="' . esc_attr( $source ) . '"'
+			. ' data-roster-id="' . esc_attr( $s['roster_id'] ?? '' ) . '"'
+			. ' data-team-name="' . esc_attr( $s['team_name'] ?? '' ) . '"'
+			. ' data-team-group="' . esc_attr( $s['group_name'] ?? '' ) . '"'
+			. ' data-team-id="' . esc_attr( $s['team_id'] ?? '' ) . '"'
+			. $style
+			. '>';
+		$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
+		$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
+		if ( ! empty( $col['show_team'] ) ) {
+			$html .= '<td class="pp-stats-team">' . esc_html( $s['team_name'] ?? '' ) . '</td>';
+		}
+		$html .= '<td class="pp-stats-pos">' . esc_html( $s['pos'] ?? '' ) . '</td>';
+		$html .= '<td>' . esc_html( $s['games_played'] ?? 0 ) . '</td>';
+		$html .= '<td>' . esc_html( $s['goals'] ?? 0 ) . '</td>';
+		$html .= '<td>' . esc_html( $s['assists'] ?? 0 ) . '</td>';
+		$html .= '<td class="pp-stats-pts">' . esc_html( $s['points'] ?? 0 ) . '</td>';
+
+		if ( ! empty( $col['show_pts_per_game'] ) ) {
+			$ppg_rate = isset( $s['points_per_game'] ) ? number_format( (float) $s['points_per_game'], 2 ) : '0.00';
+			$html    .= '<td class="pp-stats-col-opt">' . esc_html( $ppg_rate ) . '</td>';
+		}
+		if ( ! empty( $col['show_pim'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['penalty_minutes'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_ppg'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['power_play_goals'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_shg'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['short_handed_goals'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_gwg'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $s['game_winning_goals'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_sh_pct'] ) ) {
+			$sh_pct = isset( $s['shooting_percentage'] ) ? number_format( (float) $s['shooting_percentage'], 1 ) : '0.0';
+			$html  .= '<td class="pp-stats-col-opt">' . esc_html( $sh_pct ) . '</td>';
+		}
+
+		$html .= '</tr>';
+		return $html;
+	}
+
+	private function buildGoaliesSection( array $goalies, array $goalies_raw, array $col ): string {
 		$html  = '<section class="pp-stats-section">';
 		$html .= '<h2 class="pp-stats-section-title">Goalies</h2>';
 
@@ -266,7 +312,7 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<th class="pp-stats-col-rank"></th>';
 		$html .= '<th class="pp-stats-col-player pp-stats-th-sortable" data-col="name" data-type="str">Player</th>';
 		if ( ! empty( $col['show_team'] ) ) {
-			$html .= '<th class="pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
+			$html .= '<th class="pp-stats-col-team pp-stats-th-sortable" data-col="team" data-type="str">Team</th>';
 		}
 		$html .= '<th class="pp-stats-th-sortable" data-tip="Games Played" data-col="gp" data-type="num">GP</th>';
 		$html .= '<th class="pp-stats-th-sortable" data-tip="Wins" data-col="w" data-type="num">W</th>';
@@ -298,59 +344,87 @@ class StandardTemplate extends PuckPressTemplate {
 			. '</svg>'
 		);
 
+		$raw_by_player = array();
+		foreach ( $goalies_raw as $row ) {
+			$pid = (string) ( $row['player_id'] ?? '' );
+			$rid = (string) ( $row['roster_id'] ?? '' );
+			if ( '' !== $pid ) {
+				$raw_by_player[ $pid . '_' . $rid ][] = $row;
+			}
+		}
+
 		foreach ( $goalies as $i => $g ) {
 			$rank   = ! empty( $g['stat_rank'] ) ? (int) $g['stat_rank'] : ( $i + 1 );
 			$name   = esc_html( $g['name'] ?? '' );
-			$gp     = esc_html( $g['games_played'] ?? 0 );
-			$wins   = esc_html( $g['wins'] ?? 0 );
-			$losses = esc_html( $g['losses'] ?? 0 );
-
-			$src = ! empty( $g['headshot_link'] ) ? esc_url( $g['headshot_link'] ) : $fallback;
-			$img = '<img src="' . $src . '" loading="lazy" decoding="async"'
+			$slug   = sanitize_title( $name );
+			$src    = ! empty( $g['headshot_link'] ) ? esc_url( $g['headshot_link'] ) : $fallback;
+			$img    = '<img src="' . $src . '" loading="lazy" decoding="async"'
 				. ' width="32" height="32"'
 				. ' onerror="this.onerror=null;this.src=\'' . $fallback . '\';"'
 				. ' alt="' . esc_attr( $name . ' headshot' ) . '"'
 				. ' class="pp-stats-headshot" />';
 
-			$slug  = sanitize_title( $name );
-			$html .= '<tr'
-				. ' data-source="' . esc_attr( $g['source'] ?? '' ) . '"'
-				. ' data-roster-id="' . esc_attr( $g['roster_id'] ?? '' ) . '"'
-				. ' data-team-name="' . esc_attr( $g['team_name'] ?? '' ) . '"'
-				. ' data-team-group="' . esc_attr( $g['group_name'] ?? '' ) . '"'
-				. ' data-team-id="' . esc_attr( $g['team_id'] ?? '' ) . '"'
-				. '>';
-			$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
-			$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
-			if ( ! empty( $col['show_team'] ) ) {
-				$html .= '<td class="pp-stats-team">' . esc_html( $g['team_name'] ?? '' ) . '</td>';
-			}
-			$html .= '<td>' . $gp . '</td>';
-			$html .= '<td>' . $wins . '</td>';
-			$html .= '<td>' . $losses . '</td>';
+			$html .= $this->buildGoalieRow( $g, $rank, $img, $name, $slug, '__all__', $col, false );
 
-			if ( ! empty( $col['show_goalie_otl'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['overtime_losses'] ?? 0 ) . '</td>';
+			$pkey = ( (string) ( $g['player_id'] ?? '' ) ) . '_' . ( (string) ( $g['roster_id'] ?? '' ) );
+			if ( ! empty( $raw_by_player[ $pkey ] ) ) {
+				foreach ( $raw_by_player[ $pkey ] as $rg ) {
+					$rg_rank = ! empty( $rg['stat_rank'] ) ? (int) $rg['stat_rank'] : ( $i + 1 );
+					$rg_name = esc_html( $rg['name'] ?? '' );
+					$rg_slug = sanitize_title( $rg_name );
+					$rg_src  = ! empty( $rg['headshot_link'] ) ? esc_url( $rg['headshot_link'] ) : $fallback;
+					$rg_img  = '<img src="' . $rg_src . '" loading="lazy" decoding="async"'
+						. ' width="32" height="32"'
+						. ' onerror="this.onerror=null;this.src=\'' . $fallback . '\';"'
+						. ' alt="' . esc_attr( $rg_name . ' headshot' ) . '"'
+						. ' class="pp-stats-headshot" />';
+					$html .= $this->buildGoalieRow( $rg, $rg_rank, $rg_img, $rg_name, $rg_slug, $rg['source'] ?? '', $col, true );
+				}
 			}
-			if ( ! empty( $col['show_goalie_gaa'] ) ) {
-				$gaa   = isset( $g['goals_against_average'] ) ? number_format( (float) $g['goals_against_average'], 2 ) : '0.00';
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $gaa ) . '</td>';
-			}
-			if ( ! empty( $col['show_goalie_svpct'] ) ) {
-				$svp   = isset( $g['save_percentage'] ) ? number_format( (float) $g['save_percentage'], 3 ) : '.000';
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $svp ) . '</td>';
-			}
-			if ( ! empty( $col['show_goalie_sa'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['shots_against'] ?? 0 ) . '</td>';
-			}
-			if ( ! empty( $col['show_goalie_saves'] ) ) {
-				$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['saves'] ?? 0 ) . '</td>';
-			}
-
-			$html .= '</tr>';
 		}
 
 		$html .= '</tbody></table></div></section>';
+		return $html;
+	}
+
+	private function buildGoalieRow( array $g, int $rank, string $img, string $name, string $slug, string $source, array $col, bool $hidden ): string {
+		$style = $hidden ? ' style="display:none;"' : '';
+		$html  = '<tr'
+			. ' data-source="' . esc_attr( $source ) . '"'
+			. ' data-roster-id="' . esc_attr( $g['roster_id'] ?? '' ) . '"'
+			. ' data-team-name="' . esc_attr( $g['team_name'] ?? '' ) . '"'
+			. ' data-team-group="' . esc_attr( $g['group_name'] ?? '' ) . '"'
+			. ' data-team-id="' . esc_attr( $g['team_id'] ?? '' ) . '"'
+			. $style
+			. '>';
+		$html .= '<td class="pp-stats-rank-cell">' . $rank . '</td>';
+		$html .= '<td><div class="pp-stats-player-cell">' . $img . '<a class="pp-stats-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' . $name . '</a></div></td>';
+		if ( ! empty( $col['show_team'] ) ) {
+			$html .= '<td class="pp-stats-team">' . esc_html( $g['team_name'] ?? '' ) . '</td>';
+		}
+		$html .= '<td>' . esc_html( $g['games_played'] ?? 0 ) . '</td>';
+		$html .= '<td>' . esc_html( $g['wins'] ?? 0 ) . '</td>';
+		$html .= '<td>' . esc_html( $g['losses'] ?? 0 ) . '</td>';
+
+		if ( ! empty( $col['show_goalie_otl'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['overtime_losses'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_goalie_gaa'] ) ) {
+			$gaa   = isset( $g['goals_against_average'] ) ? number_format( (float) $g['goals_against_average'], 2 ) : '0.00';
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $gaa ) . '</td>';
+		}
+		if ( ! empty( $col['show_goalie_svpct'] ) ) {
+			$svp   = isset( $g['save_percentage'] ) ? number_format( (float) $g['save_percentage'], 3 ) : '.000';
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $svp ) . '</td>';
+		}
+		if ( ! empty( $col['show_goalie_sa'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['shots_against'] ?? 0 ) . '</td>';
+		}
+		if ( ! empty( $col['show_goalie_saves'] ) ) {
+			$html .= '<td class="pp-stats-col-opt">' . esc_html( $g['saves'] ?? 0 ) . '</td>';
+		}
+
+		$html .= '</tr>';
 		return $html;
 	}
 }

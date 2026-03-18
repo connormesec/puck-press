@@ -83,16 +83,18 @@
             if (hasFont) generateFontFields(key);
             if (cfg.calUrlFieldId) $(cfg.calUrlFieldId).val(cfg.templatesData.cal_url || '');
             updateCalUrlVisibility(key);
+            if (cfg.onOpen) cfg.onOpen();
         });
 
         // ── Close / cancel / click-outside ───────────────────────────────────
 
-        const closeModal = () => {
+        const closeModal = (fromSave = false) => {
             $modal.css('display', 'none');
             $form[0].reset();
             populateColorInputsFromTemplates();
             resetTemplateRendering();
             $(cfg.templateSelectorId).val(cfg.templatesData.selected_template);
+            if (!fromSave && cfg.onClose) cfg.onClose();
         };
 
         $(cfg.closeBtnId).on('click', closeModal);
@@ -127,6 +129,7 @@
                         cfg.templatesData.selected_template = key;
                         generateColorFields(key);
                         if (hasFont) generateFontFields(key);
+                        if (cfg.onSaveSuccess) cfg.onSaveSuccess(response, () => closeModal(true));
                     } else {
                         console.log(response.data);
                     }

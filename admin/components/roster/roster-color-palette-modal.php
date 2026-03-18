@@ -15,7 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$templates         = new Puck_Press_Roster_Template_Manager();
+$active_roster_id  = (int) get_option( 'pp_admin_active_new_roster_id', 1 );
+$templates         = new Puck_Press_Roster_Template_Manager( $active_roster_id );
 $rosterTemplates   = $templates->get_registered_templates_metadata();
 $selected_template = $templates->get_current_template_key();
 ?>

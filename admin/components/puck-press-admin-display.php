@@ -8,7 +8,12 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 	<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 	<!-- Here are our tabs -->
 	<nav class="nav-tab-wrapper">
-		<a href="?page=puck-press" class="nav-tab 
+		<a href="?page=puck-press&tab=teams" class="nav-tab
+		<?php
+		if ( $tab === 'teams' ) :
+			?>
+			nav-tab-active<?php endif; ?>">Teams</a>
+		<a href="?page=puck-press" class="nav-tab
 		<?php
 		if ( $tab === null ) :
 			?>
@@ -53,6 +58,11 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 	<div class="tab-content">
 		<?php
 		switch ( $tab ) :
+			case 'teams':
+				include plugin_dir_path( __DIR__ ) . 'components/teams/teams-admin-display.php';
+				$teams_admin_display = new Puck_Press_Teams_Admin_Display();
+				echo $teams_admin_display->render();
+				break;
 			case 'roster':
 				include plugin_dir_path( __DIR__ ) . 'components/roster/roster-admin-display.php';
 				$roster_admin_display = new Puck_Press_Roster_Admin_Display();

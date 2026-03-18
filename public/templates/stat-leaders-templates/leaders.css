@@ -1,0 +1,132 @@
+/* =============================================================
+   Standard Stat Leaders Template
+   CSS variables injected into .pp-stat-leaders-container by render_with_options():
+     --pp-leaders-widget_bg, --pp-leaders-header_text,
+     --pp-leaders-more_link_color, --pp-leaders-label_bg,
+     --pp-leaders-label_text, --pp-leaders-card_bg_default,
+     --pp-leaders-card_text, --pp-leaders-card_subtext, --pp-leaders-card_stat
+   All rules are scoped under .pp-stat-leaders-container.
+   ============================================================= */
+
+.pp-stat-leaders-container {
+  background: var(--pp-leaders-widget_bg, #ffffff);
+  font-family: var(--pp-leaders-leaders_font, inherit);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.pp-stat-leaders-container * {
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+}
+
+.pp-stat-leaders-container .pp-leaders-title {
+  color: var(--pp-leaders-header_text, #1a1a2e);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pp-stat-leaders-container .pp-leaders-more-link {
+  color: var(--pp-leaders-header_text, #1a1a2e);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.pp-stat-leaders-container .pp-leaders-more-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Row (label + card) ──────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-row {
+  margin-bottom: 16px;
+}
+
+/* ── Label ───────────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-label {
+  background: var(--pp-leaders-label_bg, #f5f5f5);
+  color: var(--pp-leaders-label_text, #5f6368);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 5px 16px;
+  border-radius: 10px 10px 0 0;
+  border: 1px solid #e0e0e0;
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 0 0 10px 10px;
+  gap: 8px;
+}
+
+.pp-stat-leaders-container .pp-leaders-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* ── Player name ─────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-player-name {
+  color: var(--pp-leaders-card_text, #ffffff);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ── Player name when team is hidden (only child) ───── */
+.pp-stat-leaders-container .pp-leaders-card-left .pp-leaders-player-name:only-child {
+  font-size: 1.9rem;
+}
+
+/* ── Team name ───────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-team-name {
+  color: var(--pp-leaders-card_subtext, #e8d0d5);
+  font-size: 0.9rem;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ── Stat value ──────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-stat-value {
+  color: var(--pp-leaders-card_stat, #ffffff);
+  font-size: 1.9rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.pp-stat-leaders-container .pp-leaders-empty {
+  color: var(--pp-leaders-label_text, #5f6368);
+  font-size: 0.875rem;
+  padding: 20px 16px;
+  text-align: center;
+}

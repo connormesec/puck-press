@@ -109,10 +109,10 @@ class Puck_Press_Schedule_Process_Csv_Data {
 		$date_day  = date( 'Y-m-d', $timestamp );         // date-only, passed to format_game_date_day
 
 		return array(
-			// CSV has no league-provided game ID, so we generate a stable one from the timestamp.
-			// This means if the same game appears in two CSV imports it gets the same ID,
-			// which prevents duplicate rows (the UNIQUE KEY on game_id in the raw table handles this).
-			'game_id'                => "csv_game_{$timestamp}",
+			// CSV has no league-provided game ID, so we generate a stable one from the source
+			// name and timestamp. Including source_name prevents cross-team collisions when
+			// two teams' CSV sources have games at the same timestamp.
+			'game_id'                => "csv_game_{$this->source_name}_{$timestamp}",
 
 			// CSV sources don't have league-assigned team IDs. Use 0 as a required placeholder;
 			// the DB column is NOT NULL so null would cause an insert error.
@@ -131,13 +131,13 @@ class Puck_Press_Schedule_Process_Csv_Data {
 			'opponent_score'         => $data['opponent_score'] !== '' ? $data['opponent_score'] : null,
 
 			// Run through the shared status normalizer so "Final OT" → "FINAL OT", etc.
-			'game_status'            => Puck_Press_Schedule_Source_Importer::format_game_status(
+			'game_status'            => Puck_Press_Team_Source_Importer::format_game_status(
 				$data['game_status'] ?? '',
 				$data['game_time']
 			),
 
 			// game_date_day must match the "Fri, Sep 13" format expected by the templates.
-			'game_date_day'          => Puck_Press_Schedule_Source_Importer::format_game_date_day( $date_day ),
+			'game_date_day'          => Puck_Press_Team_Source_Importer::format_game_date_day( $date_day ),
 			'game_time'              => $data['game_time'] ?: null,
 			'game_timestamp'         => $date_time,
 

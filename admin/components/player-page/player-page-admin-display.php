@@ -7,7 +7,7 @@ class Puck_Press_Player_Page_Admin_Display {
 	public function render(): string {
 		global $wpdb;
 		$players = $wpdb->get_results(
-			"SELECT name FROM {$wpdb->prefix}pp_roster_for_display ORDER BY name ASC",
+			"SELECT name FROM {$wpdb->prefix}pp_team_players_display ORDER BY name ASC",
 			ARRAY_A
 		);
 
