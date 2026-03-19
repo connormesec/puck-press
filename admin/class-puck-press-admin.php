@@ -973,6 +973,46 @@ class Puck_Press_Admin {
 		);
 	}
 
+	public static function pp_ajax_switch_active_team(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		if ( ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'Invalid team ID.' ) );
+		}
+		update_option( 'pp_admin_active_team_id', $team_id );
+
+		$data_sources_card  = new Puck_Press_Teams_Admin_Data_Sources_Card(
+			array(
+				'title'    => 'Data Sources',
+				'subtitle' => 'Manage external data sources for games',
+				'id'       => 'data-sources-table',
+			),
+			$team_id
+		);
+		$games_card         = new Puck_Press_Teams_Admin_Games_Table_Card(
+			array(
+				'title'    => 'Games',
+				'subtitle' => '0 games scheduled',
+				'id'       => 'team-game-list',
+			),
+			$team_id
+		);
+		$roster_sources_card = new Puck_Press_Teams_Admin_Roster_Sources_Card( $team_id );
+		$players_card        = new Puck_Press_Teams_Admin_Players_Table_Card( $team_id );
+
+		wp_send_json_success(
+			array(
+				'team_id'              => $team_id,
+				'data_sources_html'    => $data_sources_card->render(),
+				'games_html'           => $games_card->render(),
+				'roster_sources_html'  => $roster_sources_card->render(),
+				'players_html'         => $players_card->render(),
+			)
+		);
+	}
+
 	public static function pp_ajax_add_team_source(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
@@ -1054,6 +1094,7 @@ class Puck_Press_Admin {
 		}
 
 		$source_id = (int) ( $_POST['source_id'] ?? 0 );
+		$team_id   = (int) ( $_POST['team_id'] ?? 0 );
 		$status    = sanitize_text_field( $_POST['status'] ?? '' );
 
 		if ( ! $source_id || ! in_array( $status, array( 'active', 'inactive' ), true ) ) {
@@ -1063,11 +1104,28 @@ class Puck_Press_Admin {
 		$utils   = new Puck_Press_Teams_Wpdb_Utils();
 		$updated = $utils->update_team_source( $source_id, array( 'status' => $status ) );
 
-		if ( $updated ) {
-			wp_send_json_success( array( 'message' => 'Status updated.' ) );
-		} else {
+		if ( false === $updated ) {
 			wp_send_json_error( array( 'message' => 'Failed to update status.' ) );
 		}
+
+		if ( $team_id ) {
+			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedules-wpdb-utils.php';
+			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
+			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+
+			$importer = new Puck_Press_Team_Source_Importer( $team_id );
+			$importer->rebuild_team_and_cascade();
+
+			$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+			wp_send_json_success(
+				array(
+					'message'    => 'Status updated.',
+					'games_html' => $games_card->render_team_games_admin_preview(),
+				)
+			);
+		}
+
+		wp_send_json_success( array( 'message' => 'Status updated.' ) );
 	}
 
 	public static function pp_ajax_delete_team_source(): void {
@@ -1270,34 +1328,37 @@ class Puck_Press_Admin {
 		wp_send_json_success( array( 'message' => 'Team removed from schedule.' ) );
 	}
 
-	public static function pp_ajax_archive_team_season(): void {
+	public static function pp_ajax_archive_all_teams_season(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
 		}
 
-		$team_id    = (int) ( $_POST['team_id'] ?? 0 );
 		$season_key = sanitize_text_field( $_POST['season_key'] ?? '' );
 		$label      = sanitize_text_field( $_POST['label'] ?? $season_key );
+		$wipe       = ! empty( $_POST['wipe'] );
 
-		if ( ! $team_id || empty( $season_key ) ) {
-			wp_send_json_error( array( 'message' => 'team_id and season_key are required.' ) );
+		if ( empty( $season_key ) ) {
+			wp_send_json_error( array( 'message' => 'season_key is required.' ) );
 		}
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
 		$archive_manager = new Puck_Press_Archive_Manager();
 
-		error_log( "[PP Archive AJAX] pp_archive_team_season: team_id=$team_id season_key=$season_key label=$label" );
+		$result = $archive_manager->archive_all_teams_season( $season_key, $label );
 
-		$result = $archive_manager->archive_team_season( $team_id, $season_key, $label );
-
-		error_log( '[PP Archive AJAX] result: ' . wp_json_encode( $result ) );
-
-		if ( $result['success'] ) {
-			$result['archives_html'] = self::build_team_archives_html( $team_id );
-			wp_send_json_success( $result );
-		} else {
+		if ( ! $result['success'] ) {
 			wp_send_json_error( $result );
 		}
+
+		if ( $wipe ) {
+			$archive_manager->clear_all_teams_season_data();
+			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
+			( new Puck_Press_Schedule_Materializer() )->materialize_all_schedules();
+			$result['reload'] = true;
+		}
+
+		$result['archives_html'] = self::build_all_archives_html();
+		wp_send_json_success( $result );
 	}
 
 	public static function pp_ajax_delete_team_archive(): void {
@@ -1306,7 +1367,6 @@ class Puck_Press_Admin {
 		}
 
 		$season_key = sanitize_text_field( wp_unslash( $_POST['season_key'] ?? '' ) );
-		$team_id    = (int) ( $_POST['team_id'] ?? 0 );
 
 		if ( ! $season_key ) {
 			wp_send_json_error( array( 'message' => 'season_key is required.' ) );
@@ -1315,12 +1375,12 @@ class Puck_Press_Admin {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
 		( new Puck_Press_Archive_Manager() )->delete_archive( $season_key );
 
-		wp_send_json_success( array( 'archives_html' => self::build_team_archives_html( $team_id ) ) );
+		wp_send_json_success( array( 'archives_html' => self::build_all_archives_html() ) );
 	}
 
-	private static function build_team_archives_html( int $team_id ): string {
+	private static function build_all_archives_html(): string {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
-		$archives = ( new Puck_Press_Archive_Manager() )->get_team_archives( $team_id );
+		$archives = ( new Puck_Press_Archive_Manager() )->get_all_archives();
 
 		ob_start();
 		?>
@@ -1363,35 +1423,362 @@ class Puck_Press_Admin {
 		return ob_get_clean();
 	}
 
-	public static function pp_ajax_clear_team_season_stats(): void {
+	public static function pp_ajax_wipe_all_teams_season_data(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
 		}
 
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		( new Puck_Press_Archive_Manager() )->clear_all_teams_season_data();
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
+		( new Puck_Press_Schedule_Materializer() )->materialize_all_schedules();
+
+		wp_send_json_success( array( 'message' => 'Live season data wiped.', 'reload' => true ) );
+	}
+
+	public static function pp_ajax_get_game_data(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		global $wpdb;
+		$game_id = sanitize_text_field( $_POST['game_id'] ?? '' );
 		$team_id = (int) ( $_POST['team_id'] ?? 0 );
 
-		if ( ! $team_id ) {
-			wp_send_json_error( array( 'message' => 'team_id is required.' ) );
+		if ( ! $game_id || ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'game_id and team_id are required.' ) );
 		}
 
-		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
-		$archive_manager = new Puck_Press_Archive_Manager();
-		$archive_manager->clear_team_season_stats( $team_id );
-
-		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
-		$teams_utils->delete_team( $team_id );
-		if ( (int) get_option( 'pp_admin_active_team_id', 0 ) === $team_id ) {
-			$remaining = $teams_utils->get_all_teams();
-			update_option( 'pp_admin_active_team_id', ! empty( $remaining ) ? (int) $remaining[0]['id'] : 0 );
-		}
-
-		wp_send_json_success(
-			array(
-				'message'      => 'Season archived and team deleted.',
-				'team_deleted' => true,
-			)
+		$game = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}pp_team_games_display WHERE game_id = %s AND team_id = %d",
+				$game_id,
+				$team_id
+			),
+			ARRAY_A
 		);
+
+		if ( ! $game ) {
+			wp_send_json_error( array( 'message' => 'Game not found.' ) );
+		}
+
+		$game['game_timestamp'] = ! empty( $game['game_timestamp'] ) ? strtotime( $game['game_timestamp'] ) : null;
+
+		// Normalize game_status to match select option values (e.g. 'FINAL OT' → 'final-ot').
+		if ( ! empty( $game['game_status'] ) ) {
+			$game['game_status'] = strtolower( str_replace( ' ', '-', $game['game_status'] ) );
+		}
+
+		wp_send_json_success( array( 'game' => $game ) );
+	}
+
+	public static function pp_ajax_save_game_edit(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		global $wpdb;
+		$game_id   = sanitize_text_field( $_POST['game_id'] ?? '' );
+		$team_id   = (int) ( $_POST['team_id'] ?? 0 );
+		$is_manual = strpos( $game_id, 'manual_' ) === 0;
+
+		if ( ! $game_id || ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'game_id and team_id are required.' ) );
+		}
+
+		$mods_table = $wpdb->prefix . 'pp_team_game_mods';
+		// game_date submitted as YYYY-MM-DD (from <input type="date">).
+		// game_time submitted as HH:MM (from <input type="time">).
+		$submitted_date = sanitize_text_field( $_POST['game_date'] ?? '' );
+		$submitted_time = sanitize_text_field( $_POST['game_time'] ?? '' ); // HH:MM or ''
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+
+		if ( $is_manual ) {
+			// Manual games: no update mod — just merge into the insert mod so nothing is highlighted.
+			$manual_data = array();
+			if ( $submitted_date ) {
+				require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+				$manual_data['game_date_day']  = Puck_Press_Team_Source_Importer::format_game_date_day( $submitted_date );
+				$time_for_ts                   = $submitted_time ?: '00:00';
+				$manual_data['game_timestamp'] = wp_date( 'Y-m-d', strtotime( $submitted_date ) ) . ' ' . $time_for_ts . ':00';
+			}
+			if ( $submitted_time !== '' ) {
+				$manual_data['game_time'] = date( 'g:i A', strtotime( $submitted_time ) );
+				if ( ! isset( $manual_data['game_timestamp'] ) ) {
+					$base = substr( $manual_data['game_timestamp'] ?? current_time( 'mysql' ), 0, 10 );
+					$manual_data['game_timestamp'] = $base . ' ' . $submitted_time . ':00';
+				}
+			}
+			$home_or_away = sanitize_text_field( $_POST['home_or_away'] ?? '' );
+			if ( $home_or_away ) {
+				$manual_data['home_or_away'] = $home_or_away;
+			}
+			$game_status = sanitize_text_field( $_POST['game_status'] ?? '' );
+			if ( $game_status !== '' ) {
+				$manual_data['game_status'] = $game_status === 'none' ? null : $game_status;
+			}
+			foreach ( array( 'target_score', 'opponent_score' ) as $score_field ) {
+				$val = $_POST[ $score_field ] ?? '';
+				if ( $val !== '' ) {
+					$manual_data[ $score_field ] = (int) $val;
+				}
+			}
+			foreach ( array( 'venue', 'promo_header', 'promo_text', 'promo_img_url', 'promo_ticket_link', 'post_link' ) as $text_field ) {
+				if ( isset( $_POST[ $text_field ] ) ) {
+					$manual_data[ $text_field ] = sanitize_text_field( $_POST[ $text_field ] );
+				}
+			}
+			$insert_mod = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM $mods_table WHERE team_id = %d AND external_id = %s AND edit_action = 'insert' LIMIT 1",
+					$team_id,
+					$game_id
+				),
+				ARRAY_A
+			);
+			if ( $insert_mod ) {
+				$mod_data = json_decode( $insert_mod['edit_data'], true ) ?: array();
+				$mod_data = array_merge( $mod_data, $manual_data );
+				$wpdb->update(
+					$mods_table,
+					array(
+						'edit_data'  => wp_json_encode( $mod_data ),
+						'updated_at' => current_time( 'mysql' ),
+					),
+					array( 'id' => $insert_mod['id'] ),
+					array( '%s', '%s' ),
+					array( '%d' )
+				);
+			}
+		} else {
+			// Sourced games: compare against the raw source row. Only fields that truly
+			// differ from the source go into edit_data — those are the real overrides.
+			$raw_game = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT * FROM {$wpdb->prefix}pp_team_games_raw WHERE game_id = %s AND team_id = %d LIMIT 1",
+					$game_id,
+					$team_id
+				),
+				ARRAY_A
+			) ?: array();
+
+			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+
+			$edit_data = array();
+
+			// --- Date: compare via game_timestamp date portions (format-agnostic). ---
+			// game_date_day in raw is a display string like "Fri, Sep 13" and cannot be
+			// compared directly against the YYYY-MM-DD value from <input type="date">.
+			if ( $submitted_date ) {
+				$new_date_part = wp_date( 'Y-m-d', strtotime( $submitted_date ) );
+				$raw_date_part = substr( (string) ( $raw_game['game_timestamp'] ?? '' ), 0, 10 );
+				if ( $new_date_part !== $raw_date_part ) {
+					$time_for_ts                  = $submitted_time ?: substr( (string) ( $raw_game['game_timestamp'] ?? '1970-01-01 00:00:00' ), 11, 5 );
+					$edit_data['game_date_day']   = Puck_Press_Team_Source_Importer::format_game_date_day( $submitted_date );
+					$edit_data['game_timestamp']  = $new_date_part . ' ' . $time_for_ts . ':00';
+				}
+			}
+
+			// --- Time: submitted as HH:MM; raw stored as "7:30 PM" or "7:30pm". ---
+			// Convert submitted to the stored AM/PM format before comparing.
+			if ( $submitted_time !== '' ) {
+				$new_time_fmt = date( 'g:i A', strtotime( $submitted_time ) ); // e.g. "7:30 PM"
+				$raw_time_str = (string) ( $raw_game['game_time'] ?? '' );
+				if ( strtoupper( $new_time_fmt ) !== strtoupper( $raw_time_str ) ) {
+					$edit_data['game_time'] = $new_time_fmt;
+					// Keep game_timestamp time portion in sync.
+					if ( ! isset( $edit_data['game_timestamp'] ) ) {
+						$base = substr( (string) ( $raw_game['game_timestamp'] ?? current_time( 'mysql' ) ), 0, 10 );
+						$edit_data['game_timestamp'] = $base . ' ' . $submitted_time . ':00';
+					} else {
+						$edit_data['game_timestamp'] = substr( $edit_data['game_timestamp'], 0, 11 ) . $submitted_time . ':00';
+					}
+				}
+			}
+
+			// --- home_or_away ---
+			$home_or_away = sanitize_text_field( $_POST['home_or_away'] ?? '' );
+			if ( $home_or_away && $home_or_away !== ( $raw_game['home_or_away'] ?? '' ) ) {
+				$edit_data['home_or_away'] = $home_or_away;
+			}
+
+			// --- game_status ---
+			// Select values are 'final'/'final-ot'/'final-so'; DB stores 'FINAL'/'FINAL OT'/'FINAL SO'.
+			$game_status = sanitize_text_field( $_POST['game_status'] ?? '' );
+			if ( $game_status !== '' ) {
+				$status_map        = array( 'final' => 'FINAL', 'final-ot' => 'FINAL OT', 'final-so' => 'FINAL SO', 'none' => null );
+				$normalized_status = $status_map[ $game_status ] ?? null;
+				if ( (string) $normalized_status !== (string) ( $raw_game['game_status'] ?? '' ) ) {
+					$edit_data['game_status'] = $normalized_status;
+				}
+			}
+
+			// --- Scores ---
+			foreach ( array( 'target_score', 'opponent_score' ) as $score_field ) {
+				$val = $_POST[ $score_field ] ?? '';
+				if ( $val !== '' && (string) (int) $val !== (string) ( $raw_game[ $score_field ] ?? '' ) ) {
+					$edit_data[ $score_field ] = (int) $val;
+				}
+			}
+
+			// --- Text fields ---
+			foreach ( array( 'venue', 'promo_header', 'promo_text', 'promo_img_url', 'promo_ticket_link', 'post_link' ) as $text_field ) {
+				if ( isset( $_POST[ $text_field ] ) ) {
+					$val = sanitize_text_field( $_POST[ $text_field ] );
+					if ( $val !== (string) ( $raw_game[ $text_field ] ?? '' ) ) {
+						$edit_data[ $text_field ] = $val;
+					}
+				}
+			}
+
+			// Remove existing update mod, then re-insert if there are real changes.
+			$wpdb->delete(
+				$mods_table,
+				array( 'team_id' => $team_id, 'external_id' => $game_id, 'edit_action' => 'update' ),
+				array( '%d', '%s', '%s' )
+			);
+
+			if ( ! empty( $edit_data ) ) {
+				$teams_utils->upsert_team_game_mod( $team_id, $game_id, 'update', $edit_data );
+			}
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		$importer = new Puck_Press_Team_Source_Importer( $team_id );
+		$importer->rebuild_display_from_mods();
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
+		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+
+		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
+	}
+
+	public static function pp_ajax_delete_game(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		global $wpdb;
+		$game_id = sanitize_text_field( $_POST['game_id'] ?? '' );
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+
+		if ( ! $game_id || ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'game_id and team_id are required.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+
+		if ( strpos( $game_id, 'manual_' ) === 0 ) {
+			// Manual game: remove insert mod and any update mods.
+			$wpdb->delete(
+				$wpdb->prefix . 'pp_team_game_mods',
+				array( 'team_id' => $team_id, 'external_id' => $game_id ),
+				array( '%d', '%s' )
+			);
+		} else {
+			// Sourced game: add a delete mod.
+			$teams_utils->upsert_team_game_mod( $team_id, $game_id, 'delete', array() );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		$importer = new Puck_Press_Team_Source_Importer( $team_id );
+		$importer->rebuild_display_from_mods();
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
+		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+
+		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
+	}
+
+	public static function pp_ajax_restore_game(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$delete_mod_id = (int) ( $_POST['delete_mod_id'] ?? 0 );
+		$team_id       = (int) ( $_POST['team_id'] ?? 0 );
+
+		if ( ! $delete_mod_id || ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'delete_mod_id and team_id are required.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+		$teams_utils->delete_team_game_mod( $delete_mod_id );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		$importer = new Puck_Press_Team_Source_Importer( $team_id );
+		$importer->rebuild_display_from_mods();
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
+		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+
+		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
+	}
+
+	public static function pp_ajax_revert_game_field(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		global $wpdb;
+		$mod_id  = (int) ( $_POST['mod_id'] ?? 0 );
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		$fields  = array_map( 'sanitize_key', (array) ( $_POST['fields'] ?? array() ) );
+
+		if ( ! $mod_id || ! $team_id || empty( $fields ) ) {
+			wp_send_json_error( array( 'message' => 'mod_id, team_id, and fields are required.' ) );
+		}
+
+		$mods_table = $wpdb->prefix . 'pp_team_game_mods';
+		$mod        = $wpdb->get_row(
+			$wpdb->prepare( "SELECT * FROM $mods_table WHERE id = %d AND team_id = %d AND edit_action = 'update'", $mod_id, $team_id ),
+			ARRAY_A
+		);
+
+		if ( ! $mod ) {
+			wp_send_json_error( array( 'message' => 'Mod not found.' ) );
+		}
+
+		$edit_data = json_decode( $mod['edit_data'], true ) ?: array();
+
+		foreach ( $fields as $field ) {
+			// 'game_date' is the virtual td field — the actual stored keys are game_date_day + game_timestamp.
+			if ( 'game_date' === $field ) {
+				unset( $edit_data['game_date_day'], $edit_data['game_timestamp'] );
+			} else {
+				unset( $edit_data[ $field ] );
+			}
+		}
+
+		// If nothing meaningful remains, delete the entire mod.
+		if ( empty( array_diff( array_keys( $edit_data ), array( 'external_id' ) ) ) ) {
+			$wpdb->delete( $mods_table, array( 'id' => $mod_id ), array( '%d' ) );
+		} else {
+			$wpdb->update(
+				$mods_table,
+				array(
+					'edit_data'  => wp_json_encode( $edit_data ),
+					'updated_at' => current_time( 'mysql' ),
+				),
+				array( 'id' => $mod_id ),
+				array( '%s', '%s' ),
+				array( '%d' )
+			);
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		$importer = new Puck_Press_Team_Source_Importer( $team_id );
+		$importer->rebuild_display_from_mods();
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
+		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+
+		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
 	}
 
 	public static function pp_ajax_wipe_and_recreate_db(): void {
@@ -1916,8 +2303,11 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_create_game_summary', array( $game_summary_post_display, 'pp_create_game_summary' ) );
 
 		$insta_post_display = new Puck_Press_Admin_Instagram_Post_Importer_Display();
-		add_action( 'wp_ajax_pp_get_example_posts', array( $insta_post_display, 'ajax_get_example_posts' ) );
-		add_action( 'wp_ajax_pp_get_example_posts_and_create', array( $insta_post_display, 'ajax_get_example_posts_and_create' ) );
+		add_action( 'wp_ajax_pp_save_team_handle', array( $insta_post_display, 'ajax_save_team_handle' ) );
+		add_action( 'wp_ajax_pp_get_team_example_posts', array( $insta_post_display, 'ajax_get_team_example_posts' ) );
+		add_action( 'wp_ajax_pp_create_team_insta_post', array( $insta_post_display, 'ajax_create_team_insta_post' ) );
+		add_action( 'wp_ajax_nopriv_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
+		add_action( 'wp_ajax_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
 
 		// Register the AJAX action for refreshing all sources
 		add_action( 'wp_ajax_pp_refresh_schedule_sources', array( $this, 'pp_ajax_refresh_schedule_sources' ) );
@@ -1927,6 +2317,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_create_team', array( self::class, 'pp_ajax_create_team' ) );
 		add_action( 'wp_ajax_pp_delete_team', array( self::class, 'pp_ajax_delete_team' ) );
 		add_action( 'wp_ajax_pp_set_active_team_id', array( self::class, 'pp_ajax_set_active_team_id' ) );
+		add_action( 'wp_ajax_pp_switch_active_team', array( self::class, 'pp_ajax_switch_active_team' ) );
 		add_action( 'wp_ajax_pp_add_team_source', array( self::class, 'pp_ajax_add_team_source' ) );
 		add_action( 'wp_ajax_pp_update_team_source_status', array( self::class, 'pp_ajax_update_team_source_status' ) );
 		add_action( 'wp_ajax_pp_delete_team_source', array( self::class, 'pp_ajax_delete_team_source' ) );
@@ -1941,9 +2332,16 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_get_schedule_preview', array( self::class, 'pp_ajax_get_schedule_preview' ) );
 
 		// Archive
-		add_action( 'wp_ajax_pp_archive_team_season', array( self::class, 'pp_ajax_archive_team_season' ) );
-		add_action( 'wp_ajax_pp_clear_team_season_stats', array( self::class, 'pp_ajax_clear_team_season_stats' ) );
+		add_action( 'wp_ajax_pp_archive_all_teams_season', array( self::class, 'pp_ajax_archive_all_teams_season' ) );
+		add_action( 'wp_ajax_pp_wipe_all_teams_season_data', array( self::class, 'pp_ajax_wipe_all_teams_season_data' ) );
 		add_action( 'wp_ajax_pp_delete_team_archive', array( self::class, 'pp_ajax_delete_team_archive' ) );
+
+		// Game edits
+		add_action( 'wp_ajax_pp_get_game_data', array( self::class, 'pp_ajax_get_game_data' ) );
+		add_action( 'wp_ajax_pp_save_game_edit', array( self::class, 'pp_ajax_save_game_edit' ) );
+		add_action( 'wp_ajax_pp_delete_game', array( self::class, 'pp_ajax_delete_game' ) );
+		add_action( 'wp_ajax_pp_restore_game', array( self::class, 'pp_ajax_restore_game' ) );
+		add_action( 'wp_ajax_pp_revert_game_field', array( self::class, 'pp_ajax_revert_game_field' ) );
 
 		// Roster (team-based) CRUD
 		add_action( 'wp_ajax_pp_ajax_refresh_roster_sources', array( self::class, 'pp_ajax_refresh_roster_sources' ) );

@@ -112,7 +112,12 @@ class Puck_Press_Teams_Admin_Games_Table_Card extends Puck_Press_Admin_Card_Abst
 					if ( ! $is_deleted && ! empty( $game['override_data'] ) ) {
 						$decoded = json_decode( $game['override_data'], true );
 						if ( is_array( $decoded ) ) {
-							$override_keys = array_values( array_diff( array_keys( $decoded ), $skip_keys ) );
+							$keys = array_diff( array_keys( $decoded ), $skip_keys );
+							// Translate game_date_day → game_date to match the td data-field.
+							if ( isset( $decoded['game_date_day'] ) ) {
+								$keys[] = 'game_date';
+							}
+							$override_keys = array_values( $keys );
 						}
 					}
 					$mod_id               = $game['mod_id'] ?? '';
@@ -190,8 +195,8 @@ class Puck_Press_Teams_Admin_Games_Table_Card extends Puck_Press_Admin_Card_Abst
 						</td>
 						<td class="pp-td pp-td-compact">
 							<div class="pp-flex-small-gap">
-								<button class="pp-button-icon" id="pp-edit-game-button" data-game-id="<?php echo esc_attr( $game['game_id'] ); ?>">✏️</button>
-								<button class="pp-button-icon" id="pp-delete-game-button" data-game-id="<?php echo esc_attr( $game['game_id'] ); ?>">🗑️</button>
+								<button class="pp-button-icon pp-edit-game-btn" data-game-id="<?php echo esc_attr( $game['game_id'] ); ?>">✏️</button>
+								<button class="pp-button-icon pp-delete-game-btn" data-game-id="<?php echo esc_attr( $game['game_id'] ); ?>">🗑️</button>
 							</div>
 						</td>
 					</tr>

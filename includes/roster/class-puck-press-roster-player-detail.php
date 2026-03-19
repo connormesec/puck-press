@@ -25,6 +25,39 @@ class Puck_Press_Roster_Player_Detail {
 	);
 
 	/**
+	 * Find a player row by URL slug (sanitize_title of their name).
+	 *
+	 * Caches the result statically so multiple callers within the same request
+	 * (e.g. filter_player_page_title and player-page.php) only hit the DB once.
+	 *
+	 * @param string $slug The URL slug to match against sanitize_title(name).
+	 * @return array|null Player row (ARRAY_A) or null if not found.
+	 */
+	public static function find_by_slug( string $slug ): ?array {
+		static $cache = array();
+
+		if ( array_key_exists( $slug, $cache ) ) {
+			return $cache[ $slug ];
+		}
+
+		global $wpdb;
+		$rows = $wpdb->get_results(
+			"SELECT * FROM {$wpdb->prefix}pp_team_players_display",
+			ARRAY_A
+		);
+
+		foreach ( $rows as $row ) {
+			if ( sanitize_title( $row['name'] ) === $slug ) {
+				$cache[ $slug ] = $row;
+				return $row;
+			}
+		}
+
+		$cache[ $slug ] = null;
+		return null;
+	}
+
+	/**
 	 * Renders the player detail HTML.
 	 *
 	 * @param array $player     Row from pp_roster_for_display (ARRAY_A).

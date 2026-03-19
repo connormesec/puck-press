@@ -67,6 +67,8 @@ class Puck_Press_Teams_Admin_Display {
                                 Advanced
                             </button>
                             <div class="pp-dropdown-menu" id="pp-advancedDropdown">
+                                <div class="pp-dropdown-header">Archive</div>
+                                <div class="pp-dropdown-item" id="pp-archive-all-teams-season-btn">📦 Archive All Teams Season</div>
                                 <div class="pp-dropdown-header">Database</div>
                                 <div class="pp-dropdown-item danger" id="pp-wipe-and-recreate-db-btn">Wipe &amp; Recreate Database</div>
                             </div>
@@ -166,21 +168,18 @@ class Puck_Press_Teams_Admin_Display {
         <?php echo $this->roster_sources_card->render(); ?>
         <?php echo $this->players_table_card->render(); ?>
 
-        <!-- Archive team season card -->
+        <!-- Season archives card -->
         <div class="pp-card" style="margin-bottom:16px;">
             <div class="pp-card-header">
                 <div>
-                    <h2 class="pp-card-title">Archive Team Season</h2>
-                    <p class="pp-card-subtitle">Snapshot the current team display games into an archive</p>
+                    <h2 class="pp-card-title">Season Archives</h2>
+                    <p class="pp-card-subtitle">Archived seasons for all teams</p>
                 </div>
-                <button class="pp-button pp-button-secondary" id="pp-archive-team-season-btn" data-team-id="<?php echo esc_attr( $active_team_id ); ?>">
-                    📦 Archive Season
-                </button>
             </div>
             <div class="pp-card-content" style="padding:0 24px 16px;">
                 <?php
-                $archive_manager  = new Puck_Press_Archive_Manager();
-                $existing_archives = $archive_manager->get_team_archives( $active_team_id );
+                $archive_manager   = new Puck_Press_Archive_Manager();
+                $existing_archives = $archive_manager->get_all_archives();
                 if ( empty( $existing_archives ) ) :
                 ?>
                 <div id="pp-team-archives-list">
@@ -261,42 +260,38 @@ class Puck_Press_Teams_Admin_Display {
         <div id="pp-team-archive-modal" class="pp-modal-overlay" style="display:none;">
             <div class="pp-modal">
                 <div class="pp-modal-header">
-                    <h2>Archive Team Season</h2>
+                    <h2>Archive All Teams Season</h2>
                     <button class="pp-modal-close" id="pp-team-archive-modal-close">&times;</button>
                 </div>
                 <div class="pp-modal-body">
-                    <div id="pp-team-archive-form-step">
-                        <div class="pp-form-group">
-                            <label class="pp-form-label" for="pp-team-archive-season">Season</label>
-                            <select id="pp-team-archive-season" class="pp-form-input">
-                                <?php
-                                $current_year     = (int) gmdate( 'Y' );
-                                $default_key      = ( $current_year - 1 ) . '-' . $current_year;
-                                $archived_manager = new Puck_Press_Archive_Manager();
-                                $archived_keys    = array_column( $archived_manager->get_team_archives( $this->active_team_id ), 'season_key' );
-                                for ( $y = $current_year - 1; $y >= $current_year - 11; $y-- ) {
-                                    $key      = $y . '-' . ( $y + 1 );
-                                    $disabled = in_array( $key, $archived_keys, true ) ? ' disabled' : '';
-                                    $suffix   = $disabled ? ' (archived)' : '';
-                                    $selected = $key === $default_key ? ' selected' : '';
-                                    echo '<option value="' . esc_attr( $key ) . '"' . $disabled . $selected . '>' . esc_html( $key . $suffix ) . '</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
+                    <div class="pp-form-group">
+                        <label class="pp-form-label" for="pp-team-archive-season">Season</label>
+                        <select id="pp-team-archive-season" class="pp-form-input">
+                            <?php
+                            $current_year     = (int) gmdate( 'Y' );
+                            $default_key      = ( $current_year - 1 ) . '-' . $current_year;
+                            $archived_manager = new Puck_Press_Archive_Manager();
+                            $archived_keys    = array_column( $archived_manager->get_all_archives(), 'season_key' );
+                            for ( $y = $current_year - 1; $y >= $current_year - 11; $y-- ) {
+                                $key      = $y . '-' . ( $y + 1 );
+                                $disabled = in_array( $key, $archived_keys, true ) ? ' disabled' : '';
+                                $suffix   = $disabled ? ' (archived)' : '';
+                                $selected = $key === $default_key ? ' selected' : '';
+                                echo '<option value="' . esc_attr( $key ) . '"' . $disabled . $selected . '>' . esc_html( $key . $suffix ) . '</option>';
+                            }
+                            ?>
+                        </select>
                     </div>
-                    <div id="pp-team-archive-result-step" style="display:none;">
-                        <p id="pp-team-archive-result-message" style="margin-bottom:12px;"></p>
+                    <div class="pp-form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                             <input type="checkbox" id="pp-team-archive-wipe-stats">
-                            Also clear current season stats for this team
+                            Also clear live season data for all teams after archiving
                         </label>
                     </div>
                 </div>
                 <div class="pp-modal-footer">
                     <button class="pp-button" id="pp-team-archive-modal-cancel">Cancel</button>
                     <button class="pp-button pp-button-primary" id="pp-team-archive-modal-confirm">Archive Season</button>
-                    <button class="pp-button pp-button-primary" id="pp-team-archive-modal-done" style="display:none;">Done</button>
                 </div>
             </div>
         </div>

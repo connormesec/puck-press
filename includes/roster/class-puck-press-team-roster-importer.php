@@ -73,7 +73,7 @@ class Puck_Press_Team_Roster_Importer {
 
                     foreach ( $raw_acha_data->raw_roster_data as &$row ) {
                         $row['api_team_id']   = $row['team_id']   ?? '';
-                        $row['api_team_name'] = $row['team_name'] ?? '';
+                        $row['api_team_name'] = preg_replace( '/^(MD[1-3]|WD[1-3]|M[1-3]|W[1-3])\s+/', '', $row['team_name'] ?? '' );
                         $row['source']        = $source['name'];
                         $row['team_id']       = $this->team_id;
                     }

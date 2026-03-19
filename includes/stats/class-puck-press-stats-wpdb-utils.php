@@ -248,21 +248,18 @@ class Puck_Press_Stats_Wpdb_Utils {
 	public function get_archive_skater_stats( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
-		$teams_table = $wpdb->prefix . 'pp_teams';
+		$table = $wpdb->prefix . 'pp_team_player_stats_archive';
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
-		$join        = '';
 		if ( ! empty( $teams ) ) {
-			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
-			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+			$where_parts[] = $wpdb->prepare( "COALESCE(s.api_team_name, s.team_name) IN ($placeholders)", ...$teams );
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT MAX(s.name) AS name, MAX(s.pos) AS pos, MAX(s.headshot_link) AS headshot_link,
-                s.player_id, s.team_id, MAX(s.team_name) AS team_name,
+                s.player_id, COALESCE(MAX(s.api_team_name), MAX(s.team_name)) AS team_name,
                 s.source, MIN(s.stat_rank) AS stat_rank,
                 SUM(s.games_played) AS games_played,
                 SUM(s.goals) AS goals,
@@ -276,9 +273,8 @@ class Puck_Press_Stats_Wpdb_Utils {
                 AVG(s.shooting_percentage) AS shooting_percentage,
                 '' AS group_name
             FROM {$table} s
-            {$join}
             {$where}
-            GROUP BY s.player_id, s.team_id, s.source
+            GROUP BY s.player_id, s.source
             ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
 			ARRAY_A
 		);
@@ -289,21 +285,18 @@ class Puck_Press_Stats_Wpdb_Utils {
 	public function get_archive_skater_stats_aggregated( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
-		$teams_table = $wpdb->prefix . 'pp_teams';
+		$table = $wpdb->prefix . 'pp_team_player_stats_archive';
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
-		$join        = '';
 		if ( ! empty( $teams ) ) {
-			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
-			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+			$where_parts[] = $wpdb->prepare( "COALESCE(s.api_team_name, s.team_name) IN ($placeholders)", ...$teams );
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT MAX(s.name) AS name, MAX(s.pos) AS pos, MAX(s.headshot_link) AS headshot_link,
-                s.player_id, s.team_id, MAX(s.team_name) AS team_name,
+                s.player_id, COALESCE(MAX(s.api_team_name), MAX(s.team_name)) AS team_name,
                 MIN(s.source) AS source, MIN(s.stat_rank) AS stat_rank,
                 SUM(s.games_played) AS games_played,
                 SUM(s.goals) AS goals,
@@ -317,9 +310,8 @@ class Puck_Press_Stats_Wpdb_Utils {
                 AVG(s.shooting_percentage) AS shooting_percentage,
                 '' AS group_name
             FROM {$table} s
-            {$join}
             {$where}
-            GROUP BY s.player_id, s.team_id
+            GROUP BY s.player_id
             ORDER BY COALESCE(MIN(s.stat_rank), 9999) ASC, SUM(s.points) DESC, SUM(s.goals) DESC",
 			ARRAY_A
 		);
@@ -330,21 +322,18 @@ class Puck_Press_Stats_Wpdb_Utils {
 	public function get_archive_goalie_stats( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table       = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
-		$teams_table = $wpdb->prefix . 'pp_teams';
+		$table = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
 
 		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
-		$join        = '';
 		if ( ! empty( $teams ) ) {
-			$join          = "INNER JOIN {$teams_table} t ON t.id = g.team_id";
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
-			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+			$where_parts[] = $wpdb->prepare( "COALESCE(g.api_team_name, g.team_name) IN ($placeholders)", ...$teams );
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT MAX(g.name) AS name, MAX(g.pos) AS pos, MAX(g.headshot_link) AS headshot_link,
-                g.player_id, g.team_id, MAX(g.team_name) AS team_name,
+                g.player_id, COALESCE(MAX(g.api_team_name), MAX(g.team_name)) AS team_name,
                 g.source, MIN(g.stat_rank) AS stat_rank,
                 SUM(g.games_played) AS games_played,
                 SUM(g.wins) AS wins,
@@ -359,9 +348,8 @@ class Puck_Press_Stats_Wpdb_Utils {
                 ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
                 '' AS group_name
             FROM {$table} g
-            {$join}
             {$where}
-            GROUP BY g.player_id, g.team_id, g.source
+            GROUP BY g.player_id, g.source
             ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
 			ARRAY_A
 		);
@@ -372,21 +360,18 @@ class Puck_Press_Stats_Wpdb_Utils {
 	public function get_archive_goalie_stats_aggregated( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table       = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
-		$teams_table = $wpdb->prefix . 'pp_teams';
+		$table = $wpdb->prefix . 'pp_team_player_goalie_stats_archive';
 
 		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
-		$join        = '';
 		if ( ! empty( $teams ) ) {
-			$join          = "INNER JOIN {$teams_table} t ON t.id = g.team_id";
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
-			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+			$where_parts[] = $wpdb->prepare( "COALESCE(g.api_team_name, g.team_name) IN ($placeholders)", ...$teams );
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT MAX(g.name) AS name, MAX(g.pos) AS pos, MAX(g.headshot_link) AS headshot_link,
-                g.player_id, g.team_id, MAX(g.team_name) AS team_name,
+                g.player_id, COALESCE(MAX(g.api_team_name), MAX(g.team_name)) AS team_name,
                 MIN(g.source) AS source, MIN(g.stat_rank) AS stat_rank,
                 SUM(g.games_played) AS games_played,
                 SUM(g.wins) AS wins,
@@ -401,9 +386,8 @@ class Puck_Press_Stats_Wpdb_Utils {
                 ROUND(SUM(g.goals_against_average * g.games_played) / NULLIF(SUM(g.games_played), 0), 2) AS goals_against_average,
                 '' AS group_name
             FROM {$table} g
-            {$join}
             {$where}
-            GROUP BY g.player_id, g.team_id
+            GROUP BY g.player_id
             ORDER BY SUM(g.games_played) DESC, COALESCE(MIN(g.stat_rank), 9999) ASC, SUM(g.wins) DESC",
 			ARRAY_A
 		);
@@ -414,20 +398,17 @@ class Puck_Press_Stats_Wpdb_Utils {
 	public function get_archive_distinct_sources( string $archive_key, array $teams = array() ): array {
 		global $wpdb;
 
-		$table       = $wpdb->prefix . 'pp_team_player_stats_archive';
-		$teams_table = $wpdb->prefix . 'pp_teams';
+		$table = $wpdb->prefix . 'pp_team_player_stats_archive';
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
-		$join        = '';
 		if ( ! empty( $teams ) ) {
-			$join          = "INNER JOIN {$teams_table} t ON t.id = s.team_id";
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
-			$where_parts[] = $wpdb->prepare( "t.name IN ($placeholders)", ...$teams );
+			$where_parts[] = $wpdb->prepare( "COALESCE(s.api_team_name, s.team_name) IN ($placeholders)", ...$teams );
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
-			"SELECT DISTINCT s.source FROM {$table} s {$join} {$where} ORDER BY s.source ASC",
+			"SELECT DISTINCT s.source FROM {$table} s {$where} ORDER BY s.source ASC",
 			ARRAY_A
 		);
 
@@ -443,7 +424,6 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$seasons_table = $wpdb->prefix . 'pp_archive_seasons';
 		$stats_table   = $wpdb->prefix . 'pp_team_player_stats_archive';
-		$teams_table   = $wpdb->prefix . 'pp_teams';
 
 		if ( ! empty( $teams ) ) {
 			$placeholders = implode( ', ', array_fill( 0, count( $teams ), '%s' ) );
@@ -452,8 +432,7 @@ class Puck_Press_Stats_Wpdb_Utils {
 					"SELECT DISTINCT a.season_key AS archive_key, COALESCE(a.label, a.season_key) AS season
                      FROM {$seasons_table} a
                      INNER JOIN {$stats_table} s ON s.season_key = a.season_key
-                     INNER JOIN {$teams_table} t ON t.id = s.team_id
-                     WHERE t.name IN ($placeholders)
+                     WHERE COALESCE(s.api_team_name, s.team_name) IN ($placeholders)
                      ORDER BY a.archived_at DESC",
 					...$teams
 				),

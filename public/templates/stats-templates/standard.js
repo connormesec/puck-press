@@ -22,6 +22,41 @@
       $select.val('__all__').toggle(sources.length > 1);
     };
 
+    // ── Team dropdown rebuild ──────────────────────────────────────
+
+    const getTeamNamesFromRows = () => {
+      const names = new Set();
+      $container.find('tr[data-source="__all__"]').each(function () {
+        const name = $(this).data('team-name');
+        if (name) names.add(name);
+      });
+      return [...names];
+    };
+
+    const rebuildTeamDropdown = (teamNames) => {
+      const showTeam = String($container.data('show-team')) === '1';
+      const $left = $container.find('.pp-stats-toolbar-left');
+      let $select = $left.find('.pp-stats-team-select');
+
+      if (!showTeam || teamNames.length <= 1) {
+        $select.remove();
+        return;
+      }
+
+      if (!$select.length) {
+        $select = $('<select class="pp-stats-team-select" name="pp_stats_team" autocomplete="off"></select>');
+        $left.prepend($select);
+      }
+
+      $select.empty().append('<option value="all">All Teams</option>');
+      teamNames.forEach((team) => $select.append($('<option>').val(team).text(team)));
+      $select.val('all');
+      state.activeTeam = 'all';
+    };
+
+    // Cache original team names for current-season restore
+    const originalTeamNames = getTeamNamesFromRows();
+
     // ── Season selector ────────────────────────────────────────────
 
     $container.on('change', '.pp-stats-season-select', function () {
@@ -30,8 +65,10 @@
       if (archiveKey === 'current') {
         $container.find('.pp-stats-sections').html(originalSectionsHtml);
         state.activeSource = '__all__';
+        state.activeTeam = 'all';
         $container.find('.pp-stats-source-select').val('__all__');
         rebuildSourceDropdown(originalSources);
+        rebuildTeamDropdown(originalTeamNames);
         defaultSort();
         applyFilters();
         return;
@@ -51,7 +88,9 @@
           if (success && data?.sections_html !== undefined) {
             $container.find('.pp-stats-sections').html(data.sections_html);
             state.activeSource = '__all__';
+            state.activeTeam = 'all';
             rebuildSourceDropdown(data.sources ?? []);
+            rebuildTeamDropdown(getTeamNamesFromRows());
             defaultSort();
             applyFilters();
           }

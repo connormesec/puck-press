@@ -90,15 +90,21 @@ class CardStackTemplate extends PuckPressTemplate {
 
 	public function buildCardStack( array $players, int $roster_id = 1 ) {
 		global $wpdb;
-		$team_id               = ! empty( $players ) ? (int) ( $players[0]['team_id'] ?? 0 ) : 0;
-		$player_ids_with_stats = $team_id > 0 ? $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id = %d",
-				$team_id,
-				$team_id
-			)
-		) : array();
-		$players_with_stats    = array_flip( array_filter( $player_ids_with_stats ?: array(), 'is_scalar' ) );
+		$team_ids = array_values( array_unique( array_filter( array_column( $players, 'team_id' ), 'is_numeric' ) ) );
+		if ( ! empty( $team_ids ) ) {
+			$placeholders          = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+			$player_ids_with_stats = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id IN ($placeholders)
+					 UNION
+					 SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id IN ($placeholders)",
+					array_merge( $team_ids, $team_ids )
+				)
+			);
+		} else {
+			$player_ids_with_stats = array();
+		}
+		$players_with_stats = array_flip( array_filter( $player_ids_with_stats ?: array(), 'is_scalar' ) );
 
 		$content = '<div class="cardstack_roster_container clearfix">';
 

@@ -201,6 +201,10 @@ class Puck_Press_Activator {
 	}
 
 	public static function activate() {
+		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
+			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );
+		}
+
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-cron.php';
 		$cron = new Puck_Press_Cron();
 		$cron->schedule_cron();

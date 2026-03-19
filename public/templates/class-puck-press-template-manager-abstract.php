@@ -3,6 +3,13 @@ abstract class Puck_Press_Template_Manager {
 
 	protected $templates = array();
 
+	/**
+	 * Per-request cache of registered template arrays, keyed by option prefix.
+	 * Prevents repeat glob/require/option-read work when the same manager type
+	 * and ID is instantiated more than once in a single page load.
+	 */
+	private static array $template_cache = array();
+
 	abstract protected function get_template_dir(): string;
 	abstract protected function get_option_prefix(): string;
 	abstract protected function get_current_template_option(): string;
@@ -29,6 +36,19 @@ abstract class Puck_Press_Template_Manager {
 	}
 
 	protected function register_templates() {
+		// Use the option prefix as a unique key per class+id combination.
+		// Concrete managers set their ID before calling parent::__construct(),
+		// so get_option_prefix() is already correct at this point.
+		$cache_key = $this->get_option_prefix();
+
+		if ( isset( self::$template_cache[ $cache_key ] ) ) {
+			$this->templates = self::$template_cache[ $cache_key ];
+			if ( ! is_admin() ) {
+				$this->enqueue_current_template_assets();
+			}
+			return;
+		}
+
 		$template_files = glob( $this->get_template_dir() . '/*_template.php' );
 
 		foreach ( $template_files as $template_file ) {
@@ -53,6 +73,8 @@ abstract class Puck_Press_Template_Manager {
 				$this->register_template_fonts( $key, $class_name::get_default_fonts() );
 			}
 		}
+
+		self::$template_cache[ $cache_key ] = $this->templates;
 
 		$this->ensure_default_template_selected();
 
@@ -250,7 +272,7 @@ abstract class Puck_Press_Template_Manager {
 		if ( empty( $existing ) ) {
 			update_option( $option_name, $defaults );
 		} elseif ( $has_new ) {
-			update_option( $option_name, $defaults );
+			update_option( $option_name, $existing );
 		}
 	}
 

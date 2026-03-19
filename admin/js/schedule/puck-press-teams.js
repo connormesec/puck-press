@@ -7,6 +7,30 @@
     };
     window.countGameRows();
 
+    window.applyGameEditHighlights = function() {
+      $('#pp-games-table tbody tr:not(.pp-row-deleted)').each(function() {
+        const $row  = $(this);
+        const modId = $row.attr('data-mod-id');
+        let overrides = [];
+        try { overrides = JSON.parse($row.attr('data-overrides') || '[]'); } catch(e) {}
+
+        $row.find('td[data-field]').each(function() {
+          const $td   = $(this);
+          const field = $td.attr('data-field');
+          if (overrides.indexOf(field) !== -1) {
+            $td.addClass('pp-cell-overridden');
+            if (!$td.find('.pp-revert-game-field-btn').length) {
+              $td.append(`<button class="pp-revert-btn pp-revert-game-field-btn" title="Revert to original" data-mod-id="${modId}" data-fields="${field}">&#x2715;</button>`);
+            }
+          } else {
+            $td.removeClass('pp-cell-overridden');
+            $td.find('.pp-revert-game-field-btn').remove();
+          }
+        });
+      });
+    };
+    window.applyGameEditHighlights();
+
     //############################################################//
     //               Sub-section Tab Switching                    //
     //############################################################//
@@ -128,8 +152,22 @@
       $.ajax({
         url: ajaxurl,
         type: 'POST',
-        data: { action: 'pp_set_active_team_id', team_id: teamId },
-        success: function () {},
+        data: { action: 'pp_switch_active_team', team_id: teamId },
+        success: function (response) {
+          if (!response.success) {
+            console.error('Failed to switch active team.', response);
+            return;
+          }
+          const d = response.data;
+          $('#pp-card-data-sources-table').replaceWith(d.data_sources_html);
+          $('#pp-card-team-game-list').replaceWith(d.games_html);
+          $('#pp-card-roster-sources').replaceWith(d.roster_sources_html);
+          $('#pp-card-roster-players').replaceWith(d.players_html);
+          $('#pp-active-team-id').val(d.team_id);
+          $('#pp-refresh-team-btn').data('team-id', d.team_id).attr('data-team-id', d.team_id);
+          window.countGameRows && window.countGameRows();
+          window.applyGameEditHighlights && window.applyGameEditHighlights();
+        },
         error: function () { console.error('Failed to switch active team.'); }
       });
     });
@@ -169,6 +207,7 @@
             if (response.data.refreshed_game_table_ui) {
               $('#pp-games-table').replaceWith(response.data.refreshed_game_table_ui);
               window.countGameRows && window.countGameRows();
+              window.applyGameEditHighlights && window.applyGameEditHighlights();
             }
             if (typeof ppScheduleTemplates !== 'undefined') {
               // Default tab: color picker JS is loaded — restore all templates and
@@ -264,7 +303,7 @@
     });
 
     //############################################################//
-    //               Archive Team Season Modal                    //
+    //               Archive All Teams Season Modal              //
     //############################################################//
 
     const $archiveModal = $('#pp-team-archive-modal');
@@ -272,13 +311,10 @@
     function resetArchiveModal() {
       $('#pp-team-archive-season option:not([disabled]):first').prop('selected', true);
       $('#pp-team-archive-wipe-stats').prop('checked', false);
-      $('#pp-team-archive-form-step').show();
-      $('#pp-team-archive-result-step').hide();
-      $('#pp-team-archive-modal-confirm').show().prop('disabled', false).text('Archive Season');
-      $('#pp-team-archive-modal-done').hide();
+      $('#pp-team-archive-modal-confirm').prop('disabled', false).text('Archive Season');
     }
 
-    $('#pp-archive-team-season-btn').on('click', function () {
+    $('#pp-archive-all-teams-season-btn').on('click', function () {
       resetArchiveModal();
       $archiveModal.css('display', 'flex');
     });
@@ -287,70 +323,35 @@
       $archiveModal.css('display', 'none');
     });
 
-    $('#pp-team-archive-modal-done').on('click', function () {
-      const teamId = parseInt($('#pp-active-team-id').val(), 10);
-      const wipe   = $('#pp-team-archive-wipe-stats').is(':checked');
-
-      if (wipe && teamId) {
-        const $doneBtn = $(this);
-        $doneBtn.prop('disabled', true).text('Clearing…');
-        $.post(ajaxurl, { action: 'pp_clear_team_season_stats', team_id: teamId }, function (response) {
-          if (response.data && response.data.team_deleted) {
-            window.location.reload();
-            return;
-          }
-          if (response.data && response.data.roster_table_html) {
-            $(TABLE_SEL).replaceWith(response.data.roster_table_html);
-            applyTeamEditHighlights();
-          }
-          if (response.data && response.data.sources_table_html) {
-            $('#pp-data-sources-table').html(response.data.sources_table_html);
-          }
-          if (response.data && response.data.games_table_html) {
-            $('#pp-games-table').replaceWith(response.data.games_table_html);
-            window.countGameRows && window.countGameRows();
-          }
-          if (response.data && response.data.roster_sources_html) {
-            $('#pp-roster-sources-table').html(response.data.roster_sources_html);
-          }
-          $archiveModal.css('display', 'none');
-        }).always(function () {
-          $doneBtn.prop('disabled', false).text('Done');
-        });
-      } else {
-        $archiveModal.css('display', 'none');
-      }
-    });
-
     $('#pp-team-archive-modal-confirm').on('click', function () {
-      const teamId    = parseInt($('#pp-active-team-id').val(), 10);
       const seasonKey = $('#pp-team-archive-season').val();
 
-      if (!teamId || !seasonKey) {
+      if (!seasonKey) {
         alert('Please select a season.');
         return;
       }
 
-      const $btn = $(this);
+      const wipe  = $('#pp-team-archive-wipe-stats').is(':checked');
+      const $btn  = $(this);
       $btn.prop('disabled', true).text('Archiving…');
 
       $.ajax({
         url: ajaxurl,
         type: 'POST',
-        data: { action: 'pp_archive_team_season', team_id: teamId, season_key: seasonKey, label: seasonKey },
+        data: { action: 'pp_archive_all_teams_season', season_key: seasonKey, label: seasonKey, wipe: wipe ? 1 : 0 },
         success: function (response) {
           if (response.success) {
             const d = response.data || {};
-            $('#pp-team-archive-result-message').text(d.message || 'Season archived successfully.');
-            $('#pp-team-archive-form-step').hide();
-            $('#pp-team-archive-result-step').show();
-            $btn.hide();
-            $('#pp-team-archive-modal-done').show();
+            if (d.reload) {
+              window.location.reload();
+              return;
+            }
             if (d.archives_html) {
               $('#pp-team-archives-list').replaceWith(d.archives_html);
             }
             $('#pp-team-archive-season option[value="' + seasonKey + '"]')
               .prop('disabled', true).text(seasonKey + ' (archived)');
+            $archiveModal.css('display', 'none');
           } else {
             const msg = response.data && response.data.message ? response.data.message : 'Archive failed.';
             alert(msg);
@@ -368,11 +369,10 @@
       if (!confirm('Delete this archive? This cannot be undone.')) return;
       const $btn      = $(this).prop('disabled', true);
       const seasonKey = $btn.data('season-key');
-      const teamId    = parseInt($('#pp-active-team-id').val(), 10);
       $.ajax({
         url: ajaxurl,
         type: 'POST',
-        data: { action: 'pp_delete_team_archive', team_id: teamId, season_key: seasonKey },
+        data: { action: 'pp_delete_team_archive', season_key: seasonKey },
         success: function (response) {
           if (response.success && response.data.archives_html) {
             $('#pp-team-archives-list').replaceWith(response.data.archives_html);
@@ -520,8 +520,9 @@
     $(document).off('change.ppScheduleSource', '.pp-data-source-toggle-switch input').on('change.ppTeamSource', '.pp-data-source-toggle-switch input', function () {
       const status   = $(this).prop('checked') ? 'active' : 'inactive';
       const sourceId = $(this).data('id');
+      const teamId   = parseInt($('#pp-active-team-id').val(), 10) || 0;
       const $text    = $(this).closest('td').find('span').last();
-      const requestData = { action: 'pp_update_team_source_status', source_id: sourceId, status };
+      const requestData = { action: 'pp_update_team_source_status', source_id: sourceId, team_id: teamId, status };
       console.log('[toggle] → pp_update_team_source_status request:', requestData);
       $.ajax({
         url: ajaxurl,
@@ -529,8 +530,14 @@
         data: requestData,
         success: (response) => {
           console.log('[toggle] ← pp_update_team_source_status response:', response);
-          if ($text.length) $text.text(status === 'active' ? 'Active' : 'Inactive');
-          refreshGamesTable();
+          if (response.success) {
+            if ($text.length) $text.text(status === 'active' ? 'Active' : 'Inactive');
+            if (response.data && response.data.games_html) {
+              $('#pp-games-table').replaceWith(response.data.games_html);
+              if (typeof window.applyGameEditHighlights === 'function') window.applyGameEditHighlights();
+            }
+            if (typeof window.countGameRows === 'function') window.countGameRows();
+          }
         },
         error: (xhr, s, err) => { console.error('[toggle] AJAX error:', s, err, xhr.responseText); },
       });
@@ -1290,6 +1297,163 @@
       }).fail(function() {
         alert('Server error. Check the debug log.');
         $btn.text('Fix Database Tables').prop('disabled', false);
+      });
+    });
+
+    //############################################################//
+    //               Edit / Delete / Restore Game                 //
+    //############################################################//
+
+    const $editGameModal   = $('#pp-edit-game-modal');
+    const $editGameLoading = $('#pp-edit-game-loading');
+    let   editGameId       = null;
+
+    function openEditGameModal() {
+      $editGameModal.css('display', 'flex');
+    }
+
+    function closeEditGameModal() {
+      $editGameModal.css('display', 'none');
+      editGameId = null;
+    }
+
+    function replaceGamesTable(html) {
+      $('#pp-games-table').replaceWith(html);
+      if (typeof window.countGameRows === 'function') window.countGameRows();
+      if (typeof window.applyGameEditHighlights === 'function') window.applyGameEditHighlights();
+    }
+
+    // Open edit modal and load game data
+    $(document).on('click', '.pp-edit-game-btn', function () {
+      const gameId  = $(this).data('game-id');
+      const teamId  = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      editGameId    = gameId;
+
+      openEditGameModal();
+      $editGameLoading.show();
+
+      $.post(ajaxurl, { action: 'pp_get_game_data', game_id: gameId, team_id: teamId }, function (response) {
+        $editGameLoading.hide();
+        if (!response.success) {
+          alert('Failed to load game: ' + (response.data?.message || 'Unknown error'));
+          closeEditGameModal();
+          return;
+        }
+        const g = response.data.game;
+        if (g.game_timestamp) {
+          const d = new Date(g.game_timestamp * 1000);
+          $('#pp-edit-game-date').val(d.toISOString().slice(0, 10));
+        }
+        $('#pp-edit-game-time').val(g.game_time || '');
+        $('#pp-edit-home-or-away').val(g.home_or_away || '');
+        $('#pp-edit-game-status').val(g.game_status || '');
+        $('#pp-edit-target-score').val(g.target_score !== null ? g.target_score : '');
+        $('#pp-edit-opponent-score').val(g.opponent_score !== null ? g.opponent_score : '');
+        $('#pp-edit-venue').val(g.venue || '');
+        $('#pp-promo-header').val(g.promo_header || '');
+        $('#pp-promo-text').val(g.promo_text || '');
+        $('#pp-promo-img-url').val(g.promo_img_url || '');
+        $('#pp-promo-ticket-link').val(g.promo_ticket_link || '');
+        $('#pp-post-link').val(g.post_link || '');
+      }).fail(function () {
+        $editGameLoading.hide();
+        alert('Server error loading game data.');
+        closeEditGameModal();
+      });
+    });
+
+    // Close edit modal
+    $('#pp-edit-game-modal-close, #pp-cancel-edit-game').on('click', closeEditGameModal);
+    $editGameModal.on('mousedown', function (e) {
+      if (e.target === $editGameModal[0]) closeEditGameModal();
+    });
+
+    // Save game edit
+    $('#pp-confirm-edit-game').on('click', function () {
+      const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      if (!editGameId || !teamId) return;
+
+      const $btn = $(this);
+      $btn.prop('disabled', true).text('Saving…');
+
+      $.post(ajaxurl, {
+        action:          'pp_save_game_edit',
+        game_id:         editGameId,
+        team_id:         teamId,
+        game_date:       $('#pp-edit-game-date').val(),
+        game_time:       $('#pp-edit-game-time').val(),
+        home_or_away:    $('#pp-edit-home-or-away').val(),
+        game_status:     $('#pp-edit-game-status').val(),
+        target_score:    $('#pp-edit-target-score').val(),
+        opponent_score:  $('#pp-edit-opponent-score').val(),
+        venue:           $('#pp-edit-venue').val(),
+        promo_header:    $('#pp-promo-header').val(),
+        promo_text:      $('#pp-promo-text').val(),
+        promo_img_url:   $('#pp-promo-img-url').val(),
+        promo_ticket_link: $('#pp-promo-ticket-link').val(),
+        post_link:       $('#pp-post-link').val(),
+      }, function (response) {
+        $btn.prop('disabled', false).text('Save Edit');
+        if (response.success) {
+          replaceGamesTable(response.data.games_table_html);
+          closeEditGameModal();
+        } else {
+          alert('Save failed: ' + (response.data?.message || 'Unknown error'));
+        }
+      }).fail(function () {
+        $btn.prop('disabled', false).text('Save Edit');
+        alert('Server error saving game.');
+      });
+    });
+
+    // Delete game
+    $(document).on('click', '.pp-delete-game-btn', function () {
+      const gameId   = $(this).data('game-id');
+      const teamId   = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      if (!confirm('Delete this game?')) return;
+
+      $.post(ajaxurl, { action: 'pp_delete_game', game_id: gameId, team_id: teamId }, function (response) {
+        if (response.success) {
+          replaceGamesTable(response.data.games_table_html);
+        } else {
+          alert('Delete failed: ' + (response.data?.message || 'Unknown error'));
+        }
+      }).fail(function () {
+        alert('Server error deleting game.');
+      });
+    });
+
+    // Restore deleted game
+    $(document).on('click', '.pp-restore-game-button', function () {
+      const deleteModId = $(this).data('delete-mod-id');
+      const teamId      = parseInt($('#pp-active-team-id').val(), 10) || 0;
+
+      $.post(ajaxurl, { action: 'pp_restore_game', delete_mod_id: deleteModId, team_id: teamId }, function (response) {
+        if (response.success) {
+          replaceGamesTable(response.data.games_table_html);
+        } else {
+          alert('Restore failed: ' + (response.data?.message || 'Unknown error'));
+        }
+      }).fail(function () {
+        alert('Server error restoring game.');
+      });
+    });
+
+    // Revert individual game field
+    $(document).on('click', '.pp-revert-game-field-btn', function(e) {
+      e.stopPropagation();
+      const modId  = $(this).data('mod-id');
+      const fields = String($(this).data('fields')).split(',');
+      const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
+
+      $.post(ajaxurl, { action: 'pp_revert_game_field', mod_id: modId, fields: fields, team_id: teamId }, function(response) {
+        if (response.success) {
+          replaceGamesTable(response.data.games_table_html);
+        } else {
+          alert('Revert failed: ' + (response.data?.message || 'Unknown error'));
+        }
+      }).fail(function() {
+        alert('Server error reverting field.');
       });
     });
 

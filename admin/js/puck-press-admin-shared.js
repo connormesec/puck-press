@@ -38,6 +38,7 @@ function refreshGamesTable(successCallback, errorCallback) {
                     const $existing = (jQuery)('#pp-games-table');
                     console.log('[refreshGamesTable] #pp-games-table found:', $existing.length, '| replacing with HTML length:', (response.data.refreshed_game_table_ui || '').length);
                     $existing.replaceWith(response.data.refreshed_game_table_ui);
+                    if (typeof window.applyGameEditHighlights === 'function') window.applyGameEditHighlights();
                     const results = response.data.results || {};
                     const messages = (results.messages || []).filter(m => typeof m === 'string');
                     const errors = results.errors || [];

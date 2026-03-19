@@ -1,127 +1,177 @@
 jQuery(document).ready(function ($) {
-    $('#pp-get-example-posts').on('click', function (e) {
-        e.preventDefault();
+  // ── Team handle save ────────────────────────────────────────────────────────
 
-        const $button = $(this);
-        const $result = $('#pp-example-posts-result');
-        const $container = $('#pp-example-posts-container');
-        const $grid = $('#pp-posts-grid');
+  $(document).on('click', '.pp-save-team-handle', function () {
+    const $btn    = $(this);
+    const teamId  = $btn.data('team-id');
+    const $row    = $btn.closest('tr');
+    const handle  = $row.find('.pp-team-handle').val().trim();
+    const enabled = $row.find('.pp-team-enabled').is(':checked') ? '1' : '0';
+    const $result = $row.find('.pp-save-team-result');
 
-        $button.prop('disabled', true);
-        $result.html('<span class="pp-loading">Loading example posts...</span>');
+    $btn.prop('disabled', true);
+    $result.html('');
 
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'pp_get_example_posts',
-                nonce: ppInstaPost.nonce
-            },
-            success: (response) => {
-                if (response.success) {
-                    console.log('Response data:', response.data);
-                    $result.html(`<span class="pp-success">✓ Loaded ${response.data.length} example posts</span>`);
+    $.ajax({
+      url: ajaxurl,
+      type: 'POST',
+      data: {
+        action:  'pp_save_team_handle',
+        nonce:   ppInstaPost.nonce,
+        team_id: teamId,
+        handle:  handle,
+        enabled: enabled,
+      },
+      success: (response) => {
+        if (response.success) {
+          $result.html('<span class="pp-success">Saved</span>');
+        } else {
+          $result.html('<span class="pp-error">' + response.data + '</span>');
+        }
+      },
+      error: () => {
+        $result.html('<span class="pp-error">Request failed</span>');
+      },
+      complete: () => {
+        $btn.prop('disabled', false);
+      },
+    });
+  });
 
-                    // Clear existing posts
-                    $grid.empty();
+  // ── Fetch test posts ────────────────────────────────────────────────────────
 
-                    // Display posts
-                    response.data.forEach((post) => {
-                        let postHtml = '<div class="pp-post-item">';
-                        if (post.image_url) {
-                            postHtml += `<img src="data:image/jpeg;base64,${post.image_buffer}" alt="Instagram post" class="pp-post-image" />`;
-                        }
-                        postHtml += `<div class="pp-post-title">${post.post_title}</div>`;
-                        postHtml += `<div class="pp-post-caption">${post.post_body}</div>`;
-                        postHtml += `<div class="pp-post-meta">Slug: ${post.slug}</div>`;
-                        postHtml += '</div>';
+  $('#pp-fetch-team-posts').on('click', function () {
+    const teamId = $('#pp-test-team-select').val();
+    if (!teamId) {
+      $('#pp-fetch-result').html('<span class="pp-error">Select a team first.</span>');
+      return;
+    }
 
-                        $grid.append(postHtml);
-                    });
+    const $btn       = $(this);
+    const $result    = $('#pp-fetch-result');
+    const $container = $('#pp-test-posts-container');
+    const $grid      = $('#pp-test-posts-grid');
 
-                    $container.show();
-                } else {
-                    $result.html(`<span class="pp-error">✗ ${response.data}</span>`);
-                }
-            },
-            error: (err) => {
-                $result.html('<span class="pp-error">✗ Failed to load posts</span>');
-                console.error(err);
-            },
-            complete: () => {
-                $button.prop('disabled', false);
-            }
+    $btn.prop('disabled', true);
+    $result.html('<span class="pp-loading">Fetching posts…</span>');
+    $container.hide();
+    $grid.empty();
+
+    $.ajax({
+      url: ajaxurl,
+      type: 'POST',
+      data: {
+        action:  'pp_get_team_example_posts',
+        nonce:   ppInstaPost.nonce,
+        team_id: teamId,
+      },
+      success: (response) => {
+        if (!response.success) {
+          $result.html('<span class="pp-error">✗ ' + response.data + '</span>');
+          return;
+        }
+
+        const posts = response.data;
+        $result.html('<span class="pp-success">✓ ' + posts.length + ' post(s) fetched</span>');
+
+        if (posts.length === 0) {
+          $grid.html('<p>No new posts found.</p>');
+          $container.show();
+          return;
+        }
+
+        posts.forEach((post) => {
+          const $card = buildPostCard(post, teamId);
+          $grid.append($card);
         });
+
+        $container.show();
+      },
+      error: () => {
+        $result.html('<span class="pp-error">✗ Request failed</span>');
+      },
+      complete: () => {
+        $btn.prop('disabled', false);
+      },
+    });
+  });
+
+  // ── Build a post preview card ────────────────────────────────────────────────
+
+  function buildPostCard(post, teamId) {
+    const $card = $('<div class="pp-post-item"></div>');
+
+    if (post.image_buffer) {
+      $card.append(
+        $('<img class="pp-post-image" alt="Instagram post" />').attr(
+          'src',
+          'data:image/jpeg;base64,' + post.image_buffer
+        )
+      );
+    }
+
+    $card.append('<div class="pp-post-title">' + escapeHtml(post.post_title) + '</div>');
+    $card.append('<div class="pp-post-caption">' + escapeHtml(post.post_body) + '</div>');
+    $card.append('<div class="pp-post-meta">Slug: ' + escapeHtml(post.slug) + '</div>');
+    $card.append('<div class="pp-post-meta">ID: ' + escapeHtml(post.insta_id) + '</div>');
+
+    const $actions   = $('<div class="pp-post-actions"></div>');
+    const $createBtn = $('<button class="button button-primary pp-create-post-btn">Create Post</button>');
+    const $status    = $('<span class="pp-create-status"></span>');
+
+    $createBtn.on('click', function () {
+      handleCreatePost($(this), $status, post, teamId);
     });
 
-    $('#pp-get-example-posts-and-create').on('click', function (e) {
-        e.preventDefault();
+    $actions.append($createBtn).append($status);
+    $card.append($actions);
 
-        const $button = $(this);
-        const $result = $('#pp-example-posts-result');
-        const $container = $('#pp-example-posts-container');
-        const $grid = $('#pp-posts-grid');
+    return $card;
+  }
 
-        $button.prop('disabled', true);
-        $result.html('<span class="pp-loading">Creating posts...</span>');
+  // ── Create a single post ─────────────────────────────────────────────────────
 
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'pp_get_example_posts_and_create',
-                nonce: ppInstaPost.nonce
-            },
-            success: (response) => {
-                if (response.success) {
-                    console.log('Response data:', response.data);
-                    $result.html(`<span class="pp-success">✓ Created ${response.data.successful_imports.length} example posts</span>`);
+  function handleCreatePost($btn, $status, post, teamId) {
+    $btn.prop('disabled', true);
+    $status.html('<span class="pp-loading">Creating…</span>');
 
-                    // Clear existing posts
-                    $grid.empty();
-
-                    // Display posts
-                    response.data.successful_imports.forEach((post) => {
-                        let postHtml = '<div class="pp-post-item">';
-                        if (post.image_url) {
-                            postHtml += `<img src="data:image/jpeg;base64,${post.image_buffer}" alt="Instagram post" class="pp-post-image" />`;
-                        }
-                        postHtml += `<div class="pp-post-title">${post.post_title}</div>`;
-                        postHtml += `<div class="pp-post-caption">${post.post_body}</div>`;
-                        postHtml += `<div class="pp-post-meta">Slug: ${post.slug}</div>`;
-                        postHtml += `<div class="pp-post-meta">Post ID: ${post.post_id}</div>`;
-                        postHtml += '</div>';
-
-                        $grid.append(postHtml);
-                    });
-
-                    response.data.failed_imports.forEach((post) => {
-                        let postHtml = '<div class="pp-post-item">';
-                        postHtml += `<div class="pp-post-title" style="color: red;">${post.error}</div>`;
-                        if (post.post_data.image_url) {
-                            postHtml += `<img src="data:image/jpeg;base64,${post.post_data.image_buffer}" alt="Instagram post" class="pp-post-image" />`;
-                        }
-                        postHtml += `<div class="pp-post-title">${post.post_data.post_title}</div>`;
-                        postHtml += `<div class="pp-post-caption">${post.post_data.post_body}</div>`;
-                        postHtml += `<div class="pp-post-meta">Slug: ${post.post_data.slug}</div>`;
-                        postHtml += '</div>';
-
-                        $grid.append(postHtml);
-                    });
-
-                    $container.show();
-                } else {
-                    console.log('Error response data:', response);
-                    $result.html(`<span class="pp-error">✗ ${response.data}</span>`);
-                }
-            },
-            error: (err) => {
-                $result.html('<span class="pp-error">✗ Failed to load posts</span>');
-                console.error(err);
-            },
-            complete: () => {
-                $button.prop('disabled', false);
-            }
-        });
+    $.ajax({
+      url: ajaxurl,
+      type: 'POST',
+      data: {
+        action:       'pp_create_team_insta_post',
+        nonce:        ppInstaPost.nonce,
+        team_id:      teamId,
+        insta_id:     post.insta_id,
+        post_title:   post.post_title,
+        post_body:    post.post_body,
+        slug:         post.slug,
+        image_buffer: post.image_buffer,
+      },
+      success: (response) => {
+        if (response.success) {
+          $status.html('<span class="pp-success">✓ Created (ID ' + response.data.post_id + ')</span>');
+          $btn.prop('disabled', true).text('Created');
+        } else {
+          $status.html('<span class="pp-error">✗ ' + response.data + '</span>');
+          $btn.prop('disabled', false);
+        }
+      },
+      error: () => {
+        $status.html('<span class="pp-error">✗ Request failed</span>');
+        $btn.prop('disabled', false);
+      },
     });
+  }
+
+  // ── Utility ──────────────────────────────────────────────────────────────────
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 });

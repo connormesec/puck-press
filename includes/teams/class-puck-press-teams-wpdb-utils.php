@@ -326,7 +326,7 @@ class Puck_Press_Teams_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
         return $result ? (int) $wpdb->insert_id : 0;
     }
 
-    public function update_team_source( int $source_id, array $data ): bool {
+    public function update_team_source( int $source_id, array $data ): int|false {
         global $wpdb;
         $table   = $wpdb->prefix . 'pp_team_sources';
         $allowed = array( 'name', 'type', 'season', 'source_url_or_path', 'status', 'csv_data', 'other_data' );
@@ -334,7 +334,7 @@ class Puck_Press_Teams_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
         if ( empty( $row ) ) {
             return false;
         }
-        return (bool) $wpdb->update( $table, $row, array( 'id' => $source_id ) );
+        return $wpdb->update( $table, $row, array( 'id' => $source_id ) );
     }
 
     public function delete_team_source( int $source_id ): bool {

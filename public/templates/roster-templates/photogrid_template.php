@@ -78,14 +78,20 @@ class PhotoGridTemplate extends PuckPressTemplate {
 		$fonts                    = self::get_roster_fonts( $roster_id );
 		$inline_css               = self::get_inline_css( ':root', $colors, $fonts );
 		$css_block                = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-		$team_id = ! empty( $players ) ? (int) ( $players[0]['team_id'] ?? 0 ) : 0;
-		$ids     = $team_id > 0 ? $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id = %d UNION SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id = %d",
-				$team_id,
-				$team_id
-			)
-		) : array();
+		$team_ids = array_values( array_unique( array_filter( array_column( $players, 'team_id' ), 'is_numeric' ) ) );
+		if ( ! empty( $team_ids ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+			$ids          = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id IN ($placeholders)
+					 UNION
+					 SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id IN ($placeholders)",
+					array_merge( $team_ids, $team_ids )
+				)
+			);
+		} else {
+			$ids = array();
+		}
 		$this->players_with_stats = array_flip( array_filter( $ids ?: array(), 'is_scalar' ) );
 
 		$output = $css_block . '<div class="photogrid_roster_container">';

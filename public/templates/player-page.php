@@ -12,23 +12,10 @@
 require_once PLUGIN_DIR_PATH . 'includes/roster/class-puck-press-roster-render-utils.php';
 require_once PLUGIN_DIR_PATH . 'includes/roster/class-puck-press-roster-player-detail.php';
 
-global $wpdb;
-
 $player_slug = sanitize_text_field( get_query_var( 'pp_player' ) );
 
 // ── Look up player ────────────────────────────────────────────────────────────
-$all_players = $wpdb->get_results(
-	"SELECT * FROM {$wpdb->prefix}pp_team_players_display",
-	ARRAY_A
-);
-
-$player = null;
-foreach ( $all_players as $row ) {
-	if ( sanitize_title( $row['name'] ) === $player_slug ) {
-		$player = $row;
-		break;
-	}
-}
+$player = Puck_Press_Roster_Player_Detail::find_by_slug( $player_slug );
 
 if ( ! $player ) {
 	status_header( 404 );
@@ -42,6 +29,7 @@ if ( ! $player ) {
 }
 
 // ── Look up stats ─────────────────────────────────────────────────────────────
+global $wpdb;
 $is_goalie   = ( strtoupper( $player['pos'] ?? '' ) === 'G' );
 $team_id     = (int) ( $player['team_id'] ?? 0 );
 $stats_table = $is_goalie

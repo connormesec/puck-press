@@ -6,18 +6,103 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Puck_Press_Instagram_Post_Importer {
 
-	public function run_daily() {
+	public function run_daily(): array {
+		global $wpdb;
 		$messages = array();
+
+		$api_key = get_option( 'pp_insta_scraper_api_key', '' );
+		if ( empty( $api_key ) ) {
+			$messages[] = 'Instagram API key is not set.';
+			return $messages;
+		}
+
+		$secret = get_option( 'pp_insta_loopback_secret', '' );
+		if ( empty( $secret ) ) {
+			$messages[] = 'Loopback secret not set — re-activate the plugin.';
+			return $messages;
+		}
+
+		$rows = $wpdb->get_results(
+			"SELECT option_name, option_value FROM {$wpdb->options}
+             WHERE option_name LIKE 'pp_team_%_insta_enabled'
+               AND option_value = '1'"
+		);
+
+		if ( empty( $rows ) ) {
+			$messages[] = 'No teams have Instagram import enabled.';
+			return $messages;
+		}
+
+		foreach ( $rows as $row ) {
+			if ( ! preg_match( '/^pp_team_(\d+)_insta_enabled$/', $row->option_name, $m ) ) {
+				continue;
+			}
+			$team_id = (int) $m[1];
+			$handle  = get_option( "pp_team_{$team_id}_insta_handle", '' );
+			if ( empty( $handle ) ) {
+				$messages[] = "Team {$team_id}: no Instagram handle configured, skipping.";
+				continue;
+			}
+
+			wp_remote_post(
+				admin_url( 'admin-ajax.php' ),
+				array(
+					'blocking' => false,
+					'timeout'  => 1,
+					'body'     => array(
+						'action'  => 'pp_run_team_insta_import',
+						'team_id' => $team_id,
+						'secret'  => $secret,
+					),
+				)
+			);
+
+			$messages[] = "Team {$team_id} ({$handle}): dispatched async import.";
+		}
+
+		return $messages;
+	}
+
+	public static function handle_loopback_team_import(): void {
+		$secret   = get_option( 'pp_insta_loopback_secret', '' );
+		$provided = isset( $_POST['secret'] ) ? sanitize_text_field( wp_unslash( $_POST['secret'] ) ) : '';
+
+		if ( empty( $secret ) || ! hash_equals( $secret, $provided ) ) {
+			wp_send_json_error( 'Unauthorized', 403 );
+			return;
+		}
+
+		$team_id = isset( $_POST['team_id'] ) ? (int) $_POST['team_id'] : 0;
+		if ( $team_id <= 0 ) {
+			wp_send_json_error( 'Invalid team ID', 400 );
+			return;
+		}
+
+		$importer = new self();
+		$messages = $importer->run_for_team( $team_id );
+		wp_send_json_success( $messages );
+	}
+
+	public function run_for_team( int $team_id ): array {
+		$messages = array();
+
 		if ( ! get_option( 'pp_enable_insta_post', 0 ) ) {
 			$messages[] = 'Instagram import feature is disabled.';
 			return $messages;
 		}
-		$existing_post_slugs = $this->get_existing_insta_ids( -1 );
-		$fetch_result        = $this->fetch_instagram_posts( $existing_post_slugs );
+
+		$handle = get_option( "pp_team_{$team_id}_insta_handle", '' );
+		if ( empty( $handle ) ) {
+			$messages[] = "Team {$team_id}: no Instagram handle configured.";
+			return $messages;
+		}
+
+		$existing_ids = $this->get_existing_insta_ids( $team_id );
+		$fetch_result = $this->fetch_instagram_posts( $existing_ids, $handle );
 
 		if ( ! $fetch_result['success'] ) {
 			$messages[] = 'Error fetching Instagram posts: ' . $fetch_result['message'];
-			return;
+			return $messages;
 		}
 
 		foreach ( $fetch_result['data'] as $post_data ) {
@@ -28,41 +113,32 @@ class Puck_Press_Instagram_Post_Importer {
 			$image_name = 'insta-' . $insta_id . '.jpg';
 			$slug       = isset( $post_data['slug'] ) ? $post_data['slug'] : '';
 
-			// Double check to make sure Instagram post ID hasn't already been imported
-			if ( in_array( $insta_id, $existing_post_slugs, true ) || preg_grep( '/^' . preg_quote( $insta_id, '/' ) . '-/', $existing_post_slugs ) ) {
+			if ( in_array( $insta_id, $existing_ids, true ) || preg_grep( '/^' . preg_quote( $insta_id, '/' ) . '-/', $existing_ids ) ) {
 				$messages[] = 'Post with Instagram ID ' . $insta_id . ' already exists.';
 				continue;
 			}
 
-			// Create the post
-			$post_id = $this->create_instagram_post( $title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id );
+			$post_id = $this->create_instagram_post( $title, $content, 'publish', $slug, $b64_image, $image_name, $insta_id, $team_id );
 
 			if ( is_wp_error( $post_id ) ) {
 				$messages[] = 'Failed to create post for slug ' . $slug . ': ' . $post_id->get_error_message();
 				continue;
 			}
-			$messages[] = 'Successfully created post ID ' . $post_id . ': ' . ( mb_strlen( $title ) > 20 ? mb_substr( $title, 0, 20 - 1 ) . '…' : $title );
+			$messages[] = 'Successfully created post ID ' . $post_id . ': ' . ( mb_strlen( $title ) > 20 ? mb_substr( $title, 0, 19 ) . '…' : $title );
 		}
 
 		return $messages;
 	}
 
 	/**
-	 * @return array{
-	 *     success: bool,
-	 *     data: array<int, array{
-	 *         slug?: string,
-	 *         post_title?: string,
-	 *         post_body?: string,
-	 *         image_url?: string,
-	 *         image_buffer?: string,
-	 *         error?: string
-	 *     }>
-	 * }
+	 * @param string[] $existing_post_ids
+	 * @return array{success: bool, message?: string, data?: array<int, array{insta_id: string, slug: string, post_title: string, post_body: string, image_url: string, image_buffer: string}>}
 	 */
-	public function fetch_instagram_posts( $existing_post_ids = array() ) {
-		$api_key      = get_option( 'pp_insta_scraper_api_key', '' );
-		$insta_handle = get_option( 'pp_insta_handle', '' );
+	public function fetch_instagram_posts( array $existing_post_ids = array(), string $handle = '' ): array {
+		$api_key = get_option( 'pp_insta_scraper_api_key', '' );
+		if ( empty( $handle ) ) {
+			$handle = get_option( 'pp_insta_handle', '' );
+		}
 
 		if ( empty( $api_key ) ) {
 			return array(
@@ -81,7 +157,7 @@ class Puck_Press_Instagram_Post_Importer {
 				'timeout' => 30,
 				'body'    => wp_json_encode(
 					array(
-						'instagram_handle'  => $insta_handle,
+						'instagram_handle'  => $handle,
 						'existing_post_ids' => $existing_post_ids,
 					)
 				),
@@ -112,13 +188,12 @@ class Puck_Press_Instagram_Post_Importer {
 				'message' => 'Invalid JSON response from API',
 			);
 		}
-		// Format posts
+
 		$formatted_posts = array();
 		if ( ! empty( $data['new_posts'] ) && is_array( $data['new_posts'] ) ) {
 			foreach ( $data['new_posts'] as $post ) {
-				// Ensure all required content fields exist
 				if ( empty( $post['postTitle'] ) || empty( $post['imgSrc'] ) || empty( $post['featuredImageBuffer'] ) ) {
-					continue; // skip silently — unusable post data
+					continue;
 				}
 				$formatted_posts[] = array(
 					'insta_id'     => ! empty( $post['post_id'] ) ? $post['post_id'] : ( $post['postSlug'] ?? '' ),
@@ -138,19 +213,9 @@ class Puck_Press_Instagram_Post_Importer {
 	}
 
 	/**
-	 * Create a WordPress post with the "Instagram" tag and optional featured image from base64 buffer.
-	 *
-	 * @param string $title        The post title.
-	 * @param string $content      The post content.
-	 * @param string $status       Post status (default 'publish').
-	 * @param string $slug         Optional post slug (defaults to auto-generated from title).
-	 * @param string $b64_image    Optional base64-encoded image buffer.
-	 * @param string $image_name   Optional filename for the image (default 'instagram-image.png').
-	 *
-	 * @return int|WP_Error Post ID on success, WP_Error on failure.
+	 * @return int|WP_Error
 	 */
-	public function create_instagram_post( $title, $content, $status = 'publish', $slug = '', $b64_image = '', $image_name = 'instagram-image.png', $insta_id = '' ) {
-		// ✅ Ensure "Instagram" tag exists
+	public function create_instagram_post( string $title, string $content, string $status = 'publish', string $slug = '', string $b64_image = '', string $image_name = 'instagram-image.png', string $insta_id = '', int $team_id = 0 ) {
 		$tag_id = term_exists( 'Instagram', 'post_tag' );
 		if ( $tag_id ) {
 			$tag_id = (int) $tag_id['term_id'];
@@ -163,7 +228,6 @@ class Puck_Press_Instagram_Post_Importer {
 			return new WP_Error( 'tag_error', 'Could not create or retrieve Instagram tag.' );
 		}
 
-		// ✅ Create the post
 		$postarr = array(
 			'post_title'   => $title,
 			'post_content' => $content,
@@ -172,11 +236,8 @@ class Puck_Press_Instagram_Post_Importer {
 			'post_type'    => 'pp_insta_post',
 		);
 
-		// Sanitize slug if provided
 		if ( ! empty( $slug ) ) {
-			$slug = sanitize_title( $slug );
-
-			// If a post with this slug already exists, append the Instagram ID as a disambiguator
+			$slug          = sanitize_title( $slug );
 			$existing_post = get_page_by_path( $slug, OBJECT, 'pp_insta_post' );
 			if ( $existing_post && ! empty( $insta_id ) ) {
 				$slug = $slug . '-' . sanitize_title( $insta_id );
@@ -184,23 +245,23 @@ class Puck_Press_Instagram_Post_Importer {
 			$postarr['post_name'] = $slug;
 		}
 
-		$post_id = wp_insert_post( $postarr, true ); // true = return WP_Error on fail
+		$post_id = wp_insert_post( $postarr, true );
 		if ( is_wp_error( $post_id ) ) {
 			return $post_id;
 		}
 
-		// ✅ Store Instagram post ID as meta for future duplicate detection
 		if ( ! empty( $insta_id ) ) {
 			update_post_meta( $post_id, '_insta_post_id', sanitize_text_field( $insta_id ) );
 		}
 
-		// ✅ Assign the "Instagram" tag
+		if ( $team_id > 0 ) {
+			update_post_meta( $post_id, '_pp_team_id', $team_id );
+		}
+
 		wp_set_post_terms( $post_id, array( $tag_id ), 'post_tag', true );
 
-		// ✅ Handle featured image if provided
 		if ( ! empty( $b64_image ) ) {
 			$image_id = $this->save_base64_image_to_media( $b64_image, $image_name, $post_id );
-
 			if ( $image_id && ! is_wp_error( $image_id ) ) {
 				set_post_thumbnail( $post_id, $image_id );
 			}
@@ -209,33 +270,22 @@ class Puck_Press_Instagram_Post_Importer {
 		return $post_id;
 	}
 
-
 	/**
-	 * Save a base64 image buffer to the WordPress media library.
-	 *
-	 * @param string $b64_image  Base64-encoded image string.
-	 * @param string $filename   Filename to save as.
-	 * @param int    $post_id    Optional post ID to attach to.
-	 *
-	 * @return int|WP_Error Attachment ID on success, WP_Error on failure.
+	 * @return int|WP_Error
 	 */
-	private function save_base64_image_to_media( $b64_image, $filename = 'instagram-image.png', $post_id = 0 ) {
-		// Decode base64
+	private function save_base64_image_to_media( string $b64_image, string $filename = 'instagram-image.png', int $post_id = 0 ) {
 		$decoded = base64_decode( $b64_image );
 		if ( ! $decoded ) {
 			return new WP_Error( 'b64_decode_error', 'Failed to decode base64 image.' );
 		}
 
-		// Upload to WP uploads dir
 		$upload_dir = wp_upload_dir();
 		$file_path  = trailingslashit( $upload_dir['path'] ) . $filename;
 
 		file_put_contents( $file_path, $decoded );
 
-		// Check file type
 		$filetype = wp_check_filetype( $filename, null );
 
-		// Create attachment
 		$attachment = array(
 			'post_mime_type' => $filetype['type'],
 			'post_title'     => sanitize_file_name( pathinfo( $filename, PATHINFO_FILENAME ) ),
@@ -245,7 +295,6 @@ class Puck_Press_Instagram_Post_Importer {
 
 		$attach_id = wp_insert_attachment( $attachment, $file_path, $post_id );
 
-		// Generate metadata
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
@@ -254,15 +303,12 @@ class Puck_Press_Instagram_Post_Importer {
 	}
 
 	/**
-	 * Retrieve an array of post slugs for all posts tagged with "Instagram".
-	 *
-	 * @param int $limit Number of posts to return. Use -1 for all posts.
-	 * @return string[] Array of post slugs.
+	 * @return string[]
 	 */
-	function get_instagram_post_slugs( $limit = -1 ) {
+	private function get_instagram_post_slugs( int $limit = -1 ): array {
 		$args = array(
-			'post_type'      => 'post',              // only old-style posts; CPT posts use _insta_post_id meta
-			'tag_slug__in'   => array( 'instagram' ),  // filter by tag slug
+			'post_type'      => 'post',
+			'tag_slug__in'   => array( 'instagram' ),
 			'posts_per_page' => $limit,
 			'post_status'    => 'publish',
 			'fields'         => 'ids',
@@ -280,15 +326,45 @@ class Puck_Press_Instagram_Post_Importer {
 			}
 		}
 
-		wp_reset_postdata(); // reset after custom query
+		wp_reset_postdata();
 		return $slugs;
 	}
 
-
 	/**
-	 * Generate an SEO-friendly WordPress slug from a post title.
-	 * Truncates at a word boundary to a maximum of 60 characters.
+	 * @return string[]
 	 */
+	public function get_existing_insta_ids( int $team_id = 0 ): array {
+		global $wpdb;
+
+		if ( $team_id > 0 ) {
+			$meta_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT pm.meta_value
+                     FROM {$wpdb->postmeta} pm
+                     INNER JOIN {$wpdb->postmeta} tm ON tm.post_id = pm.post_id
+                     INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                     WHERE pm.meta_key = '_insta_post_id'
+                       AND tm.meta_key = '_pp_team_id'
+                       AND tm.meta_value = %d
+                       AND p.post_status != 'trash'",
+					$team_id
+				)
+			);
+		} else {
+			$meta_ids = $wpdb->get_col(
+				"SELECT DISTINCT pm.meta_value
+                 FROM {$wpdb->postmeta} pm
+                 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                 WHERE pm.meta_key = '_insta_post_id'
+                   AND p.post_status != 'trash'"
+			);
+		}
+
+		$meta_ids  = $meta_ids ?: array();
+		$old_slugs = $this->get_instagram_post_slugs( -1 );
+		return array_values( array_unique( array_merge( $meta_ids, $old_slugs ) ) );
+	}
+
 	private function title_to_slug( string $title ): string {
 		$slug = sanitize_title( $title );
 		if ( strlen( $slug ) > 60 ) {
@@ -296,66 +372,5 @@ class Puck_Press_Instagram_Post_Importer {
 			$slug = rtrim( $slug, '-' );
 		}
 		return $slug ?: 'instagram-post';
-	}
-
-	/**
-	 * Return all known Instagram post IDs (for duplicate detection).
-	 *
-	 * Combines two sources for backward compatibility:
-	 *   - _insta_post_id meta (new posts after CPT migration)
-	 *   - WordPress post slugs of Instagram-tagged posts (old posts where slug = Instagram ID)
-	 *
-	 * @param int $limit Passed to get_instagram_post_slugs(). Use -1 for all.
-	 * @return string[]
-	 */
-	public function get_existing_insta_ids( $limit = -1 ): array {
-		global $wpdb;
-		$meta_ids  = $wpdb->get_col(
-			"SELECT DISTINCT pm.meta_value
-             FROM {$wpdb->postmeta} pm
-             INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-             WHERE pm.meta_key = '_insta_post_id'
-               AND p.post_status != 'trash'"
-		) ?: array();
-		$old_slugs = $this->get_instagram_post_slugs( $limit );
-		return array_values( array_unique( array_merge( $meta_ids, $old_slugs ) ) );
-	}
-
-	/**
-	 * Convert a base64 image buffer into an HTML <img> tag with automatic MIME type detection.
-	 *
-	 * @param string $base64_buffer The base64-encoded image data.
-	 * @param string $alt           Alt text for the image.
-	 * @param string $class         Optional CSS classes for the image tag.
-	 *
-	 * @return string HTML <img> tag with inline base64 image or empty string if invalid.
-	 */
-	function base64_to_img_tag_auto_mime( $base64_buffer, $alt = '', $class = '' ) {
-		// Validate base64 string
-		if ( empty( $base64_buffer ) || ! is_string( $base64_buffer ) ) {
-			return '';
-		}
-
-		// Decode just enough of the base64 string to detect MIME type
-		$decoded = base64_decode( substr( $base64_buffer, 0, 50 ) );
-
-		$mime_type = 'image/png'; // default
-		if ( substr( $decoded, 0, 4 ) === "\x89PNG" ) {
-			$mime_type = 'image/png';
-		} elseif ( substr( $decoded, 0, 3 ) === "\xFF\xD8\xFF" ) {
-			$mime_type = 'image/jpeg';
-		} elseif ( substr( $decoded, 0, 6 ) === 'GIF87a' || substr( $decoded, 0, 6 ) === 'GIF89a' ) {
-			$mime_type = 'image/gif';
-		}
-
-		// Sanitize alt text and class
-		$alt   = esc_attr( $alt );
-		$class = esc_attr( $class );
-
-		// Build data URI
-		$src = 'data:' . $mime_type . ';base64,' . $base64_buffer;
-
-		// Return HTML img tag
-		return '<img src="' . esc_url( $src ) . '" alt="' . $alt . '" class="' . $class . '" />';
 	}
 }

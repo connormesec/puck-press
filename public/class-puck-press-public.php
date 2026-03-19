@@ -188,18 +188,8 @@ class Puck_Press_Public {
 			return $title_parts;
 		}
 
-		global $wpdb;
-		$all_players = $wpdb->get_results(
-			"SELECT name, pos, number FROM {$wpdb->prefix}pp_team_players_display",
-			ARRAY_A
-		);
-		$player      = null;
-		foreach ( $all_players as $row ) {
-			if ( sanitize_title( $row['name'] ) === $player_slug ) {
-				$player = $row;
-				break;
-			}
-		}
+		require_once plugin_dir_path( __FILE__ ) . '../includes/roster/class-puck-press-roster-player-detail.php';
+		$player = Puck_Press_Roster_Player_Detail::find_by_slug( $player_slug );
 
 		if ( ! $player ) {
 			return $title_parts;
