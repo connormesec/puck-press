@@ -396,6 +396,68 @@ class Puck_Press_Admin {
 		self::update_template_colors( new Puck_Press_Stats_Template_Manager() );
 	}
 
+	public static function pp_ajax_update_post_slider_template_colors() {
+		self::update_template_colors( new Puck_Press_Post_Slider_Template_Manager() );
+	}
+
+	public static function pp_ajax_update_league_news_template_colors() {
+		self::update_template_colors(
+			new Puck_Press_League_News_Template_Manager(),
+			false,
+			function () {
+				return array(
+					'preview_html' => Puck_Press_League_News_Admin_Preview_Card::get_current_template_html(),
+				);
+			}
+		);
+	}
+
+	public static function pp_ajax_save_league_news_settings() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_league_news_nonce', 'nonce' );
+
+		$source      = sanitize_key( $_POST['source'] ?? 'acha' );
+		$category_id = (int) ( $_POST['category'] ?? 1 );
+		$count       = max( 1, min( 20, (int) ( $_POST['count'] ?? 8 ) ) );
+
+		$valid_sources = array( 'acha', 'usphl' );
+		if ( ! in_array( $source, $valid_sources, true ) ) {
+			$source = 'acha';
+		}
+
+		$valid_categories = array_keys( Puck_Press_League_News_Api::get_categories( $source ) );
+		if ( ! in_array( $category_id, $valid_categories, true ) ) {
+			$category_id = $valid_categories[0] ?? 1;
+		}
+
+		$old_source   = get_option( 'pp_league_news_source', 'acha' );
+		$old_cat_key  = 'pp_league_news_' . $old_source . '_category';
+		$old_category = (int) get_option( $old_cat_key, 1 );
+
+		update_option( 'pp_league_news_source', $source );
+		update_option( 'pp_league_news_' . $source . '_category', $category_id );
+		update_option( 'pp_league_news_count', $count );
+
+		// Bust old and new caches so preview refreshes immediately.
+		Puck_Press_League_News_Api::bust_cache( $old_source, $old_category );
+		Puck_Press_League_News_Api::bust_cache( $source, $category_id );
+
+		wp_send_json_success( array(
+			'preview_html' => Puck_Press_League_News_Admin_Preview_Card::get_current_template_html(),
+		) );
+	}
+
+	public static function pp_ajax_get_league_news_preview() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		wp_send_json_success( array(
+			'preview_html' => Puck_Press_League_News_Admin_Preview_Card::get_all_templates_html(),
+		) );
+	}
+
 	public static function pp_ajax_update_stat_leaders_colors(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
@@ -705,6 +767,15 @@ class Puck_Press_Admin {
 			case 'insta-post':
 				wp_enqueue_script( 'pp-insta-post-admin', plugin_dir_url( __FILE__ ) . 'js/insta-post/puck-press-insta-post-admin.js', array( 'jquery' ), '1.0', true );
 				break;
+			case 'post-slider':
+				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-post-slider-color-picker', plugin_dir_url( __FILE__ ) . 'js/post-slider/puck-press-post-slider-color-picker.js', array( 'jquery', 'select2-js', 'puck-press-color-picker-shared' ), $this->version, false );
+				break;
+			case 'league-news':
+				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-league-news-admin', plugin_dir_url( __FILE__ ) . 'js/league-news/puck-press-league-news-admin.js', array( 'jquery' ), $this->version, true );
+				wp_enqueue_script( 'puck-press-league-news-color-picker', plugin_dir_url( __FILE__ ) . 'js/league-news/puck-press-league-news-color-picker.js', array( 'jquery', 'select2-js', 'puck-press-color-picker-shared' ), $this->version, false );
+				break;
 			case 'upcoming_games_table':
 				// wp_enqueue_script('pp-admin-upcoming', plugin_dir_url(__FILE__) . 'admin/js/upcoming-games.js', ['jquery'], null, true);
 				break;
@@ -861,6 +932,36 @@ class Puck_Press_Admin {
 			)
 		);
 
+		$ps_template_manager  = new Puck_Press_Post_Slider_Template_Manager();
+		$ps_selected_template = $ps_template_manager->get_current_template_key();
+		$ps_templates_data    = array(
+			'postSliderTemplates' => $ps_template_manager->get_all_template_colors(),
+			'colorLabels'         => $ps_template_manager->get_all_template_color_labels(),
+			'selected_template'   => $ps_selected_template,
+		);
+		wp_localize_script( 'puck-press-post-slider-color-picker', 'ppPostSliderData', $ps_templates_data );
+
+		$ln_template_manager  = new Puck_Press_League_News_Template_Manager();
+		$ln_selected_template = $ln_template_manager->get_current_template_key();
+		$ln_templates_data    = array(
+			'leagueNewsTemplates' => $ln_template_manager->get_all_template_colors(),
+			'colorLabels'         => $ln_template_manager->get_all_template_color_labels(),
+			'selected_template'   => $ln_selected_template,
+		);
+		wp_localize_script( 'puck-press-league-news-color-picker', 'ppLeagueNewsTemplates', $ln_templates_data );
+		wp_localize_script(
+			'puck-press-league-news-admin',
+			'ppLeagueNewsData',
+			array(
+				'ajax_url'   => admin_url( 'admin-ajax.php' ),
+				'nonce'      => wp_create_nonce( 'pp_league_news_nonce' ),
+				'categories' => array(
+					'acha'  => Puck_Press_League_News_Api::get_categories( 'acha' ),
+					'usphl' => Puck_Press_League_News_Api::get_categories( 'usphl' ),
+				),
+			)
+		);
+
 		wp_localize_script(
 			'puck-press-bulk-edit-schedule',
 			'ppBulkSchedule',
@@ -923,14 +1024,104 @@ class Puck_Press_Admin {
 			wp_send_json_error( array( 'message' => 'Failed to create team. Slug may already exist.' ) );
 		}
 
+		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
+		$schedule_id     = self::auto_create_schedule_for_team( $schedules_utils, $slug, $name, $id );
+
+		$roster_registry = new Puck_Press_Roster_Registry_Wpdb_Utils();
+		$roster_id       = self::auto_create_roster_for_team( $roster_registry, $slug, $name, $id );
+
+		update_option( 'pp_admin_active_team_id', $id );
+
+		$data_sources_card  = new Puck_Press_Teams_Admin_Data_Sources_Card(
+			array(
+				'title'    => 'Data Sources',
+				'subtitle' => 'Manage external data sources for games',
+				'id'       => 'data-sources-table',
+			),
+			$id
+		);
+		$games_card         = new Puck_Press_Teams_Admin_Games_Table_Card(
+			array(
+				'title'    => 'Games',
+				'subtitle' => '0 games scheduled',
+				'id'       => 'team-game-list',
+			),
+			$id
+		);
+		$roster_sources_card = new Puck_Press_Teams_Admin_Roster_Sources_Card( $id );
+		$players_card        = new Puck_Press_Teams_Admin_Players_Table_Card( $id );
+
 		wp_send_json_success(
 			array(
-				'message' => "Team '{$name}' created.",
-				'id'      => $id,
-				'slug'    => $slug,
-				'name'    => $name,
+				'message'             => "Team '{$name}' created.",
+				'id'                  => $id,
+				'slug'                => $slug,
+				'name'                => $name,
+				'schedule_id'         => $schedule_id,
+				'roster_id'           => $roster_id,
+				'data_sources_html'   => $data_sources_card->render(),
+				'games_html'          => $games_card->render(),
+				'roster_sources_html' => $roster_sources_card->render(),
+				'players_html'        => $players_card->render(),
 			)
 		);
+	}
+
+	private static function auto_create_schedule_for_team( Puck_Press_Schedules_Wpdb_Utils $utils, string $team_slug, string $team_name, int $team_id ): ?int {
+		$base        = $team_slug . '-schedule';
+		$candidates  = array( $base );
+		for ( $i = 2; $i <= 20; $i++ ) {
+			$candidates[] = $base . '-' . $i;
+		}
+		$candidates[] = $base . '-' . time();
+
+		$schedule_slug = null;
+		foreach ( $candidates as $candidate ) {
+			if ( ! $utils->slug_exists( $candidate ) ) {
+				$schedule_slug = $candidate;
+				break;
+			}
+		}
+
+		if ( null === $schedule_slug ) {
+			error_log( "[PuckPress] auto_create_schedule_for_team: could not find unique slug for team {$team_slug}" );
+			return null;
+		}
+
+		$schedule_id = $utils->create_schedule( $schedule_slug, $team_name . ' Schedule', false );
+		if ( ! $schedule_id ) {
+			error_log( "[PuckPress] auto_create_schedule_for_team: create_schedule failed for slug {$schedule_slug}" );
+			return null;
+		}
+
+		$utils->add_team_to_schedule( $schedule_id, $team_id );
+		return $schedule_id;
+	}
+
+	private static function auto_create_roster_for_team( Puck_Press_Roster_Registry_Wpdb_Utils $registry, string $team_slug, string $team_name, int $team_id ): ?int {
+		$base       = $team_slug . '-roster';
+		$candidates = array( $base );
+		for ( $i = 2; $i <= 20; $i++ ) {
+			$candidates[] = $base . '-' . $i;
+		}
+		$candidates[] = $base . '-' . time();
+
+		foreach ( $candidates as $candidate ) {
+			$result = $registry->create_roster( $team_name . ' Roster', $candidate );
+			if ( $result === 'duplicate_slug' ) {
+				continue;
+			}
+			if ( ! $result ) {
+				error_log( "[PuckPress] auto_create_roster_for_team: create_roster failed for slug {$candidate}" );
+				return null;
+			}
+			$roster_id = (int) $result;
+			$registry->add_team_to_roster( $roster_id, $team_id );
+			return $roster_id;
+		}
+
+		error_log( "[PuckPress] auto_create_roster_for_team: could not find unique slug for team {$team_slug}" );
+		return null;
 	}
 
 	public static function pp_ajax_delete_team(): void {
@@ -1035,9 +1226,12 @@ class Puck_Press_Admin {
 				break;
 
 			case 'usphlGameScheduleUrl':
-				$url        = sanitize_text_field( $_POST['team_id_url'] ?? '' );
-				$season_id  = sanitize_text_field( $_POST['season_id'] ?? '' );
-				$other_data = ! empty( $season_id ) ? wp_json_encode( array( 'season_id' => $season_id ) ) : null;
+				$url       = sanitize_text_field( $_POST['team_id_url'] ?? '' );
+				$season_id = sanitize_text_field( $_POST['season_id'] ?? '' );
+				if ( empty( $season_id ) ) {
+					wp_send_json_error( array( 'message' => 'Season ID is required for USPHL sources.' ) );
+				}
+				$other_data = wp_json_encode( array( 'season_id' => $season_id ) );
 				break;
 
 			case 'csv':
@@ -1465,6 +1659,14 @@ class Puck_Press_Admin {
 
 		$game['game_timestamp'] = ! empty( $game['game_timestamp'] ) ? strtotime( $game['game_timestamp'] ) : null;
 
+		// Convert game_time from 12-hour display format to HH:MM for <input type="time">.
+		if ( ! empty( $game['game_time'] ) ) {
+			$parsed = strtotime( $game['game_time'] );
+			if ( $parsed ) {
+				$game['game_time'] = date( 'H:i', $parsed );
+			}
+		}
+
 		// Normalize game_status to match select option values (e.g. 'FINAL OT' → 'final-ot').
 		if ( ! empty( $game['game_status'] ) ) {
 			$game['game_status'] = strtolower( str_replace( ' ', '-', $game['game_status'] ) );
@@ -1583,11 +1785,14 @@ class Puck_Press_Admin {
 			}
 
 			// --- Time: submitted as HH:MM; raw stored as "7:30 PM" or "7:30pm". ---
-			// Convert submitted to the stored AM/PM format before comparing.
+			// Normalize both to "g:i A" format before comparing so spacing/case differences
+			// (e.g. "7:30pm" vs "7:30 PM") don't produce false positives.
 			if ( $submitted_time !== '' ) {
-				$new_time_fmt = date( 'g:i A', strtotime( $submitted_time ) ); // e.g. "7:30 PM"
-				$raw_time_str = (string) ( $raw_game['game_time'] ?? '' );
-				if ( strtoupper( $new_time_fmt ) !== strtoupper( $raw_time_str ) ) {
+				$new_time_fmt    = date( 'g:i A', strtotime( $submitted_time ) ); // e.g. "7:30 PM"
+				$raw_time_str    = (string) ( $raw_game['game_time'] ?? '' );
+				$raw_time_parsed = strtotime( $raw_time_str );
+				$raw_time_fmt    = $raw_time_parsed ? date( 'g:i A', $raw_time_parsed ) : $raw_time_str;
+				if ( $new_time_fmt !== $raw_time_fmt ) {
 					$edit_data['game_time'] = $new_time_fmt;
 					// Keep game_timestamp time portion in sync.
 					if ( ! isset( $edit_data['game_timestamp'] ) ) {
@@ -1648,7 +1853,7 @@ class Puck_Press_Admin {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
 		$importer = new Puck_Press_Team_Source_Importer( $team_id );
-		$importer->rebuild_display_from_mods();
+		$importer->rebuild_display_and_cascade();
 
 		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
 		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
@@ -1686,7 +1891,7 @@ class Puck_Press_Admin {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
 		$importer = new Puck_Press_Team_Source_Importer( $team_id );
-		$importer->rebuild_display_from_mods();
+		$importer->rebuild_display_and_cascade();
 
 		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
 		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
@@ -1712,7 +1917,7 @@ class Puck_Press_Admin {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
 		$importer = new Puck_Press_Team_Source_Importer( $team_id );
-		$importer->rebuild_display_from_mods();
+		$importer->rebuild_display_and_cascade();
 
 		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
 		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
@@ -1773,7 +1978,7 @@ class Puck_Press_Admin {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
 		$importer = new Puck_Press_Team_Source_Importer( $team_id );
-		$importer->rebuild_display_from_mods();
+		$importer->rebuild_display_and_cascade();
 
 		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
 		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
@@ -2306,8 +2511,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_save_team_handle', array( $insta_post_display, 'ajax_save_team_handle' ) );
 		add_action( 'wp_ajax_pp_get_team_example_posts', array( $insta_post_display, 'ajax_get_team_example_posts' ) );
 		add_action( 'wp_ajax_pp_create_team_insta_post', array( $insta_post_display, 'ajax_create_team_insta_post' ) );
-		add_action( 'wp_ajax_nopriv_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
-		add_action( 'wp_ajax_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
+		// Registered in register_insta_loopback_hooks() on 'init' instead.
 
 		// Register the AJAX action for refreshing all sources
 		add_action( 'wp_ajax_pp_refresh_schedule_sources', array( $this, 'pp_ajax_refresh_schedule_sources' ) );
@@ -2381,6 +2585,10 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_puck_press_update_roster_colors', array( self::class, 'pp_ajax_update_roster_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_record_colors', array( self::class, 'pp_ajax_update_record_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_stats_colors', array( self::class, 'pp_ajax_update_stats_template_colors' ) );
+		add_action( 'wp_ajax_puck_press_update_post_slider_colors', array( self::class, 'pp_ajax_update_post_slider_template_colors' ) );
+		add_action( 'wp_ajax_puck_press_update_league_news_colors', array( self::class, 'pp_ajax_update_league_news_template_colors' ) );
+		add_action( 'wp_ajax_pp_save_league_news_settings', array( self::class, 'pp_ajax_save_league_news_settings' ) );
+		add_action( 'wp_ajax_pp_get_league_news_preview', array( self::class, 'pp_ajax_get_league_news_preview' ) );
 		add_action( 'wp_ajax_pp_save_stats_column_settings', array( self::class, 'pp_ajax_save_stats_column_settings' ) );
 		add_action( 'wp_ajax_pp_get_archive_stats', array( self::class, 'pp_ajax_get_archive_stats' ) );
 		add_action( 'wp_ajax_nopriv_pp_get_archive_stats', array( self::class, 'pp_ajax_get_archive_stats' ) );
@@ -2388,5 +2596,11 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_update_stat_leaders_colors', array( self::class, 'pp_ajax_update_stat_leaders_colors' ) );
 		add_action( 'wp_ajax_pp_save_stat_leaders_settings', array( self::class, 'pp_ajax_save_stat_leaders_settings' ) );
 		add_action( 'wp_ajax_pp_set_active_stats_roster_id', array( self::class, 'pp_ajax_set_active_stats_roster_id' ) );
+	}
+
+	public function register_insta_loopback_hooks() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
+		add_action( 'wp_ajax_nopriv_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
+		add_action( 'wp_ajax_pp_run_team_insta_import', array( 'Puck_Press_Instagram_Post_Importer', 'handle_loopback_team_import' ) );
 	}
 }

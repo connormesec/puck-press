@@ -91,25 +91,30 @@
           if (response.success) {
             $addTeamModal.css('display', 'none');
             const team = response.data;
-            // Add row to teams list table
             const $tbody = $('#pp-teams-list-table tbody');
-            if ($tbody.length) {
-              $tbody.append(
-                '<tr data-team-id="' + team.id + '">' +
-                  '<td class="pp-td">' + $('<span>').text(team.name).html() + '</td>' +
-                  '<td class="pp-td"><code>' + $('<span>').text(team.slug).html() + '</code></td>' +
-                  '<td class="pp-td"><button class="pp-button-icon pp-delete-team-btn" data-team-id="' + team.id + '" title="Delete team">🗑️</button></td>' +
-                '</tr>'
-              );
-            } else {
-              // Table didn't exist yet (no teams before); reload to show full UI
+            if (!$tbody.length) {
               location.reload();
               return;
             }
-            // Add option to team selector
+            $tbody.append(
+              '<tr data-team-id="' + team.id + '">' +
+                '<td class="pp-td">' + $('<span>').text(team.name).html() + '</td>' +
+                '<td class="pp-td"><code>' + $('<span>').text(team.slug).html() + '</code></td>' +
+                '<td class="pp-td"><button class="pp-button-icon pp-delete-team-btn" data-team-id="' + team.id + '" title="Delete team">🗑️</button></td>' +
+              '</tr>'
+            );
             $('#pp-team-selector').append(
               '<option value="' + team.id + '">' + $('<span>').text(team.name + ' (' + team.slug + ')').html() + '</option>'
             );
+            $('#pp-team-selector').val(team.id);
+            $('#pp-card-data-sources-table').replaceWith(team.data_sources_html);
+            $('#pp-card-team-game-list').replaceWith(team.games_html);
+            $('#pp-card-roster-sources').replaceWith(team.roster_sources_html);
+            $('#pp-card-roster-players').replaceWith(team.players_html);
+            $('#pp-active-team-id').val(team.id);
+            $('#pp-refresh-team-btn').data('team-id', team.id).attr('data-team-id', team.id);
+            window.countGameRows && window.countGameRows();
+            window.applyGameEditHighlights && window.applyGameEditHighlights();
           } else {
             console.error('Failed to create team:', response.data && response.data.message);
           }
@@ -395,7 +400,7 @@
     // Show/hide source-type-specific fields in the add-source modal
     const sourceTypeConfig = {
       achaGameScheduleUrl:   { required: ['#pp-source-url', '#pp-source-season-year'] },
-      usphlGameScheduleUrl:  { required: ['#pp-usphl-team-id'] },
+      usphlGameScheduleUrl:  { required: ['#pp-usphl-team-id', '#pp-usphl-season-id'] },
       csv:                   { required: ['#pp-schedule-fileInput'] },
     };
 
@@ -420,7 +425,9 @@
     $(document).on('change', '#pp-source-type', toggleSourceInputs);
 
     // Open / close add-source modal
-    $('#pp-add-source-button').on('click', function () {
+    // Use delegated binding — #pp-add-source-button lives inside #pp-card-data-sources-table
+    // which gets replaced via replaceWith() on team switch, destroying direct bindings.
+    $(document).on('click', '#pp-add-source-button', function () {
       $('#pp-add-source-form')[0].reset();
       toggleSourceInputs();
       $('#pp-add-source-modal').css('display', 'flex');
@@ -701,6 +708,11 @@
         success: function (response) {
           if (response.success) {
             $addScheduleModal.css('display', 'none');
+            const sched = response.data;
+            $('#pp-schedule-group-selector').append(
+              $('<option>', { value: sched.id, text: sched.name })
+            );
+            $('#pp-schedule-group-selector').val(sched.id).trigger('change');
           } else {
             console.error('Failed to create schedule:', response.data && response.data.message);
           }
@@ -772,8 +784,6 @@
     //               Roster Sources                              //
     //############################################################//
 
-    const $rosterSourceModal = $('#pp-add-roster-source-modal');
-
     function resetRosterSourceModal() {
       $('#pp-roster-source-name').val('');
       $('#pp-roster-source-type').val('achaRosterUrl');
@@ -800,7 +810,7 @@
     }
 
     $(document).on('click', '#pp-add-roster-source-button', function() {
-      $rosterSourceModal.css('display', 'flex');
+      $('#pp-add-roster-source-modal').css('display', 'flex');
       toggleRosterSourceInputs();
       $('#pp-roster-source-stat-period').val('');
       $('#pp-roster-source-stat-period-other').hide().val('');
@@ -818,7 +828,7 @@
     });
 
     $(document).on('click', '.pp-cancel-roster-source-modal', function() {
-      $rosterSourceModal.css('display', 'none');
+      $('#pp-add-roster-source-modal').css('display', 'none');
       resetRosterSourceModal();
     });
 
@@ -873,7 +883,7 @@
             $(TABLE_SEL).replaceWith(response.data.roster_table_html);
             applyTeamEditHighlights();
           }
-          $rosterSourceModal.css('display', 'none');
+          $('#pp-add-roster-source-modal').css('display', 'none');
           resetRosterSourceModal();
         } else {
           alert('Error adding roster source.');

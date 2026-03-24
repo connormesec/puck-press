@@ -453,3 +453,80 @@
     display: none;
   }
 }
+
+/* ── Player links in game summaries ─────────────────────────────────────── */
+.pp-player-link {
+  display: inline;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Related tab: game recap list ───────────────────────────────────────── */
+.pp-related-wrap {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.pp-related-heading {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pp-pd-accent, #009da5);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.pp-related-posts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pp-related-post {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pp-related-post:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pp-related-post:first-child {
+  padding-top: 0;
+}
+
+.pp-related-date {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pp-pd-accent, #009da5);
+  margin-bottom: 3px;
+}
+
+.pp-related-post a {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--pp-pd-text, #1a1a2e);
+  text-decoration: none;
+}
+
+.pp-related-post a:hover {
+  color: var(--pp-pd-accent, #009da5);
+}
+
+.pp-related-empty {
+  color: var(--pp-pd-text, #1a1a2e);
+  opacity: 0.5;
+  font-size: 0.9rem;
+  padding: 20px 0 4px;
+}

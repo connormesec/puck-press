@@ -105,6 +105,12 @@ class Puck_Press_Schedules_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
         return $main ? (int) $main['id'] : 0;
     }
 
+    public function slug_exists( string $slug ): bool {
+        global $wpdb;
+        $table = $wpdb->prefix . 'pp_schedules';
+        return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table WHERE slug = %s LIMIT 1", sanitize_title( $slug ) ) );
+    }
+
     public function create_schedule( string $slug, string $name, bool $is_main = false ): int {
         global $wpdb;
         $table  = $wpdb->prefix . 'pp_schedules';

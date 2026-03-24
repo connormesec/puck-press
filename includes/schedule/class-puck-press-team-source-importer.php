@@ -125,6 +125,15 @@ class Puck_Press_Team_Source_Importer {
         return $this->results;
     }
 
+    public function rebuild_display_and_cascade(): void {
+        $this->rebuild_display_from_mods();
+
+        $schedule_ids = $this->materializer->get_schedule_ids_for_team( $this->team_id );
+        foreach ( array_unique( $schedule_ids ) as $sid ) {
+            $this->materializer->materialize_schedule( (int) $sid );
+        }
+    }
+
     public function rebuild_display_from_mods(): void {
         global $wpdb;
 
@@ -196,8 +205,6 @@ class Puck_Press_Team_Source_Importer {
         foreach ( array_unique( $schedule_ids ) as $sid ) {
             $this->materializer->materialize_schedule( (int) $sid );
         }
-
-        $this->update_failure_count( $import_ok || ! $has_active );
 
         return $import_results;
     }
@@ -321,10 +328,4 @@ class Puck_Press_Team_Source_Importer {
         }
     }
 
-    private function update_failure_count( bool $success ): void {
-        $counts                  = get_option( 'puck_press_cron_failure_counts', array() );
-        $key                     = "team_{$this->team_id}";
-        $counts[ $key ]          = $success ? 0 : ( ( $counts[ $key ] ?? 0 ) + 1 );
-        update_option( 'puck_press_cron_failure_counts', $counts );
-    }
 }

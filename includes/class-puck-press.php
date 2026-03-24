@@ -145,6 +145,8 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_teams_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_registry_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_cleanup_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_promo_columns_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_league_news_options_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}
@@ -180,6 +182,11 @@ class Puck_Press {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'localize_scripts' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'register_ajax_hooks' );
+
+		// Loopback AJAX handlers must be on 'init', not 'admin_init'.
+		// admin-ajax.php fires 'init' but never fires 'admin_init', so handlers
+		// registered on 'admin_init' are invisible to unauthenticated AJAX requests.
+		$this->loader->add_action( 'init', $plugin_admin, 'register_insta_loopback_hooks' );
 	}
 
 	public function register_post_types() {
@@ -258,6 +265,10 @@ class Puck_Press {
 		$this->loader->add_shortcode( 'pp-stats', $plugin_public, 'stats_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-stat-leaders-skaters', $plugin_public, 'stat_leaders_skaters_shortcode' );
 		$this->loader->add_shortcode( 'pp-stat-leaders-goalies', $plugin_public, 'stat_leaders_goalies_shortcode' );
+		$this->loader->add_shortcode( 'pp-post-slider', $plugin_public, 'post_slider_shortcode' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_post_slider_assets' );
+		$this->loader->add_shortcode( 'pp-league-news', $plugin_public, 'league_news_shortcode' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_league_news_assets' );
 	}
 
 	/**

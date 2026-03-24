@@ -42,8 +42,8 @@ $season_options = $this->get_season_options_array();
 			<span class="pp-form-help">USPHL league-assigned team ID</span>
 		</div>
 		<div class="pp-form-group">
-			<label for="pp-usphl-season-id" class="pp-form-label">Season ID <span style="font-weight:normal;color:#888;">(optional)</span></label>
-			<input type="text" id="pp-usphl-season-id" class="pp-form-input" placeholder="e.g. 65 — leave blank for current season">
+			<label for="pp-usphl-season-id" class="pp-form-label">Season ID</label>
+			<input type="text" id="pp-usphl-season-id" class="pp-form-input" placeholder="e.g. 65" required>
 		</div>
 	</div>
 	<!-- CSV Upload Section -->

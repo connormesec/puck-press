@@ -70,6 +70,7 @@ class Puck_Press_Roster_Player_Detail {
 	public static function render( array $player, array $stats_rows ): string {
 		$fallback   = PuckPressTemplate::HEADSHOT_FALLBACK;
 		$full_name  = $player['name'] ?? '';
+		$player_slug = sanitize_title( $full_name );
 		$name_parts = explode( ' ', $full_name, 2 );
 		$first_name = esc_html( $name_parts[0] ?? '' );
 		$last_name  = esc_html( $name_parts[1] ?? '' );
@@ -153,6 +154,45 @@ class Puck_Press_Roster_Player_Detail {
 			$stats_html = '<p class="pp-no-stats">No stats available for this player.</p>';
 		}
 
+		// ── Related tab: game summaries that mention this player ─────────────
+		$related_query = new WP_Query(
+			array(
+				'post_type'      => 'pp_game_summary',
+				'post_status'    => 'publish',
+				'posts_per_page' => 10,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'meta_query'     => array(
+					array(
+						'key'     => '_mentioned_player_slugs',
+						'value'   => '"' . $player_slug . '"',
+						'compare' => 'LIKE',
+					),
+				),
+			)
+		);
+
+		if ( $related_query->have_posts() ) {
+			$related_list = '';
+			while ( $related_query->have_posts() ) {
+				$related_query->the_post();
+				$related_list .= '<li class="pp-related-post">'
+					. '<span class="pp-related-date">' . esc_html( get_the_date() ) . '</span>'
+					. '<a href="' . esc_url( get_permalink() ) . '">' . esc_html( get_the_title() ) . '</a>'
+					. '</li>';
+			}
+			wp_reset_postdata();
+			$related_html = '<div class="pp-related-wrap">'
+				. '<h3 class="pp-related-heading">Game Recaps</h3>'
+				. '<ul class="pp-related-posts">' . $related_list . '</ul>'
+				. '</div>';
+		} else {
+			$related_html = '<div class="pp-related-wrap">'
+				. '<h3 class="pp-related-heading">Game Recaps</h3>'
+				. '<p class="pp-related-empty">No game recaps found for this player yet.</p>'
+				. '</div>';
+		}
+
 		$icons = self::$tab_icons;
 
 		return '
@@ -206,7 +246,7 @@ class Puck_Press_Roster_Player_Detail {
                 ' . $stats_html . '
             </div>
             <div id="pp-panel-related" class="pp-player-tab-panel">
-                <p class="pp-coming-soon">Coming soon.</p>
+                ' . $related_html . '
             </div>
             <div id="pp-panel-historical" class="pp-player-tab-panel">
                 <p class="pp-coming-soon">Coming soon.</p>

@@ -197,8 +197,10 @@ class Puck_Press_Schedule_Process_Usphl_Url {
 		// team's local timezone so game_timestamp reflects the local game time.
 		$game_timestamp = $this->format_gmt_to_timezone( $game['gmt_time'], $game['timezn'] );
 
-		// result_string is the USPHL result (e.g. "W 4-2", "L 1-3", or "" for upcoming).
-		$game_status = $game['result_string'] ?: null;
+		// Normalize result_string to uppercase canonical form (e.g. "Final/OT" → "FINAL OT").
+		// Storage must be uppercase so the edit-modal status_map comparison is exact.
+		$raw_status  = $game['result_string'] ?: null;
+		$game_status = $raw_status ? strtoupper( str_replace( '/', ' ', $raw_status ) ) : null;
 
 		// Null-guard: upcoming games have no result_string. If status is null and the
 		// score is 0, treat it as null (no score recorded yet). A real 0–0 final

@@ -122,6 +122,10 @@ class AccordionTemplate extends PuckPressTemplate {
 			$recap_btn_html = '<a class="accordion-recap-btn" href="' . esc_url( $game['post_link'] ) . '" target="_blank" rel="noopener">Summary</a>';
 		}
 
+		$venue_html = ! empty( $game['venue'] )
+			? '<span class="accordion_venue">' . esc_html( $game['venue'] ) . '</span>'
+			: '';
+
 		return '
         <div class="accordion_game_list">
             <div class="accordion_date-time">
@@ -133,6 +137,7 @@ class AccordionTemplate extends PuckPressTemplate {
                 <span class="accordion_vs">' . esc_html( $vs_at ) . '</span>
                 ' . $opponent_logo_html . '
                 <span class="accordion_team_title">' . esc_html( $game['opponent_team_name'] ) . '</span>
+                ' . $venue_html . '
             </div>
             <div class="accordion_game_detail">
                 <span class="accordion_game_outcome">' . esc_html( $result_message ) . '</span>
@@ -187,7 +192,7 @@ class AccordionTemplate extends PuckPressTemplate {
 
 	private function gameResultMessage( $game ) {
 		$game_result_message = '';
-		if ( $game['game_status'] == 'Final' ) {
+		if ( $game['game_status'] == 'FINAL' ) {
 			if ( $game['target_score'] < $game['opponent_score'] ) {
 				$game_result_message = 'L';
 			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
@@ -195,7 +200,7 @@ class AccordionTemplate extends PuckPressTemplate {
 			} else {
 				$game_result_message = 'T';
 			}
-		} elseif ( $game['game_status'] == 'Final OT' ) {
+		} elseif ( $game['game_status'] == 'FINAL OT' ) {
 			if ( $game['target_score'] < $game['opponent_score'] ) {
 				$game_result_message = 'OTL';
 			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
@@ -203,7 +208,7 @@ class AccordionTemplate extends PuckPressTemplate {
 			} else {
 				$game_result_message = 'OT';
 			}
-		} elseif ( $game['game_status'] == 'Final SO' ) {
+		} elseif ( $game['game_status'] == 'FINAL SO' ) {
 			if ( $game['target_score'] < $game['opponent_score'] ) {
 				$game_result_message = 'SOL';
 			} elseif ( $game['target_score'] > $game['opponent_score'] ) {

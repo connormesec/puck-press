@@ -74,6 +74,13 @@ class Puck_Press_Cron_Admin_Display {
 			echo '</div>';
 		}
 
+		// Handle "Force Reschedule" form
+		if ( isset( $_POST['puck_press_reschedule_cron'] ) && check_admin_referer( 'puck_press_cron_reschedule', 'puck_press_cron_reschedule_nonce' ) ) {
+			$this->cron->unschedule_cron();
+			$this->cron->schedule_cron( $this->schedule );
+			echo '<div class="notice notice-success"><p>Cron has been rescheduled successfully with the current schedule (' . esc_html( $this->schedule ) . ').</p></div>';
+		}
+
 		// Handle "Run Cron Task Now" form
 		if ( isset( $_POST['puck_press_run_cron_now'] ) && check_admin_referer( 'puck_press_cron_manual_action', 'puck_press_cron_manual_nonce' ) ) {
 			$this->cron->run_cron_task();
@@ -266,13 +273,6 @@ class Puck_Press_Cron_Admin_Display {
 		</div>
 
 		<?php
-		// Handle reschedule form
-		if ( isset( $_POST['puck_press_reschedule_cron'] ) && check_admin_referer( 'puck_press_cron_reschedule', 'puck_press_cron_reschedule_nonce' ) ) {
-			$this->cron->unschedule_cron();
-			$this->cron->schedule_cron( $this->schedule );
-			echo '<div class="notice notice-success"><p>Cron has been rescheduled successfully with the current schedule (' . esc_html( $this->schedule ) . ').</p></div>';
-		}
-
 		return ob_get_clean();
 	}
 }

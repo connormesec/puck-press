@@ -5,12 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Puck_Press_Game_Post_Creator {
 
-
 	private $table_name;
 
 	public function __construct() {
 		global $wpdb;
-		$this->table_name = $wpdb->prefix . 'pp_game_schedule_for_display';
+		$this->table_name = $wpdb->prefix . 'pp_schedule_games_display';
 	}
 
 	/**
@@ -32,13 +31,13 @@ class Puck_Press_Game_Post_Creator {
 
 		foreach ( $completed_games as $game ) {
 
-			// Guard 2: a custom URL or prior auto-post permalink is already stored
+			// Guard: a custom URL or prior auto-post permalink is already stored
 			if ( ! empty( $game->post_link ) ) {
 				$messages[] = "Game {$game->game_id} already has a post link. Skipping.";
 				continue;
 			}
 
-			// Guard 1: a WordPress post with _game_id meta already exists
+			// Guard: a WordPress post with _game_id meta already exists
 			if ( $this->game_post_exists( $game->game_id ) ) {
 				$messages[] = "Post for game {$game->game_id} already exists. Skipping.";
 				continue;
@@ -52,21 +51,14 @@ class Puck_Press_Game_Post_Creator {
 				'errors'    => array(),
 			);
 
-			// Step 1: get summary data
 			try {
 				$summary    = $initiator->returnGameDataInImageAPIFormat();
 				$messages[] = 'Summary data generated successfully.';
 			} catch ( Throwable $e ) {
 				$messages[] = 'Failed to generate summary data: ' . $e->getMessage();
-				wp_send_json_error(
-					array(
-						'error'   => 'Failed to generate summary data',
-						'details' => $e->getMessage(),
-					)
-				);
+				continue;
 			}
 
-			// Step 2: always try to generate the image
 			try {
 				$data['image'] = $initiator->getImageFromImageAPI( $summary );
 				$messages[]    = 'Image generated successfully.';
@@ -75,7 +67,6 @@ class Puck_Press_Game_Post_Creator {
 				$data['errors'][] = 'Image generation failed: ' . $e->getMessage();
 			}
 
-			// Step 3: try blog summary, but don't fail hard if it breaks
 			try {
 				$data['blog_data'] = $initiator->getGameSummaryFromBlogAPI( $summary );
 				$messages[]        = 'Blog summary generated successfully.';
@@ -87,13 +78,16 @@ class Puck_Press_Game_Post_Creator {
 			try {
 				if ( empty( $data['blog_data'] ) || empty( $data['image'] ) ) {
 					$messages[] = 'Missing blog text or image for post creation.';
-					throw new Exception( 'Missing blog text or image for post creation.' );
 				} else {
+					$link_result               = $this->linkify_player_names( $data['blog_data']['body'], $data['blog_data']['prompt_players'] ?? array() );
+					$data['blog_data']['body'] = $link_result['body'];
+					$mentioned_slugs           = $link_result['slugs'];
+
 					$post_title = $data['blog_data']['title'];
-					$permalink  = $this->testCreatePost( $game->game_id, $data['blog_data']['body'], $post_title, $data['image'] );
+					$permalink  = $this->testCreatePost( $game->game_id, $data['blog_data']['body'], $post_title, $data['image'], $mentioned_slugs );
 
 					if ( ! is_wp_error( $permalink ) ) {
-						$this->save_post_link_for_game( $game->game_id, $permalink );
+						$this->save_post_link_for_game( $game->game_id, $permalink, (int) $game->team_id );
 						$messages[] = 'Post created successfully: ' . $permalink;
 					} else {
 						$messages[]       = 'Post creation failed: ' . $permalink->get_error_message();
@@ -109,13 +103,7 @@ class Puck_Press_Game_Post_Creator {
 
 	/**
 	 * Scan all published WordPress posts and link any that match a game in the
-	 * schedule back into pp_game_schedule_mods / pp_game_schedule_for_display.
-	 *
-	 * Handles both slug formats:
-	 *   - Old: post_name = sanitize_title($game_id), _game_id meta = same value
-	 *   - New: post_name = sanitize_title($title . '-' . $game_id), _game_id meta ends with '-{game_id_slug}'
-	 *
-	 * Returns an array of human-readable result messages.
+	 * schedule back into pp_team_game_mods / pp_team_games_display / pp_schedule_games_display.
 	 */
 	public function autodiscover_post_links() {
 		global $wpdb;
@@ -124,9 +112,8 @@ class Puck_Press_Game_Post_Creator {
 		$found    = 0;
 		$skipped  = 0;
 
-		// Get all games that don't already have a post_link stored
 		$games = $wpdb->get_results(
-			"SELECT game_id FROM {$this->table_name}
+			"SELECT game_id, team_id FROM {$this->table_name}
              WHERE post_link IS NULL OR post_link = ''"
 		);
 
@@ -135,7 +122,6 @@ class Puck_Press_Game_Post_Creator {
 			return $messages;
 		}
 
-		// Build a map of _game_id meta value => post_id for all published posts
 		$posts_with_meta = get_posts(
 			array(
 				'post_type'      => array( 'post', 'pp_game_summary' ),
@@ -146,7 +132,7 @@ class Puck_Press_Game_Post_Creator {
 			)
 		);
 
-		$meta_lookup = array(); // _game_id meta value => post_id
+		$meta_lookup = array();
 		foreach ( $posts_with_meta as $post_id ) {
 			$val = get_post_meta( $post_id, '_game_id', true );
 			if ( $val !== '' && $val !== false ) {
@@ -156,15 +142,14 @@ class Puck_Press_Game_Post_Creator {
 
 		foreach ( $games as $game ) {
 			$game_id      = $game->game_id;
+			$team_id      = (int) $game->team_id;
 			$game_id_slug = sanitize_title( $game_id );
 			$matched_id   = null;
 
-			// Try 1: exact _game_id meta match (old format)
 			if ( isset( $meta_lookup[ $game_id_slug ] ) ) {
 				$matched_id = $meta_lookup[ $game_id_slug ];
 			}
 
-			// Try 2: _game_id meta ends with '-{game_id_slug}' (new title-based slug format)
 			if ( ! $matched_id ) {
 				$suffix     = '-' . $game_id_slug;
 				$suffix_len = strlen( $suffix );
@@ -177,7 +162,6 @@ class Puck_Press_Game_Post_Creator {
 				}
 			}
 
-			// Try 3: post_name = game_id_slug (old posts that may have no meta)
 			if ( ! $matched_id ) {
 				$fallback = get_posts(
 					array(
@@ -190,7 +174,6 @@ class Puck_Press_Game_Post_Creator {
 				);
 				if ( $fallback ) {
 					$matched_id = $fallback[0];
-					// Back-fill the _game_id meta so future cron runs detect it correctly
 					if ( ! get_post_meta( $matched_id, '_game_id', true ) ) {
 						update_post_meta( $matched_id, '_game_id', $game_id_slug );
 					}
@@ -199,7 +182,7 @@ class Puck_Press_Game_Post_Creator {
 
 			if ( $matched_id ) {
 				$permalink = get_permalink( $matched_id );
-				$this->save_post_link_for_game( $game_id, $permalink );
+				$this->save_post_link_for_game( $game_id, $permalink, $team_id );
 				$messages[] = "Linked game {$game_id} → {$permalink}";
 				++$found;
 			} else {
@@ -211,32 +194,38 @@ class Puck_Press_Game_Post_Creator {
 		return $messages;
 	}
 
-	/**
-	 * Get 3 most recent completed games
-	 */
+	private function get_main_schedule_id() {
+		global $wpdb;
+		$id = $wpdb->get_var(
+			"SELECT id FROM {$wpdb->prefix}pp_schedules WHERE is_main = 1 LIMIT 1"
+		);
+		return $id ? (int) $id : null;
+	}
+
 	private function get_recent_completed_games( $limit = 3 ) {
 		global $wpdb;
 
-		$sql = $wpdb->prepare(
-			"
-            SELECT *
-            FROM {$this->table_name}
-            WHERE game_status REGEXP %s
-              AND game_timestamp < NOW()
-            ORDER BY game_timestamp DESC
-            LIMIT %d
-        ",
-			'^Final',
-			$limit
-		);
+		$schedule_id = $this->get_main_schedule_id();
+		if ( ! $schedule_id ) {
+			return array();
+		}
 
-		return $wpdb->get_results( $sql );
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT *
+                 FROM {$this->table_name}
+                 WHERE schedule_id = %d
+                   AND game_status REGEXP %s
+                   AND game_timestamp < NOW()
+                 ORDER BY game_timestamp DESC
+                 LIMIT %d",
+				$schedule_id,
+				'^Final',
+				$limit
+			)
+		);
 	}
 
-	/**
-	 * Check whether a WordPress post already exists for a given game_id
-	 * by querying the _game_id post meta set during creation.
-	 */
 	private function game_post_exists( $game_id ) {
 		$posts = get_posts(
 			array(
@@ -252,69 +241,76 @@ class Puck_Press_Game_Post_Creator {
 	}
 
 	/**
-	 * Persist a post permalink back into the schedule pipeline so it survives
-	 * table rebuilds and appears in the admin games table immediately.
+	 * Persist a post permalink back into the schedule pipeline.
 	 *
-	 * 1. Upsert into pp_game_schedule_mods (persists through any rebuild)
-	 * 2. Directly update pp_game_schedule_for_display (shows immediately)
+	 * 1. Upsert into pp_team_game_mods (persists through any rebuild)
+	 * 2. Update pp_team_games_display directly (shows immediately)
+	 * 3. Update all rows in pp_schedule_games_display by game_id (all team perspectives)
 	 */
-	public function save_post_link_for_game( $game_id, $permalink ) {
+	public function save_post_link_for_game( $game_id, $permalink, $team_id = null ) {
 		global $wpdb;
 
-		$mods_table    = $wpdb->prefix . 'pp_game_schedule_mods';
-		$display_table = $wpdb->prefix . 'pp_game_schedule_for_display';
 		$current_time  = current_time( 'mysql' );
+		$mods_table    = $wpdb->prefix . 'pp_team_game_mods';
+		$team_display  = $wpdb->prefix . 'pp_team_games_display';
+		$sched_display = $wpdb->prefix . 'pp_schedule_games_display';
 
-		// Upsert into mods so the link survives the next full rebuild
-		$existing_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT id FROM $mods_table WHERE external_id = %s AND edit_action = 'update' LIMIT 1",
-				$game_id
-			)
-		);
-
-		if ( $existing_id ) {
-			$existing_json                = $wpdb->get_var(
+		if ( $team_id ) {
+			$existing = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT edit_data FROM $mods_table WHERE id = %d",
-					intval( $existing_id )
+					"SELECT id, edit_data FROM {$mods_table}
+                     WHERE external_id = %s AND team_id = %d AND edit_action = 'update'
+                     LIMIT 1",
+					$game_id,
+					$team_id
 				)
 			);
-			$existing_fields              = ! empty( $existing_json ) ? ( json_decode( $existing_json, true ) ?: array() ) : array();
-			$existing_fields['post_link'] = $permalink;
+
+			if ( $existing ) {
+				$fields              = json_decode( $existing->edit_data, true ) ?: array();
+				$fields['post_link'] = $permalink;
+				$wpdb->update(
+					$mods_table,
+					array(
+						'edit_data'  => wp_json_encode( $fields ),
+						'updated_at' => $current_time,
+					),
+					array( 'id' => (int) $existing->id ),
+					array( '%s', '%s' ),
+					array( '%d' )
+				);
+			} else {
+				$wpdb->insert(
+					$mods_table,
+					array(
+						'team_id'     => $team_id,
+						'external_id' => $game_id,
+						'edit_action' => 'update',
+						'edit_data'   => wp_json_encode(
+							array(
+								'external_id' => $game_id,
+								'post_link'   => $permalink,
+							)
+						),
+						'created_at'  => $current_time,
+						'updated_at'  => $current_time,
+					),
+					array( '%d', '%s', '%s', '%s', '%s', '%s' )
+				);
+			}
 
 			$wpdb->update(
-				$mods_table,
-				array(
-					'edit_data'  => wp_json_encode( $existing_fields ),
-					'updated_at' => $current_time,
-				),
-				array( 'id' => intval( $existing_id ) ),
-				array( '%s', '%s' ),
-				array( '%d' )
-			);
-		} else {
-			$wpdb->insert(
-				$mods_table,
-				array(
-					'external_id' => $game_id,
-					'edit_action' => 'update',
-					'edit_data'   => wp_json_encode(
-						array(
-							'external_id' => $game_id,
-							'post_link'   => $permalink,
-						)
-					),
-					'created_at'  => $current_time,
-					'updated_at'  => $current_time,
-				),
-				array( '%s', '%s', '%s', '%s', '%s' )
+				$team_display,
+				array( 'post_link' => $permalink ),
+				array( 'game_id' => $game_id, 'team_id' => $team_id ),
+				array( '%s' ),
+				array( '%s', '%d' )
 			);
 		}
 
-		// Also update for_display directly so the column is visible right now
+		// Update all perspectives of this game in the schedule display table
 		$wpdb->update(
-			$display_table,
+			$sched_display,
 			array( 'post_link' => $permalink ),
 			array( 'game_id' => $game_id ),
 			array( '%s' ),
@@ -322,10 +318,68 @@ class Puck_Press_Game_Post_Creator {
 		);
 	}
 
+	public function delete_post_for_game( $game_id ) {
+		$posts = get_posts(
+			array(
+				'post_type'      => array( 'post', 'pp_game_summary' ),
+				'meta_key'       => '_game_id',
+				'meta_value'     => sanitize_title( $game_id ),
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+			)
+		);
+
+		foreach ( $posts as $post_id ) {
+			wp_delete_post( $post_id, true );
+		}
+
+		$this->save_post_link_for_game( $game_id, '' );
+	}
+
 	/**
-	 * Create a new post for the given game, optionally attaching a featured image
+	 * Replace each prompt player's name in $body with a link to their player page.
+	 * Only players found in pp_team_players_display are linked; others are silently skipped.
+	 *
+	 * @param string $body           Post body HTML.
+	 * @param array  $prompt_players Array of full name strings.
+	 * @return array { body: string, slugs: string[] }
 	 */
-	private function create_game_post( $slug, $post_body, $post_title, $image_buffer = null ) {
+	public function linkify_player_names( string $body, array $prompt_players ): array {
+		global $wpdb;
+		$slugs = array();
+
+		foreach ( $prompt_players as $name ) {
+			$full_name = trim( $name );
+			if ( empty( $full_name ) || $full_name === 'Unknown Player' ) {
+				continue;
+			}
+
+			$found = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT name FROM {$wpdb->prefix}pp_team_players_display WHERE name = %s LIMIT 1",
+					$full_name
+				)
+			);
+
+			if ( ! $found ) {
+				continue;
+			}
+
+			$slug    = sanitize_title( $full_name );
+			$href    = home_url( '/player/' . $slug . '/' );
+			$link    = '<a href="' . esc_url( $href ) . '" class="pp-player-link">' . esc_html( $full_name ) . '</a>';
+			$body    = str_replace( $full_name, $link, $body );
+			$slugs[] = $slug;
+		}
+
+		return array(
+			'body'  => $body,
+			'slugs' => array_unique( $slugs ),
+		);
+	}
+
+	private function create_game_post( $slug, $post_body, $post_title, $image_buffer = null, $mentioned_slugs = array() ) {
 		$post_data = array(
 			'post_title'   => $post_title,
 			'post_content' => $post_body,
@@ -338,10 +392,12 @@ class Puck_Press_Game_Post_Creator {
 		$post_id = wp_insert_post( $post_data );
 
 		if ( ! is_wp_error( $post_id ) ) {
-			// Store the sanitized game_id in meta for reliable duplicate detection
 			update_post_meta( $post_id, '_game_id', sanitize_title( $slug ) );
 
-			// Handle featured image if provided
+			if ( ! empty( $mentioned_slugs ) ) {
+				update_post_meta( $post_id, '_mentioned_player_slugs', wp_json_encode( $mentioned_slugs ) );
+			}
+
 			if ( ! empty( $image_buffer ) ) {
 				$this->attach_featured_image_from_base64( $post_id, $image_buffer, $slug );
 			}
@@ -350,11 +406,7 @@ class Puck_Press_Game_Post_Creator {
 		return $post_id;
 	}
 
-	/**
-	 * Decode a base64 image and set it as the featured image for a post
-	 */
 	private function attach_featured_image_from_base64( $post_id, $image_buffer, $slug ) {
-		// Clean base64 string (remove data:image/png;base64, if present)
 		if ( strpos( $image_buffer, 'base64,' ) !== false ) {
 			$image_buffer = explode( 'base64,', $image_buffer )[1];
 		}
@@ -365,7 +417,6 @@ class Puck_Press_Game_Post_Creator {
 			return;
 		}
 
-		// Prepare upload directory
 		$upload_dir = wp_upload_dir();
 		if ( ! empty( $upload_dir['error'] ) ) {
 			error_log( 'Upload dir error: ' . $upload_dir['error'] );
@@ -375,10 +426,8 @@ class Puck_Press_Game_Post_Creator {
 		$filename  = 'game-summary-' . sanitize_title( $slug ) . '-' . time() . '.png';
 		$file_path = trailingslashit( $upload_dir['path'] ) . $filename;
 
-		// Save file
 		file_put_contents( $file_path, $decoded );
 
-		// Create attachment
 		$filetype   = wp_check_filetype( $filename, null );
 		$attachment = array(
 			'post_mime_type' => $filetype['type'],
@@ -389,31 +438,23 @@ class Puck_Press_Game_Post_Creator {
 
 		$attach_id = wp_insert_attachment( $attachment, $file_path, $post_id );
 
-		// Generate metadata & update
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $file_path );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
 
-		// Set as featured image
 		set_post_thumbnail( $post_id, $attach_id );
 	}
 
-	/**
-	 * Create a post with an SEO-friendly slug (title + game_id suffix).
-	 * Returns the permalink on success or a WP_Error on failure.
-	 */
-	public function testCreatePost( $game_id, $post_body, $post_title, $image_buffer ) {
-		// Guard: double-check meta-based duplicate detection
+	public function testCreatePost( $game_id, $post_body, $post_title, $image_buffer, $mentioned_slugs = array() ) {
 		if ( $this->game_post_exists( $game_id ) ) {
 			$msg = "Post for game_id {$game_id} already exists. Skipping creation.";
 			error_log( $msg );
 			return new WP_Error( 'post_exists', $msg );
 		}
 
-		// SEO-friendly slug: "{post-title}-{game_id}"
 		$slug = sanitize_title( ( $post_title ?? '' ) . '-' . $game_id );
 
-		$post_id = $this->create_game_post( $slug, $post_body, $post_title, $image_buffer );
+		$post_id = $this->create_game_post( $slug, $post_body, $post_title, $image_buffer, $mentioned_slugs );
 
 		if ( is_wp_error( $post_id ) || ! $post_id ) {
 			$msg = "Failed to create post for game_id {$game_id}.";

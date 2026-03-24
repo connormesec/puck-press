@@ -45,7 +45,7 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--pp-arena-accent);
+  color: var(--pp-arena-header_text);
 }
 
 .arena-banner__matchup {
@@ -80,7 +80,7 @@
 .arena-banner__date {
   font-size: 14px;
   font-weight: 600;
-  color: var(--pp-arena-accent);
+  color: var(--pp-arena-header_text);
 }
 
 .arena-banner__venue {

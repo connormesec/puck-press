@@ -7,14 +7,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Puck_Press_Admin_Game_Summary_Post_Display {
 
 	public function render() {
-		// Manual save for API keys
 		if ( isset( $_POST['pp_save_keys'] ) ) {
 			check_admin_referer( 'pp_save_game_summary_keys' );
 
 			update_option( 'pp_openai_api_key', sanitize_text_field( $_POST['pp_openai_api_key'] ) );
 			update_option( 'pp_image_api_key', sanitize_text_field( $_POST['pp_image_api_key'] ) );
 
-			// Save feature toggle checkbox
 			$enabled = isset( $_POST['pp_enable_game_summary_post'] ) ? 1 : 0;
 			update_option( 'pp_enable_game_summary_post', $enabled );
 
@@ -119,6 +117,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 
 		$game_id     = isset( $_POST['game_id'] ) ? intval( $_POST['game_id'] ) : 0;
 		$source_type = isset( $_POST['source_type'] ) ? sanitize_text_field( $_POST['source_type'] ) : '';
+		$team_id     = isset( $_POST['team_id'] ) ? intval( $_POST['team_id'] ) : 0;
 
 		if ( ! $game_id || ! $source_type ) {
 			wp_send_json_error( array( 'error' => 'No game ID or source type provided.' ) );
@@ -139,7 +138,6 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 					'errors'    => array(),
 				);
 
-				// Step 1: get summary data
 				try {
 					$summary = $initiator->returnGameDataInImageAPIFormat();
 				} catch ( Throwable $e ) {
@@ -151,27 +149,37 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 					);
 				}
 
-				// Step 2: always try to generate the image
 				try {
 					$data['image'] = $initiator->getImageFromImageAPI( $summary );
 				} catch ( Throwable $e ) {
 					$data['errors'][] = 'Image generation failed: ' . $e->getMessage();
 				}
 
-				// Step 3: try blog summary, but don’t fail hard if it breaks
 				try {
 					$data['blog_data'] = $initiator->getGameSummaryFromBlogAPI( $summary );
 				} catch ( Throwable $e ) {
 					$data['errors'][] = 'Blog summary failed: ' . $e->getMessage();
-					// Leave $data['blog'] as null
+				}
+
+				if ( ! empty( $data['blog_data'] ) ) {
+					include_once plugin_dir_path( __DIR__ ) . '../../includes/game-summary-post/class-puck-press-game-post-creator.php';
+					$post_creator_preview      = new Puck_Press_Game_Post_Creator();
+					$link_result               = $post_creator_preview->linkify_player_names( $data['blog_data']['body'], $data['blog_data']['prompt_players'] ?? array() );
+					$data['blog_data']['body'] = $link_result['body'];
 				}
 
 				wp_send_json_success( $data );
 				wp_die();
+
 			} elseif ( $action === 'generate_and_post' ) {
 				include_once plugin_dir_path( __DIR__ ) . '../../includes/game-summary-post/class-puck-press-game-post-creator.php';
 				$post_creator = new Puck_Press_Game_Post_Creator();
 				$initiator    = new Puck_Press_Post_Game_Summary_Initiator( $game_id, $source_type );
+
+				// Handle overwrite: delete existing post before creating new one
+				if ( isset( $_POST['overwrite'] ) && $_POST['overwrite'] === '1' ) {
+					$post_creator->delete_post_for_game( $game_id );
+				}
 
 				$data = array(
 					'image'     => null,
@@ -179,7 +187,6 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 					'errors'    => array(),
 				);
 
-				// Step 1: get summary data
 				try {
 					$summary = $initiator->returnGameDataInImageAPIFormat();
 				} catch ( Throwable $e ) {
@@ -191,14 +198,12 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 					);
 				}
 
-				// Step 2: always try to generate the image
 				try {
 					$data['image'] = $initiator->getImageFromImageAPI( $summary );
 				} catch ( Throwable $e ) {
 					$data['errors'][] = 'Image generation failed: ' . $e->getMessage();
 				}
 
-				// Step 3: try blog summary, but don’t fail hard if it breaks
 				try {
 					$data['blog_data'] = $initiator->getGameSummaryFromBlogAPI( $summary );
 				} catch ( Throwable $e ) {
@@ -209,9 +214,12 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 					if ( empty( $data['blog_data'] ) || empty( $data['image'] ) ) {
 						throw new Exception( 'Missing blog text or image for post creation.' );
 					} else {
-						$permalink = $post_creator->testCreatePost( $game_id, $data['blog_data']['body'], $data['blog_data']['title'], $data['image'] );
+						$link_result               = $post_creator->linkify_player_names( $data['blog_data']['body'], $data['blog_data']['prompt_players'] ?? array() );
+						$data['blog_data']['body'] = $link_result['body'];
+						$mentioned_slugs           = $link_result['slugs'];
+						$permalink = $post_creator->testCreatePost( $game_id, $data['blog_data']['body'], $data['blog_data']['title'], $data['image'], $mentioned_slugs );
 						if ( ! is_wp_error( $permalink ) ) {
-							$post_creator->save_post_link_for_game( $game_id, $permalink );
+							$post_creator->save_post_link_for_game( $game_id, $permalink, $team_id ?: null );
 						}
 						$data['post_link'] = $permalink;
 					}
@@ -221,6 +229,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 
 				wp_send_json_success( $data );
 				wp_die();
+
 			} else {
 				wp_send_json_error( array( 'error' => 'Unknown action.' ) );
 			}
@@ -230,19 +239,23 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 	function render_game_summary_test() {
 		global $wpdb;
 
-		$table = $wpdb->prefix . 'pp_game_schedule_for_display'; // adjust if different
+		$schedule_id = $wpdb->get_var(
+			"SELECT id FROM {$wpdb->prefix}pp_schedules WHERE is_main = 1 LIMIT 1"
+		);
+
+		$table = $wpdb->prefix . 'pp_schedule_games_display';
 		$today = current_time( 'Y-m-d' );
 
-		// Query past games
 		$games = $wpdb->get_results(
 			$wpdb->prepare(
-				"
-            SELECT game_id, source_type, game_timestamp, game_date_day, opponent_team_name, target_score, opponent_score
-            FROM $table
-            WHERE game_timestamp < %s
-            ORDER BY game_timestamp DESC
-            LIMIT 50
-        ",
+				"SELECT game_id, source_type, team_id, game_timestamp, game_date_day,
+                        opponent_team_name, target_score, opponent_score, post_link
+                 FROM {$table}
+                 WHERE schedule_id = %d
+                   AND game_timestamp < %s
+                 ORDER BY game_timestamp DESC
+                 LIMIT 50",
+				intval( $schedule_id ),
 				$today
 			)
 		);
@@ -257,17 +270,24 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 				<option value="">-- Select a past game --</option>
 				<?php foreach ( $games as $game ) : ?>
 					<option value="<?php echo esc_attr( $game->game_id ); ?>"
-						data-source-type="<?php echo esc_attr( $game->source_type ); ?>">
-						<?php echo esc_html( "{$game->game_date_day} vs {$game->opponent_team_name} ({$game->target_score} - {$game->opponent_score})" ); ?>
+						data-source-type="<?php echo esc_attr( $game->source_type ); ?>"
+						data-team-id="<?php echo esc_attr( $game->team_id ); ?>"
+						data-post-link="<?php echo esc_attr( $game->post_link ?? '' ); ?>">
+						<?php
+						$label = "{$game->game_date_day} vs {$game->opponent_team_name} ({$game->target_score} - {$game->opponent_score})";
+						if ( ! empty( $game->post_link ) ) {
+							$label .= ' ✓';
+						}
+						echo esc_html( $label );
+						?>
 					</option>
 				<?php endforeach; ?>
 			</select>
 
-			<button type="submit" name="pp_action" value="generate" class="button button-primary">
+			<br /><br />
+
+			<button type="submit" class="button button-primary" id="pp-generate-btn">
 				Create Game Summary
-			</button>
-			<button type="submit" name="pp_action" value="generate_and_post" class="button">
-				Create Summary & Publish Post
 			</button>
 		</form>
 

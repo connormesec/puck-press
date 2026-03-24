@@ -69,9 +69,14 @@
 class Class_Hockey_Game_Blog_Generator {
 
 	private $openaiApiKey;
+	private array $promptPlayers = array();
 
 	public function __construct( $openaiApiKey ) {
 		$this->openaiApiKey = $openaiApiKey;
+	}
+
+	public function getPromptPlayers(): array {
+		return $this->promptPlayers;
 	}
 
 	/**
@@ -187,6 +192,13 @@ Replace the bracketed title with your actual title. The very first character of 
 
 		$homePlayer     = $this->determineHighlightedPlayer( $homeTeam['skaters'] );
 		$visitingPlayer = $this->determineHighlightedPlayer( $visitingTeam['skaters'] );
+
+		$this->promptPlayers = array(
+			isset( $visitingTeam['goalieLog'][0] ) ? trim( $visitingTeam['goalieLog'][0]['info']['firstName'] . ' ' . $visitingTeam['goalieLog'][0]['info']['lastName'] ) : '',
+			isset( $homeTeam['goalieLog'][0] ) ? trim( $homeTeam['goalieLog'][0]['info']['firstName'] . ' ' . $homeTeam['goalieLog'][0]['info']['lastName'] ) : '',
+			trim( $visitingPlayer['firstName'] . ' ' . $visitingPlayer['lastName'] ),
+			trim( $homePlayer['firstName'] . ' ' . $homePlayer['lastName'] ),
+		);
 
 		$nextGameMessage = $this->getNextGameMessage( $gameData );
 

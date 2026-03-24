@@ -43,12 +43,22 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 		if ( $tab === 'game-summary' ) :
 			?>
 			nav-tab-active<?php endif; ?>">Post Game Summary</a>
-		<a href="?page=puck-press&tab=insta-post" class="nav-tab 
+		<a href="?page=puck-press&tab=insta-post" class="nav-tab
 		<?php
 		if ( $tab === 'insta-post' ) :
 			?>
 			nav-tab-active<?php endif; ?>">Insta Post</a>
-		<a href="?page=puck-press&tab=player-page" class="nav-tab 
+		<a href="?page=puck-press&tab=post-slider" class="nav-tab
+		<?php
+		if ( $tab === 'post-slider' ) :
+			?>
+			nav-tab-active<?php endif; ?>">Post Slider</a>
+		<a href="?page=puck-press&tab=league-news" class="nav-tab
+		<?php
+		if ( $tab === 'league-news' ) :
+			?>
+			nav-tab-active<?php endif; ?>">League News</a>
+		<a href="?page=puck-press&tab=player-page" class="nav-tab
 		<?php
 		if ( $tab === 'player-page' ) :
 			?>
@@ -92,6 +102,16 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 				include_once plugin_dir_path( __DIR__ ) . 'components/insta-post-importer/instagram-post-admin-display.php';
 				$insta_post_display = new Puck_Press_Admin_Instagram_Post_Importer_Display();
 				echo $insta_post_display->render();
+				break;
+			case 'post-slider':
+				include_once plugin_dir_path( __DIR__ ) . 'components/post-slider/post-slider-admin-display.php';
+				$post_slider_display = new Puck_Press_Post_Slider_Admin_Display();
+				echo $post_slider_display->render();
+				break;
+			case 'league-news':
+				include_once plugin_dir_path( __DIR__ ) . 'components/league-news/league-news-admin-display.php';
+				$league_news_display = new Puck_Press_League_News_Admin_Display();
+				echo $league_news_display->render();
 				break;
 			case 'player-page':
 				include plugin_dir_path( __DIR__ ) . 'components/player-page/player-page-admin-display.php';

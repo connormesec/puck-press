@@ -282,6 +282,57 @@ class Puck_Press_Public {
 		new Puck_Press_Stats_Template_Manager();
 	}
 
+	public function enqueue_post_slider_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-post-slider' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-post-slider-template-manager.php';
+		new Puck_Press_Post_Slider_Template_Manager();
+	}
+
+	public function post_slider_shortcode( $atts = array() ) {
+		$atts = shortcode_atts(
+			array(
+				'post_type' => 'post',
+				'count'     => '6',
+				'more_url'  => '#',
+				'more_text' => 'More Posts',
+			),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/post-slider/class-puck-press-post-slider-render-utils.php';
+
+		$render = new Puck_Press_Post_Slider_Render_Utils(
+			sanitize_text_field( $atts['post_type'] ),
+			max( 1, (int) $atts['count'] ),
+			esc_url_raw( $atts['more_url'] ),
+			sanitize_text_field( $atts['more_text'] )
+		);
+		return $render->get_html();
+	}
+
+	public function enqueue_league_news_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-league-news' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-league-news-template-manager.php';
+		new Puck_Press_League_News_Template_Manager();
+	}
+
+	public function league_news_shortcode( $atts = array() ) {
+		require_once plugin_dir_path( __FILE__ ) . '../includes/league-news/class-puck-press-league-news-api.php';
+		require_once plugin_dir_path( __FILE__ ) . '../includes/league-news/class-puck-press-league-news-render-utils.php';
+
+		$render = new Puck_Press_League_News_Render_Utils();
+		return $render->get_html();
+	}
+
 	public function stat_leaders_skaters_shortcode( $atts = array() ) {
 		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
 		$slug        = sanitize_title( $atts['roster'] );

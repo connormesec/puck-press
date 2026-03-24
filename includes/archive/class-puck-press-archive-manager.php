@@ -60,6 +60,7 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
             type TEXT NOT NULL,
             season VARCHAR(50) DEFAULT NULL,
             source_url_or_path TEXT DEFAULT NULL,
+            other_data TEXT DEFAULT NULL,
             PRIMARY KEY (id),
             KEY archive_id (archive_id),
             KEY season_team (season_key, team_id)
@@ -231,8 +232,8 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
         $wpdb->query(
             $wpdb->prepare(
                 "INSERT INTO {$wpdb->prefix}pp_team_sources_archive
-                    (archive_id, season_key, team_id, name, type, season, source_url_or_path)
-                SELECT %d, %s, team_id, name, type, season, source_url_or_path
+                    (archive_id, season_key, team_id, name, type, season, source_url_or_path, other_data)
+                SELECT %d, %s, team_id, name, type, season, source_url_or_path, other_data
                 FROM {$wpdb->prefix}pp_team_sources
                 WHERE team_id = %d AND status = 'active'",
                 $archive_id,

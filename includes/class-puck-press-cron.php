@@ -17,36 +17,15 @@ class Puck_Press_Cron {
 	private $cron_messages = array();
 
 	public function __construct() {
-		// Load dependencies
-		$this->load_dependencies();
-
-		// Register the cron action
+		// Register the cron action only.
+		// maybe_schedule_cron is registered by the loader in class-puck-press.php.
 		add_action( self::HOOK, array( $this, 'run_cron_task' ) );
-
-		// Only schedule if cron is enabled
-		add_action( 'init', array( $this, 'maybe_schedule_cron' ) );
-	}
-
-	private function load_dependencies() {
-		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedules-wpdb-utils.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-registry-wpdb-utils.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-normalizer.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
-		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
 	}
 
 	public function maybe_schedule_cron() {
 		$enabled = get_option( self::OPTION_ENABLED, true );
 
 		if ( ! $enabled ) {
-			// If cron is disabled, make sure it's unscheduled
 			if ( wp_next_scheduled( self::HOOK ) ) {
 				$this->unschedule_cron();
 				error_log( 'Puck Press Cron: Unscheduled cron because it\'s disabled' );
@@ -56,12 +35,13 @@ class Puck_Press_Cron {
 
 		$current_schedule = get_option( self::OPTION_SCHEDULE, 'twicedaily' );
 
-		// Check if the event is already scheduled
 		if ( ! wp_next_scheduled( self::HOOK ) ) {
 			error_log( 'Puck Press Cron: Scheduling new cron event with schedule: ' . $current_schedule );
 			$this->schedule_cron( $current_schedule );
 		} else {
-			error_log( 'Puck Press Cron: Event already scheduled for ' . date( 'Y-m-d H:i:s', wp_next_scheduled( self::HOOK ) ) );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'Puck Press Cron: Event already scheduled for ' . wp_date( 'Y-m-d H:i:s', wp_next_scheduled( self::HOOK ) ) );
+			}
 		}
 	}
 
@@ -70,23 +50,19 @@ class Puck_Press_Cron {
 			$schedule = get_option( self::OPTION_SCHEDULE, 'twicedaily' );
 		}
 
-		// Clear any existing schedules first to avoid duplicates
 		wp_clear_scheduled_hook( self::HOOK );
 
-		// Validate that the schedule exists
 		$available_schedules = wp_get_schedules();
 		if ( ! isset( $available_schedules[ $schedule ] ) ) {
 			error_log( 'Puck Press Cron: Invalid schedule "' . $schedule . '", falling back to twicedaily' );
 			$schedule = 'twicedaily';
 		}
 
-		// Schedule the event
 		$scheduled = wp_schedule_event( time(), $schedule, self::HOOK );
 
 		if ( $scheduled === false ) {
 			error_log( 'Puck Press Cron: Failed to schedule cron event with schedule: ' . $schedule );
 
-			// Try with twicedaily as fallback if we weren't already using it
 			if ( $schedule !== 'twicedaily' ) {
 				$fallback_scheduled = wp_schedule_event( time(), 'twicedaily', self::HOOK );
 				if ( $fallback_scheduled === false ) {
@@ -94,7 +70,6 @@ class Puck_Press_Cron {
 					return false;
 				} else {
 					error_log( 'Puck Press Cron: Fallback to twicedaily schedule successful' );
-					// Update the stored schedule option to reflect what actually got scheduled
 					update_option( self::OPTION_SCHEDULE, 'twicedaily' );
 					return true;
 				}
@@ -103,13 +78,9 @@ class Puck_Press_Cron {
 			}
 		} else {
 			error_log( 'Puck Press Cron: Successfully scheduled with ' . $schedule . ' interval' );
-
-			// Update the stored schedule option
 			update_option( self::OPTION_SCHEDULE, $schedule );
-
-			// Log the next scheduled time
 			$next_run = wp_next_scheduled( self::HOOK );
-			error_log( 'Puck Press Cron: Next run scheduled for ' . date( 'Y-m-d H:i:s', $next_run ) );
+			error_log( 'Puck Press Cron: Next run scheduled for ' . wp_date( 'Y-m-d H:i:s', $next_run ) );
 			return true;
 		}
 	}
@@ -121,38 +92,43 @@ class Puck_Press_Cron {
 			error_log( 'Puck Press Cron: Unscheduled event at timestamp ' . $timestamp );
 		}
 
-		// Also clear any remaining hooks
 		wp_clear_scheduled_hook( self::HOOK );
 	}
 
 	public function run_cron_task() {
-		$this->log_message( 'Puck Press Cron: Starting cron task execution' );
+		// Prevent the process from being killed mid-run by PHP's execution timeout.
+		@set_time_limit( 300 ); // phpcs:ignore
 
-		// Double-check if cron is enabled
+		$this->log_message( 'Puck Press Cron: Starting cron task execution' );
+		$this->log_message( 'Puck Press Cron: PHP max_execution_time = ' . ini_get( 'max_execution_time' ) . 's' );
+
 		$enabled = get_option( self::OPTION_ENABLED, true );
 		if ( ! $enabled ) {
 			$this->log_message( 'Puck Press Cron: Task is disabled via option' );
 			return;
 		}
 
+		$this->load_dependencies();
+
 		$start_time     = microtime( true );
 		$failure_counts = get_option( self::OPTION_FAILURE_COUNTS, array() );
 
-		// These flags are read by failure-count logic after the try/catch blocks.
 		$schedule_ok        = false;
 		$no_active_schedule = false;
 		$roster_ok          = false;
 		$no_active_roster   = false;
 
 		try {
-			$teams_utils         = new Puck_Press_Teams_Wpdb_Utils();
-			$all_teams           = $teams_utils->get_all_teams();
-			$all_sched_no_active = true;
-			$all_roster_no_active = true;
+			$teams_utils          = new Puck_Press_Teams_Wpdb_Utils();
+			$all_teams            = $teams_utils->get_all_teams();
+			$all_sched_no_active  = false;
+			$all_roster_no_active = false;
+			$any_team_processed   = false;
 
 			foreach ( $all_teams as $team ) {
-				$team_id   = (int) $team['id'];
-				$team_name = $team['name'] ?? "Team {$team_id}";
+				$team_id            = (int) $team['id'];
+				$team_name          = $team['name'] ?? "Team {$team_id}";
+				$any_team_processed = true;
 
 				// Schedule refresh
 				$t_importer = new Puck_Press_Team_Source_Importer( $team_id );
@@ -161,8 +137,8 @@ class Puck_Press_Cron {
 				$team_sched_no_active = in_array( 'No active sources to import.', $results['messages'] ?? array(), true );
 				$team_sched_ok        = ( $results['success_count'] ?? 0 ) > 0 || $team_sched_no_active;
 
-				if ( ! $team_sched_no_active ) {
-					$all_sched_no_active = false;
+				if ( $team_sched_no_active ) {
+					$all_sched_no_active = true;
 				}
 
 				if ( $team_sched_ok ) {
@@ -178,14 +154,20 @@ class Puck_Press_Cron {
 				}
 
 				// Roster refresh
-				$r_importer     = new Puck_Press_Team_Roster_Importer( $team_id );
-				$roster_results = $r_importer->rebuild_team_and_cascade();
+				$r_importer    = new Puck_Press_Team_Roster_Importer( $team_id );
+				$roster_result = $r_importer->rebuild_team_and_cascade();
+				$roster_import = $roster_result['import'] ?? array();
 
-				$team_roster_no_active = isset( $roster_results['message'] ) && strpos( $roster_results['message'], 'No active sources' ) !== false;
-				$team_roster_ok        = ( $roster_results['success'] ?? false ) || $team_roster_no_active;
+				$team_roster_no_active = ! empty(
+					array_filter(
+						$roster_import['messages'] ?? array(),
+						fn( $m ) => strpos( $m, 'No active sources' ) !== false
+					)
+				);
+				$team_roster_ok = ( $roster_import['success_count'] ?? 0 ) > 0 || $team_roster_no_active;
 
-				if ( ! $team_roster_no_active ) {
-					$all_roster_no_active = false;
+				if ( $team_roster_no_active ) {
+					$all_roster_no_active = true;
 				}
 
 				if ( $team_roster_ok ) {
@@ -193,22 +175,31 @@ class Puck_Press_Cron {
 					$roster_ok = true;
 				} else {
 					$this->log_error( "Puck Press Cron: Team '{$team_name}' roster import returned no data." );
+					foreach ( $roster_import['errors'] ?? array() as $err ) {
+						$source = is_array( $err ) ? ( $err['source'] ?? 'unknown' ) : 'unknown';
+						$msg    = is_array( $err ) ? ( $err['message'] ?? print_r( $err, true ) ) : (string) $err;
+						$this->log_error( "Puck Press Cron: Team '{$team_name}' roster source '{$source}' error — {$msg}" );
+					}
 				}
 			}
 
-			$no_active_schedule = $all_sched_no_active;
-			$no_active_roster   = $all_roster_no_active;
+			// If the loop never ran, an exception fired before the first team — treat as failure.
+			if ( ! $any_team_processed ) {
+				$no_active_schedule = false;
+				$no_active_roster   = false;
+			} else {
+				$no_active_schedule = $all_sched_no_active && ! $schedule_ok;
+				$no_active_roster   = $all_roster_no_active && ! $roster_ok;
+			}
 
 			$execution_time = round( microtime( true ) - $start_time, 2 );
-			$this->log_message( 'Puck Press Cron: schedule/roster refresh executed in ' . $execution_time . ' seconds' );
+			$this->log_message( 'Puck Press Cron: Schedule/roster refresh completed in ' . $execution_time . 's' );
 		} catch ( Exception $e ) {
 			$execution_time = round( microtime( true ) - $start_time, 2 );
-			$this->log_error( 'Puck Press Cron: Error during schedule/roster refresh after ' . $execution_time . ' seconds — ' . $e->getMessage() );
+			$this->log_error( 'Puck Press Cron: Error during schedule/roster refresh after ' . $execution_time . 's — ' . $e->getMessage() );
 			$this->log_error( 'Puck Press Cron: Stack trace — ' . $e->getTraceAsString() );
 		}
 
-		// Update consecutive failure counts.
-		// "no active sources" is intentional — don't count it as a failure.
 		if ( $schedule_ok || $no_active_schedule ) {
 			$failure_counts['schedule'] = 0;
 		} else {
@@ -238,10 +229,23 @@ class Puck_Press_Cron {
 			include_once plugin_dir_path( __FILE__ ) . 'game-summary-post/class-puck-press-game-post-creator.php';
 			$game_post_creator = new Puck_Press_Game_Post_Creator();
 			$messages          = $game_post_creator->run_daily();
+			$post_errors       = 0;
+
 			foreach ( $messages as $msg ) {
 				$this->log_message( 'Puck Press Cron: Game Post Creator — ' . $msg );
+				if ( stripos( $msg, 'failed' ) !== false || stripos( $msg, 'error' ) !== false ) {
+					++$post_errors;
+				}
 			}
-			$failure_counts['game_posts'] = 0;
+
+			if ( $post_errors === 0 ) {
+				$failure_counts['game_posts'] = 0;
+			} else {
+				$failure_counts['game_posts'] = ( $failure_counts['game_posts'] ?? 0 ) + 1;
+				$this->log_error(
+					sprintf( 'Puck Press Cron: Game post creator had %d soft error(s).', $post_errors )
+				);
+			}
 		} catch ( Exception $e ) {
 			$failure_counts['game_posts'] = ( $failure_counts['game_posts'] ?? 0 ) + 1;
 			$this->log_error( 'Puck Press Cron: Error during game post creation — ' . $e->getMessage() );
@@ -263,17 +267,36 @@ class Puck_Press_Cron {
 			$this->log_error( 'Puck Press Cron: Stack trace — ' . $e->getTraceAsString() );
 		}
 
-		// Persist updated failure counts, then send alert email if thresholds are crossed.
+		// Strip any orphaned team_* keys left over from a previous version of the importer.
+		$failure_counts = array_intersect_key(
+			$failure_counts,
+			array_flip( array( 'schedule', 'roster', 'game_posts', 'instagram' ) )
+		);
+
 		update_option( self::OPTION_FAILURE_COUNTS, $failure_counts );
 		$this->maybe_send_failure_email( $failure_counts );
 
-		// Update last run information
 		$current_time = current_time( 'mysql' );
 		update_option( self::OPTION_LAST_RUN, $current_time );
 		update_option( self::OPTION_LAST_RUN_TIMESTAMP, time() );
 		update_option( 'puck_press_cron_last_log', $this->cron_messages );
 
 		$this->log_message( 'Puck Press Cron: Updated last run time to ' . $current_time );
+	}
+
+	private function load_dependencies() {
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedules-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-materializer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-registry-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-normalizer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-acha-stats.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
 	}
 
 	/**
@@ -292,7 +315,6 @@ class Puck_Press_Cron {
 			return;
 		}
 
-		// Throttle: don't send more than once per day.
 		$last_sent = (int) get_option( self::OPTION_LAST_EMAIL_SENT, 0 );
 		if ( time() - $last_sent < DAY_IN_SECONDS ) {
 			return;
@@ -316,7 +338,6 @@ class Puck_Press_Cron {
 		$lines[] = 'Recent log entries:';
 		$lines[] = '-------------------';
 
-		// Include the last 20 log entries so the admin can see what went wrong.
 		$recent = array_slice( $this->cron_messages, -20 );
 		foreach ( $recent as $entry ) {
 			$lines[] = $entry;
@@ -345,10 +366,6 @@ class Puck_Press_Cron {
 		$this->cron_messages[] = "[$timestamp] $message";
 	}
 
-	/**
-	 * Log a message that represents an error. The [ERROR] tag makes failures
-	 * easy to spot when an admin scans the last-log option.
-	 */
 	private function log_error( $message ) {
 		$timestamp             = current_time( 'mysql' );
 		$entry                 = "[$timestamp] [ERROR] $message";
@@ -361,7 +378,6 @@ class Puck_Press_Cron {
 		do_action( self::HOOK );
 	}
 
-	// Get comprehensive status information
 	public function get_status() {
 		$next_run           = wp_next_scheduled( self::HOOK );
 		$enabled            = get_option( self::OPTION_ENABLED, true );
@@ -376,7 +392,7 @@ class Puck_Press_Cron {
 			'enabled'               => $enabled,
 			'schedule'              => $schedule,
 			'next_run'              => $next_run,
-			'next_run_formatted'    => $next_run ? date( 'Y-m-d H:i:s', $next_run ) : 'Not scheduled',
+			'next_run_formatted'    => $next_run ? wp_date( 'Y-m-d H:i:s', $next_run ) : 'Not scheduled',
 			'last_run'              => $last_run,
 			'last_run_timestamp'    => $last_run_timestamp,
 			'last_run_human'        => $last_run_timestamp ? human_time_diff( $last_run_timestamp ) . ' ago' : 'Never',
@@ -388,14 +404,12 @@ class Puck_Press_Cron {
 		);
 	}
 
-	// Debug method to check cron status
 	public function debug_cron_status() {
 		$next_run  = wp_next_scheduled( self::HOOK );
 		$schedules = wp_get_schedules();
 		$status    = $this->get_status();
 
-		// Check WordPress cron configuration
-		$cron_disabled = defined( 'DISABLE_WP_CRON' );
+		$cron_disabled = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
 		$cron_status   = $cron_disabled ? 'disabled via DISABLE_WP_CRON' : 'enabled';
 
 		$debug_info = array(
@@ -410,11 +424,10 @@ class Puck_Press_Cron {
 			'selected_schedule_exists' => isset( $schedules[ $status['schedule'] ] ) ? 'Yes' : 'No',
 			'wp_cron_status'           => $cron_status,
 			'disable_wp_cron_defined'  => defined( 'DISABLE_WP_CRON' ) ? 'Yes' : 'No',
-			'current_time'             => date( 'Y-m-d H:i:s' ),
+			'current_time'             => wp_date( 'Y-m-d H:i:s' ),
 			'current_timestamp'        => time(),
 		);
 
-		// Add selected schedule details if it exists
 		if ( isset( $schedules[ $status['schedule'] ] ) ) {
 			$schedule_info                                  = $schedules[ $status['schedule'] ];
 			$debug_info['selected_schedule_interval']       = $schedule_info['interval'];
@@ -422,7 +435,6 @@ class Puck_Press_Cron {
 			$debug_info['selected_schedule_interval_hours'] = round( $schedule_info['interval'] / HOUR_IN_SECONDS, 2 );
 		}
 
-		// Show all available schedules with their intervals
 		$debug_info['all_schedules'] = array();
 		foreach ( $schedules as $key => $schedule ) {
 			$debug_info['all_schedules'][ $key ] = array(
@@ -437,22 +449,18 @@ class Puck_Press_Cron {
 		return $debug_info;
 	}
 
-	// Health check method
 	public function health_check() {
 		$issues = array();
 		$status = $this->get_status();
 
-		// Check if cron is enabled but not scheduled
 		if ( $status['enabled'] && ! $status['is_scheduled'] ) {
 			$issues[] = 'Cron is enabled but not scheduled';
 		}
 
-		// Check if cron is disabled but still scheduled
 		if ( ! $status['enabled'] && $status['is_scheduled'] ) {
 			$issues[] = 'Cron is disabled but still scheduled';
 		}
 
-		// Check if selected schedule exists
 		$schedules = wp_get_schedules();
 		if ( ! isset( $schedules[ $status['schedule'] ] ) ) {
 			$issues[] = 'Selected schedule "' . $status['schedule'] . '" does not exist';
@@ -465,7 +473,6 @@ class Puck_Press_Cron {
 		);
 	}
 
-	// Get available schedules for admin display
 	public function get_available_schedules() {
 		return wp_get_schedules();
 	}

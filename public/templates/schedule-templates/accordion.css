@@ -26,6 +26,14 @@
 .accordion_game_outcome {
   color: var(--pp-accordion-content_text);
 }
+.accordion_venue {
+  float: left;
+  padding: 18px;
+  font-size: 13px;
+  opacity: 0.75;
+  color: var(--pp-accordion-content_text);
+  letter-spacing: 0.5px;
+}
 .accordion_game_list {
   border-bottom-color: var(--pp-accordion-border);
 }
@@ -366,6 +374,7 @@
 }
 
 .accordion_game_promotion_item_header {
+  text-align: center;
   font-size: 1.1em;
   font-weight: 800;
   margin: 0 0 0.25rem;

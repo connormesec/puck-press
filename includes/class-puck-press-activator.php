@@ -200,6 +200,53 @@ class Puck_Press_Activator {
 		update_option( 'pp_db_version', '6.0' );
 	}
 
+	public static function maybe_run_league_news_options_migration(): void {
+		if ( get_option( 'pp_league_news_options_migrated' ) ) {
+			return;
+		}
+
+		$count = get_option( 'pp_acha_news_count' );
+		if ( false !== $count ) {
+			update_option( 'pp_league_news_count', $count );
+		}
+
+		$category = get_option( 'pp_acha_news_category' );
+		if ( false !== $category ) {
+			update_option( 'pp_league_news_acha_category', $category );
+		}
+
+		$colors = get_option( 'pp_acha-news_template_colors_card' );
+		if ( false !== $colors ) {
+			update_option( 'pp_league-news_template_colors_card', $colors );
+		}
+
+		$template = get_option( 'pp_current_acha_news_template' );
+		if ( false !== $template ) {
+			update_option( 'pp_current_league_news_template', $template );
+		}
+
+		update_option( 'pp_league_news_options_migrated', true );
+	}
+
+	public static function maybe_run_promo_columns_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '7.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-schedules-wpdb-utils.php';
+
+		$teams_utils     = new Puck_Press_Teams_Wpdb_Utils();
+		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
+
+		$teams_utils->maybe_create_or_update_table( 'pp_team_games_display' );
+		$schedules_utils->maybe_create_or_update_table( 'pp_schedule_games_display' );
+
+		update_option( 'pp_db_version', '7.0' );
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );

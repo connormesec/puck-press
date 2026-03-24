@@ -55,6 +55,7 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/stats/class-puck-press-stats-wpdb-utils.php';
 		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-stat-leaders-template-manager.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/stat-leaders/class-puck-press-stat-leaders-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-post-slider-template-manager.php';
 
 		// Abstracts
 		require_once plugin_dir_path( __FILE__ ) . 'components/abstracts/class-puck-press-admin-card-abstract.php';
@@ -85,6 +86,14 @@ class Puck_Press_Admin_Loader {
 
 		// Insta Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/insta-post-importer/instagram-post-admin-display.php';
+
+		// Post Slider Module
+		require_once plugin_dir_path( __DIR__ ) . 'includes/post-slider/class-puck-press-post-slider-admin-preview-card.php';
+
+		// League News Module
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-league-news-template-manager.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/league-news/class-puck-press-league-news-api.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/league-news/class-puck-press-league-news-admin-preview-card.php';
 
 		// update checker
 		require_once plugin_dir_path( __DIR__ ) . 'includes/update.php';
