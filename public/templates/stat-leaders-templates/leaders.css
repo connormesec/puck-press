@@ -100,7 +100,7 @@
 
 /* ── Player name when team is hidden (only child) ───── */
 .pp-stat-leaders-container .pp-leaders-card-left .pp-leaders-player-name:only-child {
-  font-size: 1.9rem;
+  font-size: 1.5rem;
 }
 
 /* ── Team name ───────────────────────────────────────── */

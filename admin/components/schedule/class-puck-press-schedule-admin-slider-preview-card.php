@@ -17,7 +17,27 @@ class Puck_Press_Schedule_Admin_Slider_Preview_Card extends Puck_Press_Admin_Pre
 	}
 
 	protected function make_template_manager() {
-		return new Puck_Press_Slider_Template_Manager(); }
+		return new Puck_Press_Slider_Template_Manager( $this->schedule_id );
+	}
+
+	public function get_template_html( $template_name ) {
+		$options = array( 'schedule_id' => $this->schedule_id );
+		foreach ( $this->templates as $template ) {
+			if ( $template->get_key() === $template_name ) {
+				return $template->render_with_options( $this->data, $options );
+			}
+		}
+		return '<p>Template not found: ' . esc_html( $template_name ) . '</p>';
+	}
+
+	public function get_all_templates_html() {
+		$output  = '';
+		$options = array( 'schedule_id' => $this->schedule_id );
+		foreach ( $this->templates as $template ) {
+			$output .= $template->render_with_options( $this->data, $options );
+		}
+		return $output;
+	}
 	protected function get_data_table_name(): string {
 		return 'pp_schedule_games_display'; }
 	protected function get_outer_wrapper_id(): string {

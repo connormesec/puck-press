@@ -84,7 +84,7 @@ class Puck_Press_Game_Post_Creator {
 					$mentioned_slugs           = $link_result['slugs'];
 
 					$post_title = $data['blog_data']['title'];
-					$permalink  = $this->testCreatePost( $game->game_id, $data['blog_data']['body'], $post_title, $data['image'], $mentioned_slugs );
+					$permalink  = $this->testCreatePost( $game->game_id, $data['blog_data']['body'], $post_title, $data['image'], $mentioned_slugs, (int) $game->team_id );
 
 					if ( ! is_wp_error( $permalink ) ) {
 						$this->save_post_link_for_game( $game->game_id, $permalink, (int) $game->team_id );
@@ -183,6 +183,7 @@ class Puck_Press_Game_Post_Creator {
 			if ( $matched_id ) {
 				$permalink = get_permalink( $matched_id );
 				$this->save_post_link_for_game( $game_id, $permalink, $team_id );
+				$this->set_team_ids_on_post( $matched_id, $this->get_team_ids_for_game( $game_id, $team_id ) );
 				$messages[] = "Linked game {$game_id} → {$permalink}";
 				++$found;
 			} else {
@@ -379,6 +380,30 @@ class Puck_Press_Game_Post_Creator {
 		);
 	}
 
+	private function get_team_ids_for_game( string $game_id, int $primary_team_id ): array {
+		global $wpdb;
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT team_id FROM {$wpdb->prefix}pp_schedule_games_display WHERE game_id = %s AND team_id > 0",
+				$game_id
+			)
+		);
+		$ids = array_map( 'intval', $ids ?: array() );
+		if ( $primary_team_id > 0 && ! in_array( $primary_team_id, $ids, true ) ) {
+			$ids[] = $primary_team_id;
+		}
+		return $ids;
+	}
+
+	private function set_team_ids_on_post( int $post_id, array $team_ids ): void {
+		delete_post_meta( $post_id, '_pp_team_id' );
+		foreach ( $team_ids as $team_id ) {
+			if ( $team_id > 0 ) {
+				add_post_meta( $post_id, '_pp_team_id', $team_id, false );
+			}
+		}
+	}
+
 	private function create_game_post( $slug, $post_body, $post_title, $image_buffer = null, $mentioned_slugs = array() ) {
 		$post_data = array(
 			'post_title'   => $post_title,
@@ -445,7 +470,7 @@ class Puck_Press_Game_Post_Creator {
 		set_post_thumbnail( $post_id, $attach_id );
 	}
 
-	public function testCreatePost( $game_id, $post_body, $post_title, $image_buffer, $mentioned_slugs = array() ) {
+	public function testCreatePost( $game_id, $post_body, $post_title, $image_buffer, $mentioned_slugs = array(), int $team_id = 0 ) {
 		if ( $this->game_post_exists( $game_id ) ) {
 			$msg = "Post for game_id {$game_id} already exists. Skipping creation.";
 			error_log( $msg );
@@ -461,6 +486,8 @@ class Puck_Press_Game_Post_Creator {
 			error_log( $msg );
 			return new WP_Error( 'post_failed', $msg );
 		}
+
+		$this->set_team_ids_on_post( $post_id, $this->get_team_ids_for_game( $game_id, $team_id ) );
 
 		return get_permalink( $post_id );
 	}

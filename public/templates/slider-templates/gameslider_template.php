@@ -51,13 +51,17 @@ class GameSliderTemplate extends PuckPressTemplate {
 	 * Returns the template output
 	 */
 	public function render_with_options( array $games, array $options ): string {
-		$output = $this->buildSlider( $games );
-		// Include the template file and capture output
+		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
+		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
+		$scope        = $container_id ? '#' . $container_id : ':root';
+		$colors       = $schedule_id > 0 ? self::get_slider_colors( $schedule_id ) : null;
+		$inline_css   = self::get_inline_css( $scope, $colors, null );
+		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
-		return $output;
+		return $css_block . $this->buildSlider( $games, $container_id );
 	}
 
-	public function buildSlider( array $games ) {
+	public function buildSlider( array $games, string $container_id = '' ) {
 		// Split games into past and future
 		$split   = $this->split_games_by_time( $games );
 		$counter = count( $split['past_games'] );
@@ -65,7 +69,7 @@ class GameSliderTemplate extends PuckPressTemplate {
 		$sorted_games = $this->sort_games_by_chronological_order( $games );
 		ob_start();
 		?>
-		<div class="gameslider_slider_container clearfix">
+		<div class="gameslider_slider_container clearfix"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
 			<div class="glider-contain" style="max-height: 130px; overflow: hidden;">
 				<div class="glider">
 					<?php

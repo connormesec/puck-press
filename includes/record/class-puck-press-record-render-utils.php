@@ -45,6 +45,7 @@ class Puck_Press_Record_Render_Utils {
 			'show_home_away' => isset( $atts['show_home_away'] ) ? $atts['show_home_away'] : 'true',
 			'show_goals'     => isset( $atts['show_goals'] )     ? $atts['show_goals']     : 'true',
 			'show_diff'      => isset( $atts['show_diff'] )      ? $atts['show_diff']      : 'true',
+			'show_pct'       => isset( $atts['show_pct'] )       ? $atts['show_pct']       : 'true',
 			'title'          => isset( $atts['title'] )          ? $atts['title']          : '',
 		);
 

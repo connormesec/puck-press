@@ -249,7 +249,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 		$games = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT game_id, source_type, team_id, game_timestamp, game_date_day,
-                        opponent_team_name, target_score, opponent_score, post_link
+                        target_team_name, opponent_team_name, target_score, opponent_score, post_link
                  FROM {$table}
                  WHERE schedule_id = %d
                    AND game_timestamp < %s
@@ -274,7 +274,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 						data-team-id="<?php echo esc_attr( $game->team_id ); ?>"
 						data-post-link="<?php echo esc_attr( $game->post_link ?? '' ); ?>">
 						<?php
-						$label = "{$game->game_date_day} vs {$game->opponent_team_name} ({$game->target_score} - {$game->opponent_score})";
+						$label = "{$game->game_date_day} {$game->target_team_name} vs {$game->opponent_team_name} ({$game->target_score} - {$game->opponent_score})";
 						if ( ! empty( $game->post_link ) ) {
 							$label .= ' ✓';
 						}

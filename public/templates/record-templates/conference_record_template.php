@@ -55,6 +55,7 @@ class ConferenceRecordTemplate extends PuckPressTemplate {
 		$show_home_away = ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN );
 		$show_goals     = ! isset( $values['show_goals'] )     || filter_var( $values['show_goals'],     FILTER_VALIDATE_BOOLEAN );
 		$show_diff      = ! isset( $values['show_diff'] )      || filter_var( $values['show_diff'],      FILTER_VALIDATE_BOOLEAN );
+		$show_pct       = ! isset( $values['show_pct'] )       || filter_var( $values['show_pct'],       FILTER_VALIDATE_BOOLEAN );
 
 		$any_ties = false;
 		foreach ( $rows as $row ) {
@@ -64,17 +65,19 @@ class ConferenceRecordTemplate extends PuckPressTemplate {
 			}
 		}
 
-		$key         = static::get_key();
-		$schedule_id = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
-		$colors      = $schedule_id > 0 ? self::get_record_colors( $schedule_id ) : null;
-		$fonts       = $schedule_id > 0 ? self::get_record_fonts( $schedule_id ) : null;
-		$inline_css  = self::get_inline_css( ':root', $colors, $fonts );
-		$css_block   = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+		$key          = static::get_key();
+		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
+		$container_id = $schedule_id > 0 ? 'pp-record-' . $schedule_id : '';
+		$scope        = $container_id ? '#' . $container_id : ':root';
+		$colors       = $schedule_id > 0 ? self::get_record_colors( $schedule_id ) : null;
+		$fonts        = $schedule_id > 0 ? self::get_record_fonts( $schedule_id ) : null;
+		$inline_css   = self::get_inline_css( $scope, $colors, $fonts );
+		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
 		ob_start();
 		echo $css_block;
 		?>
-		<div class="<?php echo esc_attr( $key ); ?>_record_container pp-conference-wrapper">
+		<div class="<?php echo esc_attr( $key ); ?>_record_container pp-conference-wrapper"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
 			<div class="pp-conference-scroll">
 				<table class="pp-conference-table">
 					<thead>
@@ -88,7 +91,9 @@ class ConferenceRecordTemplate extends PuckPressTemplate {
 							<th class="pp-conference-th">T</th>
 							<?php endif; ?>
 							<th class="pp-conference-th pp-conference-th--pts">Pts</th>
+							<?php if ( $show_pct ) : ?>
 							<th class="pp-conference-th">P%</th>
+							<?php endif; ?>
 							<?php if ( $show_goals ) : ?>
 							<th class="pp-conference-th">GF</th>
 							<th class="pp-conference-th">GA</th>
@@ -150,7 +155,9 @@ class ConferenceRecordTemplate extends PuckPressTemplate {
 							<td class="pp-conference-td"><?php echo $ties; ?></td>
 							<?php endif; ?>
 							<td class="pp-conference-td pp-conference-td--pts"><?php echo $pts; ?></td>
+							<?php if ( $show_pct ) : ?>
 							<td class="pp-conference-td"><?php echo $pct; ?></td>
+							<?php endif; ?>
 							<?php if ( $show_goals ) : ?>
 							<td class="pp-conference-td"><?php echo $gf; ?></td>
 							<td class="pp-conference-td"><?php echo $ga; ?></td>

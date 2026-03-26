@@ -180,6 +180,30 @@ abstract class PuckPressTemplate {
 		return is_array( $saved ) ? $saved : static::get_default_fonts();
 	}
 
+	public static function get_slider_colors( int $schedule_id ): array {
+		$key    = static::get_key();
+		$option = "pp_slider_{$schedule_id}_template_colors_{$key}";
+		$saved  = get_option( $option, null );
+
+		if ( $saved === null && $schedule_id === 1 ) {
+			$saved = get_option( "pp_slider_template_colors_{$key}", null );
+		}
+
+		return is_array( $saved ) ? $saved : static::get_default_colors();
+	}
+
+	public static function get_slider_fonts( int $schedule_id ): array {
+		$key    = static::get_key();
+		$option = "pp_slider_{$schedule_id}_template_fonts_{$key}";
+		$saved  = get_option( $option, null );
+
+		if ( $saved === null && $schedule_id === 1 ) {
+			$saved = get_option( "pp_slider_template_fonts_{$key}", null );
+		}
+
+		return is_array( $saved ) ? $saved : static::get_default_fonts();
+	}
+
 	/**
 	 * Optionally return inline CSS (e.g. using colors from get_option).
 	 *

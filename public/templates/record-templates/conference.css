@@ -33,7 +33,7 @@
 
 /* Specificity 0-2-1 — beats Divi's .entry-content thead th (0-1-2) */
 .pp-conference-table .pp-conference-th {
-  padding: 8px 14px;
+  padding: 8px 12px;
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -60,7 +60,7 @@
 }
 
 .pp-conference-td {
-  padding: 12px 14px;
+  padding: 12px 14px !important;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--pp-conference-row_text, #111827);
@@ -70,7 +70,7 @@
 
 .pp-conference-td--team {
   text-align: left;
-  padding-left: 12px;
+  padding-left: 12px !important;
   font-weight: 700;
   display: flex;
   align-items: center;

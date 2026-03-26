@@ -88,17 +88,19 @@ class RecordTemplate extends PuckPressTemplate {
 		$home_record = "{$home_wins}-{$home_losses}-{$home_otl}" . ( $home_ties > 0 ? "-{$home_ties}T" : '' );
 		$away_record = "{$away_wins}-{$away_losses}-{$away_otl}" . ( $away_ties > 0 ? "-{$away_ties}T" : '' );
 
-		$key         = static::get_key();
-		$schedule_id = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
-		$colors      = $schedule_id > 0 ? self::get_record_colors( $schedule_id ) : null;
-		$fonts       = $schedule_id > 0 ? self::get_record_fonts( $schedule_id ) : null;
-		$inline_css  = self::get_inline_css( ':root', $colors, $fonts );
-		$css_block   = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+		$key          = static::get_key();
+		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
+		$container_id = $schedule_id > 0 ? 'pp-record-' . $schedule_id : '';
+		$scope        = $container_id ? '#' . $container_id : ':root';
+		$colors       = $schedule_id > 0 ? self::get_record_colors( $schedule_id ) : null;
+		$fonts        = $schedule_id > 0 ? self::get_record_fonts( $schedule_id ) : null;
+		$inline_css   = self::get_inline_css( $scope, $colors, $fonts );
+		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
 		ob_start();
 		echo $css_block;
 		?>
-		<div class="pp-record-card <?php echo esc_attr( $key ); ?>_record_container">
+		<div class="pp-record-card <?php echo esc_attr( $key ); ?>_record_container"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
 			<div class="pp-record-header">
 				<div class="pp-record-stat-row pp-record-stat-row--main">
 					<div class="pp-record-stat">

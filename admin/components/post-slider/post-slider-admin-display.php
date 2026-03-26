@@ -80,15 +80,20 @@ class Puck_Press_Post_Slider_Admin_Display {
                                     <td style="padding: 8px 12px;"><code>#</code></td>
                                     <td style="padding: 8px 12px;">URL for the "More Posts" button at the bottom of the list</td>
                                 </tr>
-                                <tr>
+                                <tr style="border-bottom: 1px solid #f0f0f0;">
                                     <td style="padding: 8px 12px;"><code>more_text</code></td>
                                     <td style="padding: 8px 12px;"><code>More Posts</code></td>
                                     <td style="padding: 8px 12px;">Label for the "More Posts" button</td>
                                 </tr>
+                                <tr>
+                                    <td style="padding: 8px 12px;"><code>team</code></td>
+                                    <td style="padding: 8px 12px;"><em>(all teams)</em></td>
+                                    <td style="padding: 8px 12px;">Team ID to filter posts. Only <code>pp_insta_post</code> and <code>pp_game_summary</code> posts are team-scoped. Find team IDs in the Teams admin tab. Leave blank to show all posts.</td>
+                                </tr>
                             </tbody>
                         </table>
                         <p style="margin: 12px 0 0; color: #666; font-size: 0.8rem;">
-                            Examples: <code>[pp-post-slider post_type="pp_insta_post" more_url="/instagram/" more_text="More Posts"]</code>
+                            Examples: <code>[pp-post-slider post_type="pp_insta_post,pp_game_summary" team="5" count="6"]</code> &nbsp;|&nbsp; <code>[pp-post-slider post_type="pp_insta_post,pp_game_summary" count="6"]</code>
                         </p>
                     </div>
                 </div>

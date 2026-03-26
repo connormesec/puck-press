@@ -71,11 +71,15 @@ class Puck_Press_Admin_Loader {
 		// Roster Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/roster/class-puck-press-roster-admin-preview-card.php';
 
+		// Divi Page Builder
+		require_once plugin_dir_path( __DIR__ ) . 'includes/divi/class-puck-press-divi-page-builder.php';
+
 		// Teams Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-data-sources-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-games-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-roster-sources-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-players-table-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-pages-card.php';
 
 		// Stats Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stats-admin-preview-card.php';

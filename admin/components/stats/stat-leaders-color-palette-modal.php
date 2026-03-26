@@ -70,6 +70,13 @@ $sl_show_team         = (bool) get_option( 'pp_stat_leaders_show_team', 1 );
 			</form>
 		</div>
 
+		<div style="padding:12px 20px;border-top:1px solid #e0e0e0;background:#f9f9f9;border-radius:0 0 8px 8px;">
+			<p style="font-size:0.8rem;color:#5f6368;margin:0 0 4px;font-weight:600;">Shortcode Reference</p>
+			<p style="font-size:0.8rem;color:#5f6368;margin:0 0 2px;"><code>[pp-stat-leaders-skaters]</code> &nbsp;·&nbsp; <code>[pp-stat-leaders-goalies]</code></p>
+			<p style="font-size:0.8rem;color:#5f6368;margin:0 0 2px;"><code>roster="slug"</code> — filter to a roster group &nbsp;·&nbsp; <code>show_header="false"</code> — hide the heading &amp; More link</p>
+			<p style="font-size:0.8rem;color:#5f6368;margin:0;">Example: <code>[pp-stat-leaders-skaters roster="varsity" show_header="false"]</code></p>
+		</div>
+
 		<div class="pp-modal-footer">
 			<button class="pp-button pp-button-secondary" id="pp-cancel-save-stat-leaders-colors">Cancel</button>
 			<button class="pp-button pp-button-primary" id="pp-stat-leaders-palette-save-colors">Save Colors</button>

@@ -97,8 +97,8 @@ class Puck_Press_Stats_Admin_Display {
 								<tr>
 									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>team</code></td>
 									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><em>(all teams)</em></td>
-									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Filter to one or more teams by name. Use a comma-separated list to include multiple teams.</td>
-									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stats team=&quot;Bruins,Canucks&quot;]</code></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Filter to one or more teams by team ID. Use a comma-separated list for multiple teams. Find team IDs in the Teams admin tab.</td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stats team=&quot;3,4&quot;]</code></td>
 								</tr>
 							</tbody>
 						</table>

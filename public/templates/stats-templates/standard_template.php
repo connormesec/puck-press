@@ -102,7 +102,6 @@ class StandardTemplate extends PuckPressTemplate {
 			. ' data-original-sources="' . esc_attr( wp_json_encode( $sources ) ) . '"'
 			. ' data-teams="' . esc_attr( wp_json_encode( $teams ) ) . '"'
 			. '>';
-		$html .= '<h2 class="pp-stats-heading">Statistics</h2>';
 		$show_team = ! empty( $col['show_team'] );
 		$html .= $this->buildFilterToolbar( $team_names, $archives, $season_label, $sources, $show_team );
 		$html .= '<div class="pp-stats-sections">';

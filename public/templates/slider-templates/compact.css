@@ -1,0 +1,344 @@
+/* =============================================================================
+   Compact Slider Template
+   ============================================================================= */
+
+.pp-cs-container {
+  --card-h: 140px;
+
+  display: none; /* hidden until Glider.js initializes; JS adds .pp-cs-ready */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.pp-cs-container.pp-cs-ready {
+  display: block;
+}
+
+/* ── Header row — Full Schedule link sits above the slider ── */
+.pp-cs-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.pp-cs-sched-link {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pp-compact-accent_color);
+  text-decoration: none;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.pp-cs-sched-link:hover {
+  opacity: 1;
+}
+
+/* ── Glider contain ── */
+.pp-cs-glider-contain {
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Glider.js base overrides ── */
+.pp-cs-container .glider {
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  margin-left: 0 !important;
+}
+
+.pp-cs-container .glider-track {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.pp-cs-container .glider-slide {
+  user-select: none;
+  min-width: 150px;
+  height: var(--card-h) !important;
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pp-cs-container .glider-slide:first-child {
+  margin-left: 0;
+}
+
+/* ── Nav row — centered below the glider track ── */
+.pp-cs-nav-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ── Circular nav buttons ── */
+.pp-cs-nav {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--pp-compact-nav_bg);
+  color: var(--pp-compact-nav_text);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.pp-cs-nav:hover {
+  opacity: 0.85;
+  transform: scale(1.06);
+}
+
+.pp-cs-nav.disabled,
+.pp-cs-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+  transform: none;
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+
+.pp-cs-card {
+  --c-bg: var(--pp-compact-card_bg);
+  --c-border: var(--pp-compact-card_border);
+  --c-hdr: var(--pp-compact-header_text);
+  --c-name: var(--pp-compact-team_text);
+  --c-score: var(--pp-compact-score_text);
+  --c-dim: 0.5;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-top: 3px solid var(--pp-compact-accent_color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+  cursor: default;
+  transition: box-shadow 0.2s ease;
+}
+
+.pp-cs-card--has-overlay:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Card header ── */
+.pp-cs-card-hdr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.pp-cs-date-label,
+.pp-cs-sep,
+.pp-cs-status {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-hdr);
+  line-height: 1;
+}
+
+.pp-cs-sep {
+  flex-shrink: 0;
+}
+
+.pp-cs-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Teams area ── */
+.pp-cs-teams {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 10px 10px;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.pp-cs-team-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.pp-cs-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.pp-cs-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-name);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.pp-cs-score {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-score);
+  flex-shrink: 0;
+  min-width: 16px;
+  text-align: right;
+  opacity: var(--c-dim);
+}
+
+.pp-cs-score--w {
+  --c-dim: 1;
+}
+
+/* ── Full-card overlay — slides up from below on hover ── */
+.pp-cs-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  background: var(--pp-compact-accent_color);
+  color: var(--pp-compact-accent_text);
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+  border-radius: 6px;
+}
+
+.pp-cs-card:hover .pp-cs-overlay {
+  transform: translateY(0);
+}
+
+.pp-cs-ovl-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pp-cs-ovl-date {
+  flex-shrink: 0;
+}
+
+.pp-cs-ovl-sep {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pp-cs-ovl-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.pp-cs-ovl-venue {
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 6px;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pp-cs-ovl-links {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+}
+
+/* Recap text link */
+.pp-cs-ovl-link--recap {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pp-compact-accent_text);
+  text-decoration: none;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+
+.pp-cs-ovl-link--recap:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Ticket icon link */
+.pp-cs-ovl-link--ticket {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pp-compact-accent_text);
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.pp-cs-ovl-link--ticket:hover {
+  opacity: 1;
+}
+
+/* ── Corner hint ── */
+.pp-cs-hint {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--pp-compact-accent_color);
+  line-height: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.pp-cs-card--has-overlay:hover .pp-cs-hint,
+.pp-cs-card--overlay-open .pp-cs-hint {
+  opacity: 0;
+}
+
+.pp-cs-card--overlay-open .pp-cs-overlay {
+  transform: translateY(0);
+}
+
+/* ── Mobile scrollbar ── */
+@media (max-width: 640px) {
+  .pp-cs-container .glider::-webkit-scrollbar {
+    opacity: 1;
+    -webkit-appearance: none;
+    height: 3px;
+  }
+  .pp-cs-container .glider::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+}

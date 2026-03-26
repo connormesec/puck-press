@@ -107,6 +107,11 @@ class Puck_Press_Record_Admin_Display {
 									<td style="padding: 8px 12px;"><code>true</code></td>
 									<td style="padding: 8px 12px;">Show goal differential (+/-) — requires show_goals=true</td>
 								</tr>
+								<tr style="border-bottom: 1px solid #f0f0f0;">
+									<td style="padding: 8px 12px;"><code>show_pct</code></td>
+									<td style="padding: 8px 12px;"><code>true</code></td>
+									<td style="padding: 8px 12px;">Show points percentage (P%) column — conference template only</td>
+								</tr>
 								<tr>
 									<td style="padding: 8px 12px;"><code>schedule</code></td>
 									<td style="padding: 8px 12px;"><code>(default)</code></td>

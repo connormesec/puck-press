@@ -109,7 +109,7 @@ class Puck_Press_Public {
 			$atts
 		);
 
-		$teams     = array_values( array_filter( array_map( 'trim', explode( ',', $atts['team'] ) ) ) );
+		$teams     = array_values( array_filter( array_map( 'intval', explode( ',', $atts['team'] ) ) ) );
 		$show_team = '' !== $atts['show_team'] ? filter_var( $atts['show_team'], FILTER_VALIDATE_BOOLEAN ) : null;
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stats/class-puck-press-stats-render-utils.php';
@@ -124,6 +124,7 @@ class Puck_Press_Public {
 				'show_home_away' => 'true',
 				'show_goals'     => 'true',
 				'show_diff'      => 'true',
+				'show_pct'       => 'true',
 				'title'          => 'Team Record',
 				'schedule'       => '',
 				'team'           => '',
@@ -134,9 +135,22 @@ class Puck_Press_Public {
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/record/class-puck-press-record-render-utils.php';
 
+		if ( ! empty( $atts['team'] ) ) {
+			$atts['team'] = self::resolve_team_attr( $atts['team'] );
+		}
+
 		$schedule_id = Puck_Press_Group_Resolver::resolve( sanitize_title( $atts['schedule'] ), 'pp_schedules' );
 		$render      = new Puck_Press_Record_Render_Utils( $schedule_id );
 		return $render->get_current_template_html( $atts );
+	}
+
+	private static function resolve_team_attr( string $value ): string {
+		if ( ctype_digit( $value ) && (int) $value > 0 ) {
+			global $wpdb;
+			$name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}pp_teams WHERE id = %d LIMIT 1", (int) $value ) );
+			return $name ?: $value;
+		}
+		return $value;
 	}
 
 	/**
@@ -299,6 +313,7 @@ class Puck_Press_Public {
 				'count'     => '6',
 				'more_url'  => '#',
 				'more_text' => 'More Posts',
+				'team'      => '',
 			),
 			$atts
 		);
@@ -309,7 +324,8 @@ class Puck_Press_Public {
 			sanitize_text_field( $atts['post_type'] ),
 			max( 1, (int) $atts['count'] ),
 			esc_url_raw( $atts['more_url'] ),
-			sanitize_text_field( $atts['more_text'] )
+			sanitize_text_field( $atts['more_text'] ),
+			sanitize_text_field( $atts['team'] )
 		);
 		return $render->get_html();
 	}

@@ -6,11 +6,13 @@ class Puck_Press_Slider_Render_Utils {
 	protected $games;
 	protected $templates;
 	protected $selected_template_key;
+	protected int $schedule_id;
 
 	public function __construct( int $schedule_id = 1 ) {
+		$this->schedule_id = $schedule_id;
 		$this->load_dependencies();
 
-		$this->template_manager = new Puck_Press_Slider_Template_Manager();
+		$this->template_manager = new Puck_Press_Slider_Template_Manager( $schedule_id );
 
 		$schedules_utils = new Puck_Press_Schedules_Wpdb_Utils();
 		$this->games     = $schedules_utils->get_schedule_games_display( $schedule_id );
@@ -40,10 +42,11 @@ class Puck_Press_Slider_Render_Utils {
 
 	// 🧾 Return HTML string of all templates
 	public function get_all_templates_html() {
-		$output = '';
+		$output  = '';
+		$options = array( 'schedule_id' => $this->schedule_id );
 
 		foreach ( $this->templates as $template ) {
-			$output .= $template->render( $this->games );
+			$output .= $template->render_with_options( $this->games, $options );
 		}
 
 		return $output;
@@ -51,9 +54,11 @@ class Puck_Press_Slider_Render_Utils {
 
 	// 🧾 Return HTML string for a specific template
 	public function get_template_html( $template_name ) {
+		$options = array( 'schedule_id' => $this->schedule_id );
+
 		foreach ( $this->templates as $template ) {
 			if ( $template->get_key() === $template_name ) {
-				return $template->render( $this->games );
+				return $template->render_with_options( $this->games, $options );
 			}
 		}
 
