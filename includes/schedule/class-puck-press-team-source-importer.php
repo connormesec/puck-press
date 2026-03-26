@@ -49,9 +49,12 @@ class Puck_Press_Team_Source_Importer {
             $source = (object) $source;
             try {
                 if ( $source->type === 'achaGameScheduleUrl' ) {
-                    $processor = new Puck_Press_Schedule_Process_Acha_Url(
+                    $acha_other = json_decode( $source->other_data ?? '{}', true );
+                    $processor  = new Puck_Press_Schedule_Process_Acha_Url(
                         $source->source_url_or_path,
-                        $source->season
+                        $acha_other['season_id']   ?? '',
+                        $acha_other['division_id'] ?? '-1',
+                        $source->season            ?? ''
                     );
                     $games = $this->stamp_source( $processor->raw_schedule_data, $source );
                     $this->validate_and_insert( $games, $source->name );

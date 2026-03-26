@@ -151,14 +151,26 @@ class Puck_Press_Teams_Admin_Roster_Sources_Card extends Puck_Press_Admin_Card_A
 					</div>
 
 					<div class="pp-dynamic-roster-source-group-achaRosterUrl pp-form-group">
-						<label class="pp-form-label"><?php esc_html_e( 'ACHA Roster URL', 'puck-press' ); ?></label>
-						<input type="url" id="pp-roster-source-url" class="pp-form-input" placeholder="https://...">
-						<div class="pp-form-group" style="margin-top:8px;">
+						<div class="pp-form-group">
+							<label for="pp-acha-roster-team-id" class="pp-form-label"><?php esc_html_e( 'ACHA Team ID', 'puck-press' ); ?></label>
+							<input type="text" id="pp-acha-roster-team-id" class="pp-form-input" placeholder="e.g. 883">
+						</div>
+						<div class="pp-form-group">
+							<label for="pp-acha-roster-season-id" class="pp-form-label"><?php esc_html_e( 'Season ID', 'puck-press' ); ?></label>
+							<input type="text" id="pp-acha-roster-season-id" class="pp-form-input" placeholder="e.g. 60">
+						</div>
+						<div class="pp-form-group">
 							<label class="pp-form-label">
 								<input type="checkbox" id="pp-roster-source-include-stats" checked>
 								<?php esc_html_e( 'Include Stats', 'puck-press' ); ?>
 							</label>
 							<p class="pp-form-help"><?php esc_html_e( 'Import player statistics from this ACHA source.', 'puck-press' ); ?></p>
+						</div>
+						<div class="pp-form-group">
+							<label class="pp-form-label">
+								<input type="checkbox" id="pp-acha-roster-auto-discover" checked>
+								<?php esc_html_e( 'Auto-discover future seasons', 'puck-press' ); ?>
+							</label>
 						</div>
 					</div>
 

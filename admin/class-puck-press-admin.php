@@ -347,11 +347,19 @@ class Puck_Press_Admin {
 	}
 
 	public static function pp_ajax_update_slider_template_colors() {
+		$schedule_id = (int) ( $_POST['schedule_id'] ?? 1 );
 		$url_updated = false;
 		if ( isset( $_POST['cal_url'] ) ) {
 			$url_updated = update_option( 'pp_slider_cal_url', esc_url_raw( wp_strip_all_tags( $_POST['cal_url'] ) ) );
 		}
-		self::update_template_colors( new Puck_Press_Slider_Template_Manager(), $url_updated );
+		self::update_template_colors(
+			new Puck_Press_Slider_Template_Manager( $schedule_id ),
+			$url_updated,
+			function () use ( $schedule_id ) {
+				$slider_card = Puck_Press_Schedule_Admin_Slider_Preview_Card::create_and_init( $schedule_id );
+				return array( 'active_slider_html' => $slider_card->get_current_template_html() );
+			}
+		);
 	}
 
 	public static function pp_ajax_update_roster_template_colors() {
@@ -1063,34 +1071,22 @@ class Puck_Press_Admin {
 				'games_html'          => $games_card->render(),
 				'roster_sources_html' => $roster_sources_card->render(),
 				'players_html'        => $players_card->render(),
+				'pages_card_html'     => ( new Puck_Press_Teams_Admin_Pages_Card( $id ) )->render(),
 			)
 		);
 	}
 
 	private static function auto_create_schedule_for_team( Puck_Press_Schedules_Wpdb_Utils $utils, string $team_slug, string $team_name, int $team_id ): ?int {
-		$base        = $team_slug . '-schedule';
-		$candidates  = array( $base );
-		for ( $i = 2; $i <= 20; $i++ ) {
-			$candidates[] = $base . '-' . $i;
-		}
-		$candidates[] = $base . '-' . time();
+		$slug = $team_slug . '-schedule';
 
-		$schedule_slug = null;
-		foreach ( $candidates as $candidate ) {
-			if ( ! $utils->slug_exists( $candidate ) ) {
-				$schedule_slug = $candidate;
-				break;
-			}
-		}
-
-		if ( null === $schedule_slug ) {
-			error_log( "[PuckPress] auto_create_schedule_for_team: could not find unique slug for team {$team_slug}" );
+		if ( $utils->slug_exists( $slug ) ) {
+			error_log( "[PuckPress] auto_create_schedule_for_team: slug '{$slug}' already exists, skipping." );
 			return null;
 		}
 
-		$schedule_id = $utils->create_schedule( $schedule_slug, $team_name . ' Schedule', false );
+		$schedule_id = $utils->create_schedule( $slug, $team_name . ' Schedule', false );
 		if ( ! $schedule_id ) {
-			error_log( "[PuckPress] auto_create_schedule_for_team: create_schedule failed for slug {$schedule_slug}" );
+			error_log( "[PuckPress] auto_create_schedule_for_team: create_schedule failed for slug '{$slug}'." );
 			return null;
 		}
 
@@ -1099,29 +1095,59 @@ class Puck_Press_Admin {
 	}
 
 	private static function auto_create_roster_for_team( Puck_Press_Roster_Registry_Wpdb_Utils $registry, string $team_slug, string $team_name, int $team_id ): ?int {
-		$base       = $team_slug . '-roster';
-		$candidates = array( $base );
-		for ( $i = 2; $i <= 20; $i++ ) {
-			$candidates[] = $base . '-' . $i;
-		}
-		$candidates[] = $base . '-' . time();
+		$slug   = $team_slug . '-roster';
+		$result = $registry->create_roster( $team_name . ' Roster', $slug );
 
-		foreach ( $candidates as $candidate ) {
-			$result = $registry->create_roster( $team_name . ' Roster', $candidate );
-			if ( $result === 'duplicate_slug' ) {
-				continue;
-			}
-			if ( ! $result ) {
-				error_log( "[PuckPress] auto_create_roster_for_team: create_roster failed for slug {$candidate}" );
-				return null;
-			}
-			$roster_id = (int) $result;
-			$registry->add_team_to_roster( $roster_id, $team_id );
-			return $roster_id;
+		if ( $result === 'duplicate_slug' ) {
+			error_log( "[PuckPress] auto_create_roster_for_team: slug '{$slug}' already exists, skipping." );
+			return null;
 		}
 
-		error_log( "[PuckPress] auto_create_roster_for_team: could not find unique slug for team {$team_slug}" );
-		return null;
+		if ( ! $result ) {
+			error_log( "[PuckPress] auto_create_roster_for_team: create_roster failed for slug '{$slug}'." );
+			return null;
+		}
+
+		$roster_id = (int) $result;
+		$registry->add_team_to_roster( $roster_id, $team_id );
+		return $roster_id;
+	}
+
+	public static function pp_ajax_update_team(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		$name    = sanitize_text_field( $_POST['name'] ?? '' );
+		$slug    = sanitize_title( $_POST['slug'] ?? '' );
+
+		if ( ! $team_id || empty( $name ) || empty( $slug ) ) {
+			wp_send_json_error( array( 'message' => 'Team ID, name, and slug are required.' ) );
+		}
+
+		global $wpdb;
+
+		$existing = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}pp_teams WHERE slug = %s AND id != %d LIMIT 1",
+				$slug,
+				$team_id
+			)
+		);
+		if ( $existing ) {
+			wp_send_json_error( array( 'message' => 'That slug is already used by another team.' ) );
+		}
+
+		$wpdb->update(
+			$wpdb->prefix . 'pp_teams',
+			array( 'name' => $name, 'slug' => $slug ),
+			array( 'id' => $team_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+
+		wp_send_json_success( array( 'name' => $name, 'slug' => $slug ) );
 	}
 
 	public static function pp_ajax_delete_team(): void {
@@ -1140,6 +1166,8 @@ class Puck_Press_Admin {
 		if ( ! $deleted ) {
 			wp_send_json_error( array( 'message' => 'Failed to delete team.' ) );
 		}
+
+		( new Puck_Press_Divi_Page_Builder() )->delete_all( $team_id );
 
 		if ( (int) get_option( 'pp_admin_active_team_id', 0 ) === $team_id ) {
 			$teams    = $utils->get_all_teams();
@@ -1200,6 +1228,65 @@ class Puck_Press_Admin {
 				'games_html'           => $games_card->render(),
 				'roster_sources_html'  => $roster_sources_card->render(),
 				'players_html'         => $players_card->render(),
+				'pages_card_html'      => ( new Puck_Press_Teams_Admin_Pages_Card( $team_id ) )->render(),
+			)
+		);
+	}
+
+	public static function pp_ajax_generate_team_pages(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		if ( ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'Invalid team ID.' ) );
+		}
+
+		if ( ! class_exists( 'ET_Builder_Module' ) ) {
+			wp_send_json_error( array( 'message' => 'Divi is not active. Please activate the Divi theme before generating pages.' ) );
+		}
+
+		$max_width          = sanitize_text_field( $_POST['max_width'] ?? '1080px' );
+		$padding            = sanitize_text_field( $_POST['padding'] ?? '10px 0px' );
+		$header_color       = sanitize_hex_color( $_POST['header_color'] ?? '' ) ?: '';
+		$header_font_size   = sanitize_text_field( $_POST['header_font_size'] ?? '1.4rem' );
+		$header_font        = sanitize_text_field( $_POST['header_font'] ?? '' );
+		$header_text_color  = sanitize_hex_color( $_POST['header_text_color'] ?? '#ffffff' ) ?: '#ffffff';
+		$school_url         = esc_url_raw( $_POST['school_url'] ?? '' );
+
+		Puck_Press_Divi_Page_Builder::save_defaults( $max_width, $padding, $header_color, $header_font_size, $header_font, $header_text_color, $school_url );
+
+		$builder = new Puck_Press_Divi_Page_Builder();
+		$result  = $builder->generate_all( $team_id, $max_width, $padding, $header_color, $header_font_size, $header_font, $header_text_color, $school_url );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'pages_card_html' => ( new Puck_Press_Teams_Admin_Pages_Card( $team_id ) )->render(),
+			)
+		);
+	}
+
+	public static function pp_ajax_delete_team_pages(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		if ( ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'Invalid team ID.' ) );
+		}
+
+		$builder = new Puck_Press_Divi_Page_Builder();
+		$builder->delete_all( $team_id );
+
+		wp_send_json_success(
+			array(
+				'pages_card_html' => ( new Puck_Press_Teams_Admin_Pages_Card( $team_id ) )->render(),
 			)
 		);
 	}
@@ -1221,8 +1308,34 @@ class Puck_Press_Admin {
 
 		switch ( $type ) {
 			case 'achaGameScheduleUrl':
-				$url    = esc_url_raw( $_POST['url'] ?? '' );
-				$season = sanitize_text_field( $_POST['season'] ?? '' );
+				$acha_team_id   = sanitize_text_field( $_POST['team_id_url'] ?? '' );
+				$acha_season_id = sanitize_text_field( $_POST['season_id'] ?? '' );
+				$auto_discover  = ! empty( $_POST['auto_discover'] );
+
+				if ( empty( $acha_team_id ) || empty( $acha_season_id ) ) {
+					wp_send_json_error( array( 'message' => 'Team ID and Season ID are required.' ) );
+				}
+
+				require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-acha-season-discoverer.php';
+				$meta = Puck_Press_Acha_Season_Discoverer::get_team_season_meta( $acha_team_id, $acha_season_id, $auto_discover );
+				if ( is_wp_error( $meta ) ) {
+					wp_send_json_error( array( 'message' => $meta->get_error_message() ) );
+				}
+
+				$name   = $meta['season_name'];
+				$url    = $acha_team_id;
+				$season = $meta['season_year'];
+
+				$od_arr = array(
+					'season_id'   => $acha_season_id,
+					'division_id' => $meta['division_id'],
+				);
+				if ( $auto_discover ) {
+					$od_arr['auto_discover']   = true;
+					$od_arr['seed_season_id']  = $acha_season_id;
+					$od_arr['seed_start_date'] = $meta['start_date'];
+				}
+				$other_data = wp_json_encode( $od_arr );
 				break;
 
 			case 'usphlGameScheduleUrl':
@@ -1277,6 +1390,14 @@ class Puck_Press_Admin {
 
 		if ( ! $id ) {
 			wp_send_json_error( array( 'message' => 'Failed to add source.' ) );
+		}
+
+		if ( $type === 'achaGameScheduleUrl' && $auto_discover && isset( $meta ) && is_array( $meta ) ) {
+			$roster_created = Puck_Press_Acha_Season_Discoverer::maybe_create_roster_seed( $team_id, $acha_team_id, $acha_season_id, $meta );
+			if ( $roster_created ) {
+				require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
+				( new Puck_Press_Team_Roster_Importer( $team_id ) )->rebuild_team_and_cascade();
+			}
 		}
 
 		wp_send_json_success( array( 'message' => 'Source added.', 'id' => $id ) );
@@ -2258,8 +2379,31 @@ class Puck_Press_Admin {
 
 		switch ( $type ) {
 			case 'achaRosterUrl':
-				$url                              = esc_url_raw( $_POST['url'] ?? '' );
-				$other_data_arr['include_stats']  = ! empty( $_POST['include_stats'] );
+				$acha_team_id   = sanitize_text_field( $_POST['team_id_url'] ?? '' );
+				$acha_season_id = sanitize_text_field( $_POST['season_id'] ?? '' );
+				$auto_discover  = ! empty( $_POST['auto_discover'] );
+
+				if ( empty( $acha_team_id ) || empty( $acha_season_id ) ) {
+					wp_send_json_error( array( 'message' => 'Team ID and Season ID are required.' ) );
+				}
+
+				require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-acha-season-discoverer.php';
+				$meta = Puck_Press_Acha_Season_Discoverer::get_team_season_meta( $acha_team_id, $acha_season_id, $auto_discover );
+				if ( is_wp_error( $meta ) ) {
+					wp_send_json_error( array( 'message' => $meta->get_error_message() ) );
+				}
+
+				$name = $meta['season_name'];
+				$url  = $acha_team_id;
+
+				unset( $other_data_arr['stat_period'] );
+				$other_data_arr['season_id']     = $acha_season_id;
+				$other_data_arr['include_stats'] = ! empty( $_POST['include_stats'] );
+				if ( $auto_discover ) {
+					$other_data_arr['auto_discover']   = true;
+					$other_data_arr['seed_season_id']  = $acha_season_id;
+					$other_data_arr['seed_start_date'] = $meta['start_date'];
+				}
 				break;
 
 			case 'usphlRosterUrl':
@@ -2310,6 +2454,37 @@ class Puck_Press_Admin {
 		}
 
 		wp_send_json_success( array( 'id' => $id, 'roster_table_html' => $roster_table_html ) );
+	}
+
+	public static function pp_ajax_run_acha_discovery(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = isset( $_POST['team_id'] ) ? (int) $_POST['team_id'] : null;
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-acha-season-discoverer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
+
+		$discoverer = new Puck_Press_Acha_Season_Discoverer();
+		$log        = $discoverer->discover_all( $team_id );
+
+		foreach ( $log as $entry ) {
+			if ( empty( $entry['discovered'] ) || empty( $entry['team_id'] ) ) {
+				continue;
+			}
+			$wp_team_id = (int) $entry['team_id'];
+			( new Puck_Press_Team_Source_Importer( $wp_team_id ) )->rebuild_team_and_cascade();
+			( new Puck_Press_Team_Roster_Importer( $wp_team_id ) )->rebuild_team_and_cascade();
+		}
+
+		$all_discovered = array_merge( ...( array_column( $log, 'discovered' ) ?: array( array() ) ) );
+		$message        = empty( $all_discovered )
+			? 'No new seasons found.'
+			: 'Discovered: ' . implode( ', ', $all_discovered );
+
+		wp_send_json_success( array( 'message' => $message, 'log' => $log ) );
 	}
 
 	public static function pp_ajax_delete_team_roster_source(): void {
@@ -2519,12 +2694,16 @@ class Puck_Press_Admin {
 
 		// Teams CRUD
 		add_action( 'wp_ajax_pp_create_team', array( self::class, 'pp_ajax_create_team' ) );
+		add_action( 'wp_ajax_pp_update_team', array( self::class, 'pp_ajax_update_team' ) );
+		add_action( 'wp_ajax_pp_generate_team_pages', array( self::class, 'pp_ajax_generate_team_pages' ) );
+		add_action( 'wp_ajax_pp_delete_team_pages', array( self::class, 'pp_ajax_delete_team_pages' ) );
 		add_action( 'wp_ajax_pp_delete_team', array( self::class, 'pp_ajax_delete_team' ) );
 		add_action( 'wp_ajax_pp_set_active_team_id', array( self::class, 'pp_ajax_set_active_team_id' ) );
 		add_action( 'wp_ajax_pp_switch_active_team', array( self::class, 'pp_ajax_switch_active_team' ) );
 		add_action( 'wp_ajax_pp_add_team_source', array( self::class, 'pp_ajax_add_team_source' ) );
 		add_action( 'wp_ajax_pp_update_team_source_status', array( self::class, 'pp_ajax_update_team_source_status' ) );
 		add_action( 'wp_ajax_pp_delete_team_source', array( self::class, 'pp_ajax_delete_team_source' ) );
+		add_action( 'wp_ajax_pp_run_acha_discovery', array( self::class, 'pp_ajax_run_acha_discovery' ) );
 		add_action( 'wp_ajax_pp_refresh_team', array( $this, 'ajax_refresh_team_callback' ) );
 
 		// New schedules CRUD (pp_schedules table)

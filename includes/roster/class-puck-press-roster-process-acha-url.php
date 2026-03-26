@@ -22,46 +22,30 @@
  */
 class Puck_Press_Roster_Process_Acha_Url {
 
-	private $raw_acha_roster_url;
-	public $raw_roster_data;
-	public $team_id   = '';
-	public $season_id = '';
-	public $team_name = '';
+	public string $team_id   = '';
+	public string $season_id = '';
+	public string $team_name = '';
+	public array $raw_roster_data = array();
 
-	public function __construct( $raw_acha_roster_url ) {
-		$this->raw_acha_roster_url = $raw_acha_roster_url;
-		$jsonData                  = $this->getRawDataFromAchaUrl();
-		$this->raw_roster_data     = $this->extractHockeyroster( $jsonData );
+	public function __construct( string $team_id, string $season_id ) {
+		$this->team_id   = $team_id;
+		$this->season_id = $season_id;
+
+		$jsonData              = $this->fetchRosterFromApi();
+		$this->raw_roster_data = $this->extractHockeyroster( $jsonData );
 	}
 
-	public function getRawDataFromAchaUrl() {
-		$team_and_roster_id       = $this->_get_string_between( $this->raw_acha_roster_url, 'roster/', '?division' );
-		$team_and_roster_exploded = explode( '/', $team_and_roster_id );
-		$this->team_id            = $team_and_roster_exploded[0];
-		$this->season_id          = $team_and_roster_exploded[1];
+	private function fetchRosterFromApi(): array {
+		$url = "https://lscluster.hockeytech.com/feed/index.php?feed=statviewfeed&view=roster&team_id={$this->team_id}&season_id={$this->season_id}&key=e6867b36742a0c9d&client_code=acha&site_id=2&league_id=-1&lang=en";
 
-		$roster_request_url = "https://lscluster.hockeytech.com/feed/index.php?feed=statviewfeed&view=roster&team_id={$this->team_id}&season_id={$this->season_id}&key=e6867b36742a0c9d&client_code=acha&site_id=2&league_id=-1&lang=en";
+		$raw     = @file_get_contents( $url ); // phpcs:ignore
+		$decoded = json_decode( substr( (string) $raw, 1, -1 ), true );
 
-		$angularData = @file_get_contents( $roster_request_url );
-		$raw_data    = substr( $angularData, 1, -1 );
-		// Parse the JSON
-		$jsonData = json_decode( $raw_data, true );
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			return array( 'error' => 'Failed to parse JSON: ' . json_last_error_msg() );
 		}
-		$this->team_name = $jsonData['teamName'] ?? '';
-		return $jsonData;
-	}
-
-	private function _get_string_between( $string, $start, $end ) {
-		$string = ' ' . $string;
-		$ini    = strpos( $string, $start );
-		if ( $ini == 0 ) {
-			return '';
-		}
-		$ini += strlen( $start );
-		$len  = strpos( $string, $end, $ini ) - $ini;
-		return substr( $string, $ini, $len );
+		$this->team_name = $decoded['teamName'] ?? '';
+		return $decoded;
 	}
 
 	private function extractHockeyroster( $jsonData ) {

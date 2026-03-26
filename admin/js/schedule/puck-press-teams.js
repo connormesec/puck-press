@@ -97,10 +97,11 @@
               return;
             }
             $tbody.append(
-              '<tr data-team-id="' + team.id + '">' +
+              '<tr data-team-id="' + team.id + '" data-team-name="' + $('<span>').text(team.name).html() + '" data-team-slug="' + $('<span>').text(team.slug).html() + '">' +
+                '<td class="pp-td"><code>' + team.id + '</code></td>' +
                 '<td class="pp-td">' + $('<span>').text(team.name).html() + '</td>' +
                 '<td class="pp-td"><code>' + $('<span>').text(team.slug).html() + '</code></td>' +
-                '<td class="pp-td"><button class="pp-button-icon pp-delete-team-btn" data-team-id="' + team.id + '" title="Delete team">🗑️</button></td>' +
+                '<td class="pp-td"><button class="pp-button-icon pp-edit-team-btn" data-team-id="' + team.id + '" title="Edit team">✏️</button> <button class="pp-button-icon pp-delete-team-btn" data-team-id="' + team.id + '" title="Delete team">🗑️</button></td>' +
               '</tr>'
             );
             $('#pp-team-selector').append(
@@ -111,6 +112,7 @@
             $('#pp-card-team-game-list').replaceWith(team.games_html);
             $('#pp-card-roster-sources').replaceWith(team.roster_sources_html);
             $('#pp-card-roster-players').replaceWith(team.players_html);
+            if (team.pages_card_html) { $('#pp-card-team-pages').replaceWith(team.pages_card_html); }
             $('#pp-active-team-id').val(team.id);
             $('#pp-refresh-team-btn').data('team-id', team.id).attr('data-team-id', team.id);
             window.countGameRows && window.countGameRows();
@@ -149,6 +151,57 @@
     });
 
     //############################################################//
+    //               Edit Team                                   //
+    //############################################################//
+
+    const $editTeamModal = $('#pp-edit-team-modal');
+    const $editTeamId    = $('#pp-edit-team-id');
+    const $editTeamName  = $('#pp-edit-team-name');
+    const $editTeamSlug  = $('#pp-edit-team-slug');
+
+    $(document).on('click', '.pp-edit-team-btn', function () {
+      const $row = $(this).closest('tr');
+      $editTeamId.val($row.data('team-id'));
+      $editTeamName.val($row.data('team-name'));
+      $editTeamSlug.val($row.data('team-slug'));
+      $editTeamModal.css('display', 'flex');
+    });
+
+    $('#pp-edit-team-modal-close, #pp-edit-team-modal-cancel').on('click', function () {
+      $editTeamModal.css('display', 'none');
+    });
+
+    $editTeamName.on('input', function () {
+      $editTeamSlug.val($(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+    });
+
+    $('#pp-edit-team-modal-confirm').on('click', function () {
+      const teamId = $editTeamId.val();
+      const name   = $editTeamName.val().trim();
+      const slug   = $editTeamSlug.val().trim();
+      if (!name || !slug) return;
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: { action: 'pp_update_team', team_id: teamId, name: name, slug: slug },
+        success: function (response) {
+          if (response.success) {
+            $editTeamModal.css('display', 'none');
+            const $row = $('#pp-teams-list-table tbody tr[data-team-id="' + teamId + '"]');
+            $row.data('team-name', response.data.name).attr('data-team-name', response.data.name);
+            $row.data('team-slug', response.data.slug).attr('data-team-slug', response.data.slug);
+            $row.find('td').eq(1).text(response.data.name);
+            $row.find('td').eq(2).html('<code>' + $('<span>').text(response.data.slug).html() + '</code>');
+            $('#pp-team-selector option[value="' + teamId + '"]').text(response.data.name + ' (' + response.data.slug + ')');
+          } else {
+            alert('Failed to update team: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'));
+          }
+        },
+        error: function () { console.error('An error occurred while updating the team.'); }
+      });
+    });
+
+    //############################################################//
     //               Team Selector                                //
     //############################################################//
 
@@ -168,6 +221,7 @@
           $('#pp-card-team-game-list').replaceWith(d.games_html);
           $('#pp-card-roster-sources').replaceWith(d.roster_sources_html);
           $('#pp-card-roster-players').replaceWith(d.players_html);
+          if (d.pages_card_html) { $('#pp-card-team-pages').replaceWith(d.pages_card_html); }
           $('#pp-active-team-id').val(d.team_id);
           $('#pp-refresh-team-btn').data('team-id', d.team_id).attr('data-team-id', d.team_id);
           window.countGameRows && window.countGameRows();
@@ -399,15 +453,20 @@
 
     // Show/hide source-type-specific fields in the add-source modal
     const sourceTypeConfig = {
-      achaGameScheduleUrl:   { required: ['#pp-source-url', '#pp-source-season-year'] },
+      achaGameScheduleUrl:   { required: ['#pp-acha-team-id', '#pp-acha-season-id'] },
       usphlGameScheduleUrl:  { required: ['#pp-usphl-team-id', '#pp-usphl-season-id'] },
       csv:                   { required: ['#pp-schedule-fileInput'] },
     };
 
     const toggleSourceInputs = () => {
       const selectedType = $('#pp-source-type').val();
+      const isAcha = selectedType === 'achaGameScheduleUrl';
 
-      // Clear required from all fields
+      // Hide/show the name field — ACHA auto-populates it from the API
+      $('#pp-source-name').closest('.pp-form-group').toggle(!isAcha);
+      $('#pp-source-name').prop('required', !isAcha).prop('disabled', isAcha);
+
+      // Clear required from all type-specific fields
       Object.values(sourceTypeConfig).forEach(({ required }) => {
         required.forEach(sel => $(sel).prop('required', false));
       });
@@ -451,7 +510,11 @@
         $form[0].reportValidity();
         return;
       }
+      const $btn   = $(this);
       const teamId = parseInt($('#pp-active-team-id').val(), 10);
+
+      $btn.prop('disabled', true).text('Adding…');
+
       PPDataSourceUtils.handleFormSubmit({
         $form: $form,
         action: 'pp_add_team_source',
@@ -464,8 +527,9 @@
             team_id: teamId,
           };
           if (type === 'achaGameScheduleUrl') {
-            data.url = $('#pp-source-url').val();
-            data.season = $('#pp-source-season-year').val();
+            data.team_id_url     = $('#pp-acha-team-id').val();
+            data.season_id       = $('#pp-acha-season-id').val();
+            data.auto_discover   = $('#pp-acha-auto-discover').is(':checked') ? 1 : 0;
           } else if (type === 'usphlGameScheduleUrl') {
             data.team_id_url = $('#pp-usphl-team-id').val();
             const seasonId = $('#pp-usphl-season-id').val();
@@ -478,7 +542,13 @@
           return data;
         },
         onSuccess: (response) => {
-          const type   = $('#pp-source-type').val();
+          const type = $('#pp-source-type').val();
+
+          if (type === 'achaGameScheduleUrl') {
+            refreshGamesTable().then(() => { location.reload(); });
+            return;
+          }
+
           const name   = $('#pp-source-name').val();
           const active = $('#pp-new-source-active').is(':checked');
           const id     = response.data.id;
@@ -515,11 +585,15 @@
             </tr>
           `);
 
+          $btn.prop('disabled', false).text('Add Source');
           closeAddSourceModal();
 
           refreshGamesTable().then(() => { window.countGameRows(); });
         },
-        onError: (error) => { console.error('Team source add error:', error); },
+        onError: (error) => {
+          console.error('Team source add error:', error);
+          $btn.prop('disabled', false).text('Add Source');
+        },
       });
     });
 
@@ -799,6 +873,17 @@
 
     function toggleRosterSourceInputs() {
       const selectedType = $('#pp-roster-source-type').val();
+      const isAcha = selectedType === 'achaRosterUrl';
+
+      // Hide shared fields that are irrelevant for ACHA
+      $('#pp-roster-source-name').closest('.pp-form-group').toggle(!isAcha);
+      $('#pp-roster-source-name').prop('disabled', isAcha);
+      $('#pp-roster-source-stat-period').closest('.pp-form-group').toggle(!isAcha);
+      $('#pp-roster-source-stat-period').prop('disabled', isAcha);
+      $('#pp-roster-source-stat-period-other').prop('disabled', isAcha);
+      $('#pp-roster-source-season-year').closest('.pp-form-group').toggle(!isAcha);
+      $('#pp-roster-source-season-year').prop('disabled', isAcha);
+
       const types = ['achaRosterUrl', 'usphlRosterUrl', 'csv'];
       types.forEach(function(type) {
         const $group = $('.pp-dynamic-roster-source-group-' + type);
@@ -848,8 +933,10 @@
       if (seasonYear) data.season_year = seasonYear;
 
       if (type === 'achaRosterUrl') {
-        data.url           = $('#pp-roster-source-url').val();
+        data.team_id_url   = $('#pp-acha-roster-team-id').val();
+        data.season_id     = $('#pp-acha-roster-season-id').val();
         data.include_stats = $('#pp-roster-source-include-stats').is(':checked') ? 1 : 0;
+        data.auto_discover = $('#pp-acha-roster-auto-discover').is(':checked') ? 1 : 0;
       } else if (type === 'usphlRosterUrl') {
         data.team_id_usphl = $('#pp-roster-usphl-team-id').val();
         data.season_id     = $('#pp-roster-usphl-season-id').val();
@@ -859,12 +946,15 @@
 
       $.post(ajaxurl, data, function(response) {
         if (response.success) {
+          if (type === 'achaRosterUrl') {
+            location.reload();
+            return;
+          }
+
           const id         = response.data.id;
           const now        = new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true });
           let displayValue = '';
-          if (type === 'achaRosterUrl') {
-            displayValue = $('#pp-roster-source-url').val();
-          } else if (type === 'usphlRosterUrl') {
+          if (type === 'usphlRosterUrl') {
             const sid = $('#pp-roster-usphl-season-id').val();
             displayValue = 'Team: ' + $('#pp-roster-usphl-team-id').val() + (sid ? ' / Season: ' + sid : '');
           }
@@ -891,6 +981,25 @@
       }).always(function() {
         $btn.prop('disabled', false).text('Add Source');
       });
+    });
+
+    $(document).on('click', '#pp-discover-acha-seasons', function() {
+      const $btn   = $(this);
+      const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      $btn.prop('disabled', true).text('Checking...');
+      $.post(ajaxurl, { action: 'pp_run_acha_discovery', team_id: teamId })
+        .done(function(res) {
+          if (res.success && res.data.log && res.data.log.some(function(e) { return e.discovered.length > 0; })) {
+            location.reload();
+          } else {
+            $('#pp-discover-result').text(res.success ? 'No new seasons found.' : 'Discovery failed. Check the error log.');
+            $btn.prop('disabled', false).text('Discover New Seasons');
+          }
+        })
+        .fail(function() {
+          $('#pp-discover-result').text('Discovery failed. Check the error log.');
+          $btn.prop('disabled', false).text('Discover New Seasons');
+        });
     });
 
     $(document).on('click', '.pp-delete-roster-source', function() {
@@ -1464,6 +1573,64 @@
         }
       }).fail(function() {
         alert('Server error reverting field.');
+      });
+    });
+
+    //############################################################//
+    //               Generate / Delete Team Pages                //
+    //############################################################//
+
+    $(document).on('click', '#pp-generate-team-pages-btn', function () {
+      const $btn           = $(this);
+      const teamId         = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      const maxWidth       = $('#pp-divi-max-width').val() || '1080px';
+      const padding        = $('#pp-divi-padding').val() || '30px 0px';
+      const headerColor     = $('#pp-divi-header-color').val() || '';
+      const headerFontSize  = $('#pp-divi-header-font-size').val() || '1.4rem';
+      const headerFont      = $('#pp-divi-header-font').val() || '';
+      const headerTextColor = $('#pp-divi-header-text-color').val() || '#ffffff';
+      const schoolUrl       = $('#pp-divi-school-url').val() || '';
+      $btn.prop('disabled', true).text('Generating…');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: { action: 'pp_generate_team_pages', team_id: teamId, max_width: maxWidth, padding: padding, header_color: headerColor, header_font_size: headerFontSize, header_font: headerFont, header_text_color: headerTextColor, school_url: schoolUrl },
+        success: function (response) {
+          if (response.success) {
+            $('#pp-card-team-pages').replaceWith(response.data.pages_card_html);
+          } else {
+            alert('Failed to generate pages: ' + (response.data && response.data.message ? response.data.message : 'Unknown error'));
+            $btn.prop('disabled', false).text('Generate Pages');
+          }
+        },
+        error: function () {
+          console.error('Server error generating pages.');
+          $btn.prop('disabled', false).text('Generate Pages');
+        }
+      });
+    });
+
+    $(document).on('click', '#pp-delete-team-pages-btn', function () {
+      if (!confirm('Permanently delete all generated pages for this team? This cannot be undone.')) return;
+      const $btn   = $(this);
+      const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
+      $btn.prop('disabled', true).text('Deleting…');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: { action: 'pp_delete_team_pages', team_id: teamId },
+        success: function (response) {
+          if (response.success) {
+            $('#pp-card-team-pages').replaceWith(response.data.pages_card_html);
+          } else {
+            console.error('Failed to delete pages:', response.data && response.data.message);
+            $btn.prop('disabled', false).text('Delete Pages');
+          }
+        },
+        error: function () {
+          console.error('Server error deleting pages.');
+          $btn.prop('disabled', false).text('Delete Pages');
+        }
       });
     });
 

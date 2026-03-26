@@ -20,18 +20,21 @@ $season_options = $this->get_season_options_array();
 	<!-- ACHA Website Schedule URL -->
 	<div class="pp-dynamic-source-group-achaGameScheduleUrl">
 		<div class="pp-form-group">
-			<label for="pp-source-season-year" class="pp-form-label">Season Year</label>
-			<select id="pp-source-season-year" class="pp-form-select" required>
-				<option value="<?php echo esc_html( $season_options[2] ); ?>"><?php echo esc_html( $season_options[2] ); ?></option>
-				<option value="<?php echo esc_html( $season_options[1] ); ?>" selected><?php echo esc_html( $season_options[1] ); ?></option>
-				<option value="<?php echo esc_html( $season_options[0] ); ?>"><?php echo esc_html( $season_options[0] ); ?></option>
-			</select>
+			<label for="pp-acha-team-id" class="pp-form-label">ACHA Team ID</label>
+			<input type="text" id="pp-acha-team-id" class="pp-form-input" placeholder="e.g. 883">
+			<span class="pp-form-help">Found in the ACHA schedule URL: /schedule/<strong>883</strong>/60/...</span>
 		</div>
-
 		<div class="pp-form-group">
-			<label for="pp-source-url" class="pp-form-label">URL</label>
-			<input type="url" id="pp-source-url" class="pp-form-input" placeholder="https://example.com/data.csv" required>
-			<span class="pp-form-help">URL to the ACHA schedule</span>
+			<label for="pp-acha-season-id" class="pp-form-label">Season ID</label>
+			<input type="text" id="pp-acha-season-id" class="pp-form-input" placeholder="e.g. 60">
+			<span class="pp-form-help">Found in the ACHA schedule URL: /schedule/883/<strong>60</strong>/...</span>
+		</div>
+		<div class="pp-form-group">
+			<label class="pp-form-label">
+				<input type="checkbox" id="pp-acha-auto-discover" checked>
+				Auto-discover future seasons
+			</label>
+			<span class="pp-form-help">Automatically adds sources when this team qualifies for regionals or nationals.</span>
 		</div>
 	</div>
 	<!-- USPHL Schedule -->

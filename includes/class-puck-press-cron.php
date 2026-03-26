@@ -119,6 +119,15 @@ class Puck_Press_Cron {
 		$no_active_roster   = false;
 
 		try {
+			require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-acha-season-discoverer.php';
+			$discoverer    = new Puck_Press_Acha_Season_Discoverer();
+			$discovery_log = $discoverer->discover_all();
+			foreach ( $discovery_log as $entry ) {
+				if ( ! empty( $entry['discovered'] ) ) {
+					$this->log_message( 'Puck Press Cron: ACHA team ' . $entry['acha_team'] . ' — new seasons discovered: ' . implode( ', ', $entry['discovered'] ) );
+				}
+			}
+
 			$teams_utils          = new Puck_Press_Teams_Wpdb_Utils();
 			$all_teams            = $teams_utils->get_all_teams();
 			$all_sched_no_active  = false;

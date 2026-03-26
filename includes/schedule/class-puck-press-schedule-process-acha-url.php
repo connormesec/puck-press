@@ -55,8 +55,7 @@
  */
 class Puck_Press_Schedule_Process_Acha_Url {
 
-	private $raw_acha_schedule_url;
-	private $season_year = '';
+	private string $season_year = '';
 
 	/**
 	 * Normalized game records ready for insertion into pp_game_schedule_raw.
@@ -101,47 +100,32 @@ class Puck_Press_Schedule_Process_Acha_Url {
 		'W3 ',
 	);
 
-	public function __construct( $raw_acha_schedule_url, $season_year = '' ) {
-		$this->team_logo_data        = $this->retrieveLogoData();
-		$this->raw_acha_schedule_url = $raw_acha_schedule_url;
-		$this->season_year           = $season_year;
+	public function __construct( string $team_id, string $season_id, string $division_id = '-1', string $season_year = '' ) {
+		$this->team_id        = $team_id;
+		$this->season_id      = $season_id;
+		$this->division_id    = $division_id;
+		$this->season_year    = $season_year;
+		$this->team_logo_data = $this->retrieveLogoData();
 
-		$jsonData                = $this->getRawDataFromAchaUrl();
+		$jsonData                = $this->fetchScheduleFromApi();
 		$this->raw_schedule_data = $this->extractHockeySchedule( $jsonData );
 	}
 
-	/**
-	 * Parses the team ID, season ID, and division ID from the ACHA schedule URL,
-	 * then fetches the raw schedule JSON from the HockeyTech API.
-	 *
-	 * @return array Decoded JSON response from the ACHA API.
-	 */
-	public function getRawDataFromAchaUrl() {
-		// The URL path contains: /schedule/{team_id}/{season_id}/all-months
-		$team_and_schedule_id       = $this->_get_string_between( $this->raw_acha_schedule_url, 'schedule/', '/all-months' );
-		$team_and_schedule_exploded = explode( '/', $team_and_schedule_id );
-		$this->team_id              = $team_and_schedule_exploded[0];
-		$this->season_id            = $team_and_schedule_exploded[1];
-
-		// Division ID is a query parameter: ?division_id=X&...
-		$this->division_id = $this->_get_string_between( $this->raw_acha_schedule_url, 'division_id=', '&' );
-
-		$schedule_request_url = 'https://lscluster.hockeytech.com/feed/index.php'
+	private function fetchScheduleFromApi(): array {
+		$url = 'https://lscluster.hockeytech.com/feed/index.php'
 			. '?feed=statviewfeed&view=schedule'
 			. "&team={$this->team_id}&season={$this->season_id}&month=-1&location=homeaway"
 			. '&key=e6867b36742a0c9d&client_code=acha&site_id=2&league_id=1'
 			. "&division_id={$this->division_id}&lang=en";
 
-		// The ACHA API wraps its JSON in parentheses (JSONP). Strip them before decoding.
-		$angularData = @file_get_contents( $schedule_request_url );
-		$raw_data    = substr( $angularData, 1, -1 );
-		$jsonData    = json_decode( $raw_data, true );
+		$raw     = @file_get_contents( $url ); // phpcs:ignore
+		$decoded = json_decode( substr( (string) $raw, 1, -1 ), true );
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			return array( 'error' => 'Failed to parse JSON: ' . json_last_error_msg() );
 		}
 
-		return $jsonData;
+		return $decoded;
 	}
 
 	/**
@@ -403,24 +387,4 @@ class Puck_Press_Schedule_Process_Acha_Url {
 		);
 	}
 
-	/**
-	 * Extracts a substring found between two delimiter strings.
-	 *
-	 * Used to parse team ID, season ID, and division ID out of the ACHA URL.
-	 *
-	 * @param string $string Full string to search within.
-	 * @param string $start  Left delimiter.
-	 * @param string $end    Right delimiter.
-	 * @return string        Substring between the delimiters, or '' if not found.
-	 */
-	private function _get_string_between( string $string, string $start, string $end ): string {
-		$string = ' ' . $string;
-		$ini    = strpos( $string, $start );
-		if ( $ini == 0 ) {
-			return '';
-		}
-		$ini += strlen( $start );
-		$len  = strpos( $string, $end, $ini ) - $ini;
-		return substr( $string, $ini, $len );
-	}
 }

@@ -49,7 +49,11 @@ class Puck_Press_Team_Roster_Importer {
         foreach ( $active_sources as $source ) {
             try {
                 if ( $source['type'] === 'achaRosterUrl' ) {
-                    $raw_acha_data = new Puck_Press_Roster_Process_Acha_Url( $source['source_url_or_path'] );
+                    $acha_other    = json_decode( $source['other_data'] ?? '{}', true );
+                    $raw_acha_data = new Puck_Press_Roster_Process_Acha_Url(
+                        $source['source_url_or_path'],
+                        $acha_other['season_id'] ?? ''
+                    );
 
                     if ( isset( $raw_acha_data->raw_roster_data['error'] ) ) {
                         ++$results['error_count'];
@@ -372,7 +376,7 @@ class Puck_Press_Team_Roster_Importer {
     public function add_team_roster_source( array $data ): int {
         global $wpdb;
         $table   = $wpdb->prefix . 'pp_team_roster_sources';
-        $allowed = array( 'name', 'type', 'source_url_or_path', 'status', 'csv_data', 'other_data', 'last_updated' );
+        $allowed = array( 'name', 'type', 'source_url_or_path', 'status', 'csv_data', 'other_data', 'last_updated', 'season_year' );
         $row     = array_intersect_key( $data, array_flip( $allowed ) );
         $row['team_id']    = $this->team_id;
         $row['created_at'] = current_time( 'mysql' );

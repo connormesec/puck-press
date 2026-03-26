@@ -81,6 +81,7 @@ class Puck_Press_Teams_Admin_Display {
             </main>
 
             <?php echo $this->render_add_team_modal(); ?>
+            <?php echo $this->render_edit_team_modal(); ?>
             <?php echo $this->render_team_season_archive_modal(); ?>
             <?php
             include plugin_dir_path( __DIR__ ) . 'schedule/schedule-add-source-modal.php';
@@ -120,6 +121,7 @@ class Puck_Press_Teams_Admin_Display {
                     <table class="pp-table" id="pp-teams-list-table">
                         <thead class="pp-thead">
                             <tr>
+                                <th class="pp-th">ID</th>
                                 <th class="pp-th">Name</th>
                                 <th class="pp-th">Slug</th>
                                 <th class="pp-th">Actions</th>
@@ -127,10 +129,14 @@ class Puck_Press_Teams_Admin_Display {
                         </thead>
                         <tbody>
                             <?php foreach ( $teams as $team ) : ?>
-                                <tr data-team-id="<?php echo esc_attr( $team['id'] ); ?>">
+                                <tr data-team-id="<?php echo esc_attr( $team['id'] ); ?>"
+                                    data-team-name="<?php echo esc_attr( $team['name'] ); ?>"
+                                    data-team-slug="<?php echo esc_attr( $team['slug'] ); ?>">
+                                    <td class="pp-td"><code><?php echo esc_html( $team['id'] ); ?></code></td>
                                     <td class="pp-td"><?php echo esc_html( $team['name'] ); ?></td>
                                     <td class="pp-td"><code><?php echo esc_html( $team['slug'] ); ?></code></td>
                                     <td class="pp-td">
+                                        <button class="pp-button-icon pp-edit-team-btn" data-team-id="<?php echo esc_attr( $team['id'] ); ?>" title="Edit team">✏️</button>
                                         <button class="pp-button-icon pp-delete-team-btn" data-team-id="<?php echo esc_attr( $team['id'] ); ?>" title="Delete team">🗑️</button>
                                     </td>
                                 </tr>
@@ -221,6 +227,11 @@ class Puck_Press_Teams_Admin_Display {
             </div>
         </div>
         <?php endif; ?>
+
+        <?php if ( ! empty( $teams ) ) : ?>
+            <?php echo ( new Puck_Press_Teams_Admin_Pages_Card( $active_team_id ) )->render(); ?>
+        <?php endif; ?>
+
         <?php
         return ob_get_clean();
     }
@@ -247,6 +258,37 @@ class Puck_Press_Teams_Admin_Display {
                 <div class="pp-modal-footer">
                     <button class="pp-button" id="pp-add-team-modal-cancel">Cancel</button>
                     <button class="pp-button pp-button-primary" id="pp-add-team-modal-confirm">Create Team</button>
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    private function render_edit_team_modal(): string {
+        ob_start();
+        ?>
+        <div id="pp-edit-team-modal" class="pp-modal-overlay" style="display:none;">
+            <div class="pp-modal">
+                <div class="pp-modal-header">
+                    <h2>Edit Team</h2>
+                    <button class="pp-modal-close" id="pp-edit-team-modal-close">&times;</button>
+                </div>
+                <div class="pp-modal-body">
+                    <input type="hidden" id="pp-edit-team-id">
+                    <div class="pp-form-group">
+                        <label class="pp-form-label">Team Name</label>
+                        <input type="text" id="pp-edit-team-name" class="pp-form-input" placeholder="e.g. Eagles">
+                    </div>
+                    <div class="pp-form-group">
+                        <label class="pp-form-label">Slug</label>
+                        <input type="text" id="pp-edit-team-slug" class="pp-form-input" placeholder="e.g. eagles">
+                        <p style="font-size:0.8rem;color:#888;margin:4px 0 0;">Changing the slug will break any shortcodes using the old slug. Prefer team ID in shortcodes.</p>
+                    </div>
+                </div>
+                <div class="pp-modal-footer">
+                    <button class="pp-button" id="pp-edit-team-modal-cancel">Cancel</button>
+                    <button class="pp-button pp-button-primary" id="pp-edit-team-modal-confirm">Save Changes</button>
                 </div>
             </div>
         </div>
