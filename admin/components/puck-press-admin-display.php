@@ -1,5 +1,5 @@
 <?php
-$default_tab = null;
+$default_tab = 'teams';
 $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 ?>
 <!-- Our admin page content should all be inside .wrap -->
@@ -13,9 +13,9 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 		if ( $tab === 'teams' ) :
 			?>
 			nav-tab-active<?php endif; ?>">Teams</a>
-		<a href="?page=puck-press" class="nav-tab
+		<a href="?page=puck-press&tab=schedule" class="nav-tab
 		<?php
-		if ( $tab === null ) :
+		if ( $tab === 'schedule' ) :
 			?>
 			nav-tab-active<?php endif; ?>">Schedule</a>
 		<a href="?page=puck-press&tab=roster" class="nav-tab 
@@ -68,10 +68,10 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 	<div class="tab-content">
 		<?php
 		switch ( $tab ) :
-			case 'teams':
-				include plugin_dir_path( __DIR__ ) . 'components/teams/teams-admin-display.php';
-				$teams_admin_display = new Puck_Press_Teams_Admin_Display();
-				echo $teams_admin_display->render();
+			case 'schedule':
+				include plugin_dir_path( __DIR__ ) . 'components/schedule/schedule-admin-display.php';
+				$schedule_admin_display = new Puck_Press_Schedule_Admin_Display();
+				echo $schedule_admin_display->render();
 				break;
 			case 'roster':
 				include plugin_dir_path( __DIR__ ) . 'components/roster/roster-admin-display.php';
@@ -119,9 +119,9 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 				echo $player_page_display->render();
 				break;
 			default:
-				include plugin_dir_path( __DIR__ ) . 'components/schedule/schedule-admin-display.php';
-				$schedule_admin_display = new Puck_Press_Schedule_Admin_Display();
-				echo $schedule_admin_display->render();
+				include plugin_dir_path( __DIR__ ) . 'components/teams/teams-admin-display.php';
+				$teams_admin_display = new Puck_Press_Teams_Admin_Display();
+				echo $teams_admin_display->render();
 				break;
 		endswitch;
 		?>
