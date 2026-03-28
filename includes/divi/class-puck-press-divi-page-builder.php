@@ -38,6 +38,12 @@ class Puck_Press_Divi_Page_Builder {
 		$v            = self::DIVI_VERSION;
 		$rows         = implode( '', $rows );
 		$divi_padding = self::css_padding_to_divi( $padding );
+		$p_parts      = explode( '|', $divi_padding );
+		if ( count( $p_parts ) >= 4 ) {
+			$p_parts[1] = '10px';
+			$p_parts[3] = '10px';
+			$divi_padding = implode( '|', $p_parts );
+		}
 		$margin_attr  = $margin !== '' ? ' custom_margin="' . esc_attr( $margin ) . '"' : '';
 		return '[et_pb_section fb_built="1" fullwidth="off" _builder_version="' . $v . '" _module_preset="default" background_color="' . esc_attr( $bg_color ) . '" custom_padding="' . esc_attr( $divi_padding ) . '"' . $margin_attr . ']'
 			. $rows
@@ -222,7 +228,9 @@ class Puck_Press_Divi_Page_Builder {
 		return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">'
 			. '<div style="display:flex;align-items:center;gap:12px;">'
 			. $logo_html
+			. '<a href="' . esc_url( trailingslashit( home_url( $team_slug ) ) ) . '" style="text-decoration:none;">'
 			. '<h2 style="' . $h2_style . '">' . esc_html( $team_name ) . '</h2>'
+			. '</a>'
 			. '</div>'
 			. '<nav style="display:flex;align-items:center;">'
 			. implode( $sep, $links )
