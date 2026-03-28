@@ -44,7 +44,7 @@
 
 /* Link wrapper — must be block so the floated .player_item inside it
    doesn't escape it and so the cursor / hover region is correct. */
-a.pp-player-link {
+a.pp-player-link-cardstack {
   display: block;
   text-decoration: none;
   color: inherit;
@@ -64,7 +64,7 @@ a.pp-player-link {
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-a.pp-player-link:hover .player_item {
+a.pp-player-link-cardstack:hover .player_item {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }

@@ -151,7 +151,7 @@ class PhotoGridTemplate extends PuckPressTemplate {
 		$id_attr     = $has_stats ? ' id="' . esc_attr( $slug ) . '"' : '';
 		$extra_class = $has_stats ? '' : ' no-stats';
 
-		$link_open  = $has_stats ? '<a class="pp-player-link" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' : '';
+		$link_open  = $has_stats ? '<a class="pp-player-link-cardstack" href="' . esc_url( home_url( '/player/' . $slug ) ) . '">' : '';
 		$link_close = $has_stats ? '</a>' : '';
 
 		// Build the "#76 | Forward" meta line
