@@ -1,0 +1,123 @@
+/* =========================================================
+   Puck Press — Slim Conference Standings Template
+   ========================================================= */
+
+.pp-slim-wrapper {
+  font-family: var(--pp-slim_conference-table_font, inherit);
+  background: var(--pp-slim_conference-table_bg, #ffffff);
+  box-sizing: border-box;
+  width: 100%;
+  container-type: inline-size;
+}
+
+@container (max-width: 520px) {
+  .pp-slim-team-name {
+    display: none;
+  }
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+
+/* Specificity 0-2-0 — beats Divi's .entry-content table:not(.variations) (0-2-1) via !important */
+.pp-slim-wrapper .pp-slim-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: none !important;
+  margin: 0 !important;
+  text-align: left;
+}
+
+/* ── Header row ─────────────────────────────────────────── */
+
+.pp-slim-header-row {
+  background: var(--pp-slim_conference-header_bg, #16213e);
+}
+
+/* Specificity 0-2-1 — beats Divi's .entry-content thead th (0-1-2) */
+.pp-slim-table .pp-slim-th {
+  padding: 8px 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pp-slim_conference-header_text, #ffffff);
+  text-align: center;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--pp-slim_conference-border, #e5e7eb);
+}
+
+.pp-slim-table .pp-slim-th--team {
+  text-align: left;
+  padding-left: 16px;
+}
+
+.pp-slim-table .pp-slim-th--pts {
+  background: color-mix(in srgb, var(--pp-slim_conference-pts_bg, #1d3461) 60%, var(--pp-slim_conference-header_bg, #16213e) 40%);
+}
+
+/* ── Data row ───────────────────────────────────────────── */
+
+.pp-slim-row {
+  border-bottom: 1px solid var(--pp-slim_conference-border, #e5e7eb);
+}
+
+/* Specificity 0-2-0 — beats Divi's .entry-content tr td (0-1-2) */
+.pp-slim-table .pp-slim-td {
+  padding: 10px 12px !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pp-slim_conference-row_text, #111827);
+  text-align: center;
+  white-space: nowrap;
+  border-top: none !important;
+}
+
+.pp-slim-table .pp-slim-td--team {
+  text-align: left;
+  padding-left: 12px !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.pp-slim-logo {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pp-slim-team-name {
+  white-space: nowrap;
+}
+
+.pp-slim-table .pp-slim-td--pts {
+  background: var(--pp-slim_conference-pts_bg, #1d3461);
+  color: var(--pp-slim_conference-pts_text, #ffffff);
+  font-weight: 800;
+}
+
+/* ── Button ─────────────────────────────────────────────── */
+
+.pp-slim-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--pp-slim_conference-btn_bg, #16213e);
+  color: var(--pp-slim_conference-btn_text, #ffffff);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.pp-slim-btn:hover {
+  opacity: 0.9;
+  color: var(--pp-slim_conference-btn_text, #ffffff);
+  text-decoration: none;
+}

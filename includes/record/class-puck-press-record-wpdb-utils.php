@@ -275,6 +275,196 @@ class Puck_Press_Record_Wpdb_Utils {
 		}
 	}
 
+	public function get_multi_source_stats_with_overall( int $schedule_id = 1 ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'pp_schedule_games_display';
+
+		$games = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT target_team_id, target_team_name, target_team_logo,
+                        opponent_team_id, opponent_team_name, opponent_team_logo,
+                        target_score, opponent_score, home_or_away, game_status
+                   FROM {$table}
+                  WHERE schedule_id = %d
+                    AND target_score IS NOT NULL
+                    AND opponent_score IS NOT NULL
+                    AND game_status IS NOT NULL
+                    AND game_status NOT IN ('', 'null')",
+				$schedule_id
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $games ) ) {
+			return array();
+		}
+
+		// First pass: identify all conference teams (those with their own data source).
+		$conf_keys   = array();
+		$target_keys = array();
+		foreach ( $games as $game ) {
+			$tid = $game['target_team_id'] ?? '';
+			$k   = ( $tid && $tid !== '0' )
+				? "id:{$tid}"
+				: 'name:' . strtolower( trim( $game['target_team_name'] ) );
+			$conf_keys[ $k ]   = true;
+			$target_keys[ $k ] = true;
+		}
+
+		$teams = array();
+
+		foreach ( $games as $game ) {
+			$ts      = (int) $game['target_score'];
+			$os      = (int) $game['opponent_score'];
+			$is_home = ( $game['home_or_away'] === 'home' );
+			$status  = strtoupper( trim( $game['game_status'] ?? '' ) );
+
+			if ( empty( $status ) || $status === 'NULL' ) {
+				continue;
+			}
+
+			$status_tokens = preg_split( '/[\s\/\-_]+/', $status );
+			$is_ot_so      = in_array( 'OT', $status_tokens, true ) || in_array( 'SO', $status_tokens, true );
+
+			$opp_id  = $game['opponent_team_id'] ?? '';
+			$opp_key = ( $opp_id && $opp_id !== '0' )
+				? "id:{$opp_id}"
+				: 'name:' . strtolower( trim( $game['opponent_team_name'] ) );
+
+			$is_conf_game = isset( $conf_keys[ $opp_key ] );
+
+			$this->apply_game_to_team_with_overall(
+				$teams,
+				$game['target_team_id'] ?? '',
+				$game['target_team_name'],
+				$game['target_team_logo'] ?? null,
+				$ts, $os, $is_home, $is_ot_so, $status, false, $is_conf_game
+			);
+
+			$this->apply_game_to_team_with_overall(
+				$teams,
+				$opp_id,
+				$game['opponent_team_name'],
+				$game['opponent_team_logo'] ?? null,
+				$os, $ts, ! $is_home, $is_ot_so, $status, true, $is_conf_game
+			);
+		}
+
+		$teams = array_intersect_key( $teams, $target_keys );
+
+		foreach ( $teams as &$team ) {
+			$team['diff'] = $team['gf'] - $team['ga'];
+		}
+		unset( $team );
+
+		usort(
+			$teams,
+			function ( $a, $b ) {
+				$pts_a = ( $a['overall_wins'] * 2 ) + $a['overall_otl'] + $a['overall_ties'];
+				$pts_b = ( $b['overall_wins'] * 2 ) + $b['overall_otl'] + $b['overall_ties'];
+				if ( $pts_b !== $pts_a ) {
+					return $pts_b <=> $pts_a;
+				}
+				return $b['overall_wins'] <=> $a['overall_wins'];
+			}
+		);
+
+		return array_values( $teams );
+	}
+
+	private function apply_game_to_team_with_overall(
+		array &$teams,
+		string $team_id,
+		string $team_name,
+		?string $team_logo,
+		int $team_score,
+		int $opp_score,
+		bool $is_home,
+		bool $is_ot_so,
+		string $status,
+		bool $is_opponent_perspective,
+		bool $is_conf_game
+	): void {
+		$key = ( $team_id && $team_id !== '0' )
+			? "id:{$team_id}"
+			: 'name:' . strtolower( trim( $team_name ) );
+
+		if ( ! isset( $teams[ $key ] ) ) {
+			$teams[ $key ]              = $this->empty_stats_with_overall();
+			$teams[ $key ]['team_name'] = $team_name;
+			$teams[ $key ]['team_logo'] = $team_logo;
+		}
+
+		if ( empty( $teams[ $key ]['team_logo'] ) && ! empty( $team_logo ) ) {
+			$teams[ $key ]['team_logo'] = $team_logo;
+		}
+
+		$teams[ $key ]['gf'] += $team_score;
+		$teams[ $key ]['ga'] += $opp_score;
+
+		if ( $team_score > $opp_score ) {
+			$result = 'win';
+		} elseif ( $team_score < $opp_score ) {
+			$result = $is_ot_so ? 'otl' : 'loss';
+		} else {
+			if ( $is_ot_so ) {
+				$target_won    = (bool) preg_match( '/^W\b/i', $status );
+				$this_team_won = $is_opponent_perspective ? ! $target_won : $target_won;
+				$result        = $this_team_won ? 'win' : 'otl';
+			} else {
+				$result = 'tie';
+			}
+		}
+
+		switch ( $result ) {
+			case 'win':
+				++$teams[ $key ]['overall_wins'];
+				break;
+			case 'loss':
+				++$teams[ $key ]['overall_losses'];
+				break;
+			case 'otl':
+				++$teams[ $key ]['overall_otl'];
+				break;
+			case 'tie':
+				++$teams[ $key ]['overall_ties'];
+				break;
+		}
+
+		if ( $is_conf_game ) {
+			switch ( $result ) {
+				case 'win':
+					++$teams[ $key ]['wins'];
+					break;
+				case 'loss':
+					++$teams[ $key ]['losses'];
+					break;
+				case 'otl':
+					++$teams[ $key ]['otl'];
+					break;
+				case 'tie':
+					++$teams[ $key ]['ties'];
+					break;
+			}
+		}
+	}
+
+	private function empty_stats_with_overall(): array {
+		return array(
+			'wins'           => 0,
+			'losses'         => 0,
+			'otl'            => 0,
+			'ties'           => 0,
+			'gf'             => 0,
+			'ga'             => 0,
+			'diff'           => 0,
+			'overall_wins'   => 0,
+			'overall_losses' => 0,
+			'overall_otl'    => 0,
+			'overall_ties'   => 0,
+		);
+	}
+
 	private function empty_stats(): array {
 		return array(
 			'wins'        => 0,

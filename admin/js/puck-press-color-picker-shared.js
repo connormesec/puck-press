@@ -215,35 +215,50 @@
                 const fontLabel = labels[fontKey]
                     || fontKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-                let options = '<option value="">— Theme Default —</option>';
-                GOOGLE_FONTS.forEach((font) => {
-                    options += `<option value="${font}"${font === fontValue ? ' selected' : ''}>${font}</option>`;
-                });
+                const isGoogleFont = fontKey.endsWith('_font');
 
-                $container.append(
-                    `<div class="pp-font-form-group" data-font-key="${fontKey}">` +
-                        `<label class="pp-form-label">${fontLabel}</label>` +
-                        '<div class="pp-font-input-group">' +
-                            `<select class="pp-font-value" id="pp-${templateKey}-${fontKey}-font-select">` +
-                                options +
-                            '</select>' +
-                        '</div>' +
-                    '</div>'
-                );
+                if (isGoogleFont) {
+                    let options = '<option value="">— Theme Default —</option>';
+                    GOOGLE_FONTS.forEach((font) => {
+                        options += `<option value="${font}"${font === fontValue ? ' selected' : ''}>${font}</option>`;
+                    });
 
-                const $select = $(`#pp-${templateKey}-${fontKey}-font-select`);
-                $select.select2({ dropdownParent: $modal, width: '100%' });
+                    $container.append(
+                        `<div class="pp-font-form-group" data-font-key="${fontKey}">` +
+                            `<label class="pp-form-label">${fontLabel}</label>` +
+                            '<div class="pp-font-input-group">' +
+                                `<select class="pp-font-value" id="pp-${templateKey}-${fontKey}-font-select">` +
+                                    options +
+                                '</select>' +
+                            '</div>' +
+                        '</div>'
+                    );
 
-                if (fontValue) loadGoogleFont(fontValue);
+                    const $select = $(`#pp-${templateKey}-${fontKey}-font-select`);
+                    $select.select2({ dropdownParent: $modal, width: '100%' });
 
-                $select.on('select2:select change', function () {
-                    const fontName = ($(this).val() || '').trim();
-                    const cssValue = fontFamilyCss(fontName);
-                    document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
-                    $(`.${templateKey}${cfg.containerSuffix}`).css('font-family', cssValue);
-                    if (cfg.onFontChange) cfg.onFontChange(templateKey, fontKey, cssValue);
-                    if (fontName) loadGoogleFont(fontName);
-                });
+                    if (fontValue) loadGoogleFont(fontValue);
+
+                    $select.on('select2:select change', function () {
+                        const fontName = ($(this).val() || '').trim();
+                        const cssValue = fontFamilyCss(fontName);
+                        document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
+                        $(`.${templateKey}${cfg.containerSuffix}`).css('font-family', cssValue);
+                        if (cfg.onFontChange) cfg.onFontChange(templateKey, fontKey, cssValue);
+                        if (fontName) loadGoogleFont(fontName);
+                    });
+                } else {
+                    $container.append(
+                        `<div class="pp-font-form-group" data-font-key="${fontKey}">` +
+                            `<label class="pp-form-label">${fontLabel}</label>` +
+                            '<div class="pp-font-input-group">' +
+                                `<input type="text" class="pp-font-value pp-text-input"` +
+                                       ` id="pp-${templateKey}-${fontKey}-font-text"` +
+                                       ` value="${fontValue || ''}">` +
+                            '</div>' +
+                        '</div>'
+                    );
+                }
             });
         };
 
@@ -276,7 +291,7 @@
         if (hasFont) {
             Object.entries(cfg.templatesData.fontSettings || {}).forEach(([templateKey, fontSet]) => {
                 Object.entries(fontSet).forEach(([fontKey, fontValue]) => {
-                    if (!fontValue) return;
+                    if (!fontValue || !fontKey.endsWith('_font')) return;
                     const cssValue = fontFamilyCss(fontValue);
                     document.documentElement.style.setProperty(`--pp-${templateKey}-${fontKey}`, cssValue);
                     $(`.${templateKey}${cfg.containerSuffix}`).css('font-family', cssValue);

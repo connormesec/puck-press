@@ -49,7 +49,12 @@ class Puck_Press_Record_Render_Utils {
 			'title'          => isset( $atts['title'] )          ? $atts['title']          : '',
 		);
 
-		if ( $template->get_key() === 'conference' ) {
+		if ( $template->get_key() === 'slim_conference' ) {
+			$data = array_merge(
+				$common,
+				array( 'rows' => $this->wpdb_utils->get_multi_source_stats_with_overall( $this->schedule_id ) )
+			);
+		} elseif ( $template->get_key() === 'conference' ) {
 			$data = array_merge(
 				$common,
 				array( 'rows' => $this->wpdb_utils->get_multi_source_stats( $this->schedule_id ) )
@@ -66,6 +71,15 @@ class Puck_Press_Record_Render_Utils {
 			);
 		}
 
-		return $template->render_with_options( $data, array( 'schedule_id' => $this->schedule_id ) );
+		$options = array( 'schedule_id' => $this->schedule_id );
+
+		if ( $template->get_key() === 'slim_conference' ) {
+			global $wpdb;
+			$options['schedule_name'] = (string) ( $wpdb->get_var(
+				$wpdb->prepare( "SELECT name FROM {$wpdb->prefix}pp_schedules WHERE id = %d LIMIT 1", $this->schedule_id )
+			) ?? '' );
+		}
+
+		return $template->render_with_options( $data, $options );
 	}
 }

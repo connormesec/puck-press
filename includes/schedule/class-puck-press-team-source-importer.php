@@ -185,11 +185,13 @@ class Puck_Press_Team_Source_Importer {
                 $row = array_merge( $row, $edit_map[ $game_id ] );
             }
             $row['team_id'] = $team_id;
+            unset( $row['id'] );
             $this->teams_utils->insert_or_replace_row( 'pp_team_games_display', $row );
         }
 
         foreach ( $insert_mods as $manual_game ) {
             $manual_game['team_id'] = $team_id;
+            unset( $manual_game['id'] );
             $this->teams_utils->insert_or_replace_row( 'pp_team_games_display', $manual_game );
         }
     }

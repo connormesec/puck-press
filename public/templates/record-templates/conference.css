@@ -23,6 +23,7 @@
   width: 100%;
   border-collapse: collapse;
   min-width: 480px;
+  margin-bottom: 0px !important;
 }
 
 /* ── Header row ─────────────────────────────────────────── */
