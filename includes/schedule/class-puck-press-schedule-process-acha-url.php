@@ -251,12 +251,9 @@ class Puck_Press_Schedule_Process_Acha_Url {
 	 * @return string      Team name with any leading division prefix removed.
 	 */
 	private function strip_acha_division_prefix( string $name ): string {
-		foreach ( self::$acha_division_prefixes as $prefix ) {
-			if ( str_starts_with( $name, $prefix ) ) {
-				return substr( $name, strlen( $prefix ) );
-			}
-		}
-		return $name;
+		// Strip any combination of leading rank (#9, #12) and division prefix (MD2, WD1, etc.)
+		// Handles all orderings: "MD2 #9 Concordia", "#9 MD2 Concordia", "#9 Concordia", "MD2 Concordia"
+		return preg_replace( '/^(?:#\d+\s+)?(?:(?:MD[1-3]|WD[1-3]|M[1-3]|W[1-3])\s+)?(?:#\d+\s+)?/', '', $name );
 	}
 
 	/**

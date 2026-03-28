@@ -65,7 +65,7 @@
   text-align: center;
   padding: 5px 16px;
   border-radius: 10px 10px 0 0;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--pp-leaders-label_bg, #f5f5f5);;
 }
 
 /* ── Card ────────────────────────────────────────────── */
@@ -94,6 +94,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
   display: block;
 }

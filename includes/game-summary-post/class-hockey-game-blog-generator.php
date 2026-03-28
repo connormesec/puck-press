@@ -219,8 +219,8 @@ Replace the bracketed title with your actual title. The very first character of 
 		$prompt .= "{$homeTeam['info']['nickname']} #{$homePlayer['number']} {$homePlayer['firstName']} {$homePlayer['lastName']} {$homePlayer['message']}\n";
 		$prompt .= $nextGameMessage;
 
-		// Clean up any MD1, MD2, MD3, WD1, WD2 references
-		return preg_replace( '/MD2 |MD1 |MD3 |WD1 | WD2/', '', $prompt );
+		// Clean up division prefixes and playoff ranking numbers from team names
+		return preg_replace( '/\bMD[1-3]\s+|\bWD[1-3]\s+|\bM[1-3]\s+|\bW[1-3]\s+|#\d+\s+/', '', $prompt );
 	}
 
 	/**
