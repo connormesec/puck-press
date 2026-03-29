@@ -7,7 +7,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Puck_Press_Divi_Page_Builder {
 
 	private const DIVI_VERSION = '0.7';
-	private const OPTION_PAGES = 'pp_team_%d_divi_pages';
+	private const OPTION_PAGES            = 'pp_team_%d_divi_pages';
+	private const OPTION_TEAM_SETTINGS    = 'pp_team_%d_divi_settings';
 	private const OPTION_MAX_WIDTH        = 'pp_divi_page_max_width';
 	private const OPTION_PADDING          = 'pp_divi_page_padding';
 	private const OPTION_HEADER_COLOR     = 'pp_divi_page_header_color';
@@ -525,5 +526,33 @@ class Puck_Press_Divi_Page_Builder {
 		update_option( self::OPTION_HEADER_FONT, sanitize_text_field( $header_font ) );
 		update_option( self::OPTION_HEADER_TEXT_COLOR, sanitize_hex_color( $header_text_color ) ?: '#ffffff' );
 		update_option( self::OPTION_SCHOOL_URL, esc_url_raw( $school_url ) );
+	}
+
+	public static function save_team_settings( int $team_id, string $max_width, string $padding, string $header_color, string $header_font_size, string $header_font, string $header_text_color, string $school_url ): void {
+		update_option(
+			sprintf( self::OPTION_TEAM_SETTINGS, $team_id ),
+			wp_json_encode( array(
+				'max_width'         => sanitize_text_field( $max_width ),
+				'padding'           => sanitize_text_field( $padding ),
+				'header_color'      => sanitize_hex_color( $header_color ) ?: '',
+				'header_font_size'  => sanitize_text_field( $header_font_size ),
+				'header_font'       => sanitize_text_field( $header_font ),
+				'header_text_color' => sanitize_hex_color( $header_text_color ) ?: '#ffffff',
+				'school_url'        => esc_url_raw( $school_url ),
+			) )
+		);
+	}
+
+	public static function get_team_settings( int $team_id ): array {
+		$saved = json_decode( get_option( sprintf( self::OPTION_TEAM_SETTINGS, $team_id ), '' ), true );
+		return array(
+			'max_width'         => $saved['max_width']         ?? self::get_default_max_width(),
+			'padding'           => $saved['padding']           ?? self::get_default_padding(),
+			'header_color'      => $saved['header_color']      ?? self::get_default_header_color(),
+			'header_font_size'  => $saved['header_font_size']  ?? self::get_default_header_font_size(),
+			'header_font'       => $saved['header_font']       ?? self::get_default_header_font(),
+			'header_text_color' => $saved['header_text_color'] ?? self::get_default_header_text_color(),
+			'school_url'        => $saved['school_url']        ?? self::get_default_school_url(),
+		);
 	}
 }

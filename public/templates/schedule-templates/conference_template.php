@@ -52,6 +52,9 @@ class ConferenceTemplate extends PuckPressTemplate {
 		return array( 'schedule_font' => 'Schedule Font' );
 	}
 
+	/** @var array<string,true> Team names that own a schedule entry (i.e. Puck Press / conference teams). */
+	private array $conference_teams = array();
+
 	// ── Entry point ───────────────────────────────────────────────────────────
 
 	public function render_with_options( array $games, array $options ): string {
@@ -69,6 +72,12 @@ class ConferenceTemplate extends PuckPressTemplate {
 	// ── Layout shell ──────────────────────────────────────────────────────────
 
 	private function buildScoreboard( array $raw_games, bool $is_archive, string $container_id = '' ): string {
+		foreach ( $raw_games as $game ) {
+			if ( ! empty( $game['target_team_name'] ) ) {
+				$this->conference_teams[ $game['target_team_name'] ] = true;
+			}
+		}
+
 		$games = $this->normalize_and_deduplicate( $raw_games );
 
 		if ( empty( $games ) ) {
@@ -170,7 +179,7 @@ class ConferenceTemplate extends PuckPressTemplate {
 			$html .= '<img class="csb-team-logo" src="' . esc_url( $logo ) . '" loading="lazy" decoding="async" alt="' . esc_attr( $name ) . '">';
 		}
 		$html .= '<span class="csb-team-name">' . esc_html( $name ) . '</span>';
-		if ( ! empty( $record ) ) {
+		if ( ! empty( $record ) && isset( $this->conference_teams[ $name ] ) ) {
 			$html .= '<span class="csb-team-record">(' . esc_html( $record ) . ')</span>';
 		}
 		$html .= '</div>';
@@ -235,7 +244,7 @@ class ConferenceTemplate extends PuckPressTemplate {
 			$html .= '<img class="csb-team-logo" src="' . esc_url( $logo ) . '" loading="lazy" decoding="async" alt="' . esc_attr( $name ) . '">';
 		}
 		$html .= '<span class="csb-team-name">' . esc_html( $name ) . '</span>';
-		if ( ! empty( $record ) ) {
+		if ( ! empty( $record ) && isset( $this->conference_teams[ $name ] ) ) {
 			$html .= '<span class="csb-team-record">(' . esc_html( $record ) . ')</span>';
 		}
 		if ( $is_home ) {

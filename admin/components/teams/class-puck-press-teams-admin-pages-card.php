@@ -26,15 +26,16 @@ class Puck_Press_Teams_Admin_Pages_Card extends Puck_Press_Admin_Card_Abstract {
 		$page_ids = $builder->get_page_ids( $this->team_id );
 		$has_pages = ! empty( $page_ids );
 
-		$max_width        = Puck_Press_Divi_Page_Builder::get_default_max_width();
-		$padding          = Puck_Press_Divi_Page_Builder::get_default_padding();
-		$header_color     = Puck_Press_Divi_Page_Builder::get_default_header_color()
+		$settings          = Puck_Press_Divi_Page_Builder::get_team_settings( $this->team_id );
+		$max_width         = $settings['max_width'];
+		$padding           = $settings['padding'];
+		$header_color      = $settings['header_color']
 			?: Puck_Press_Divi_Page_Builder::get_accent_color( $this->team_id )
 			?: '#000000';
-		$header_font_size = Puck_Press_Divi_Page_Builder::get_default_header_font_size();
-		$header_font       = Puck_Press_Divi_Page_Builder::get_default_header_font();
-		$header_text_color = Puck_Press_Divi_Page_Builder::get_default_header_text_color();
-		$school_url        = Puck_Press_Divi_Page_Builder::get_default_school_url();
+		$header_font_size  = $settings['header_font_size'];
+		$header_font       = $settings['header_font'];
+		$header_text_color = $settings['header_text_color'];
+		$school_url        = $settings['school_url'];
 
 		ob_start();
 		?>

@@ -814,7 +814,7 @@ class Puck_Press_Admin {
 		);
 		wp_localize_script( 'puck-press-color-picker', 'ppScheduleTemplates', $templates );
 
-		$slider_template_manager  = new Puck_Press_Slider_Template_Manager();
+		$slider_template_manager  = new Puck_Press_Slider_Template_Manager( $active_schedule_id );
 		$sliderTemplates          = $slider_template_manager->get_all_template_colors();
 		$selected_slider_template = $slider_template_manager->get_current_template_key();
 		$templates                = array(
@@ -1256,6 +1256,7 @@ class Puck_Press_Admin {
 		$school_url         = esc_url_raw( $_POST['school_url'] ?? '' );
 
 		Puck_Press_Divi_Page_Builder::save_defaults( $max_width, $padding, $header_color, $header_font_size, $header_font, $header_text_color, $school_url );
+		Puck_Press_Divi_Page_Builder::save_team_settings( $team_id, $max_width, $padding, $header_color, $header_font_size, $header_font, $header_text_color, $school_url );
 
 		$builder = new Puck_Press_Divi_Page_Builder();
 		$result  = $builder->generate_all( $team_id, $max_width, $padding, $header_color, $header_font_size, $header_font, $header_text_color, $school_url );
