@@ -295,6 +295,22 @@
 
 /* ── Responsive: hide optional columns on small screens ─ */
 @media (max-width: 600px) {
+  .standard_stats_container .pp-stats-filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .standard_stats_container .pp-stats-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .standard_stats_container .pp-stats-team-select,
+  .standard_stats_container .pp-stats-source-select,
+  .standard_stats_container .pp-stats-season-select {
+    width: 100%;
+  }
+
   .standard_stats_container .pp-stats-col-opt {
     display: none;
   }
