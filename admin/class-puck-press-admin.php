@@ -315,7 +315,10 @@ class Puck_Press_Admin {
 				'colors'  => $colors,
 			);
 			if ( isset( $_POST['cal_url'] ) ) {
-				$response['cal_url'] = get_option( 'pp_slider_cal_url', '' );
+				$sid                 = (int) ( $_POST['schedule_id'] ?? 0 );
+				$response['cal_url'] = $sid > 0
+					? get_option( "pp_slider_{$sid}_cal_url", '' )
+					: get_option( 'pp_slider_cal_url', '' );
 			}
 			if ( is_callable( $extra_data_fn ) ) {
 				$response = array_merge( $response, call_user_func( $extra_data_fn ) );
@@ -350,7 +353,8 @@ class Puck_Press_Admin {
 		$schedule_id = (int) ( $_POST['schedule_id'] ?? 1 );
 		$url_updated = false;
 		if ( isset( $_POST['cal_url'] ) ) {
-			$url_updated = update_option( 'pp_slider_cal_url', esc_url_raw( wp_strip_all_tags( $_POST['cal_url'] ) ) );
+			$cal_url_key = $schedule_id > 0 ? "pp_slider_{$schedule_id}_cal_url" : 'pp_slider_cal_url';
+			$url_updated = update_option( $cal_url_key, esc_url_raw( wp_strip_all_tags( $_POST['cal_url'] ) ) );
 		}
 		self::update_template_colors(
 			new Puck_Press_Slider_Template_Manager( $schedule_id ),
@@ -820,7 +824,7 @@ class Puck_Press_Admin {
 		$templates                = array(
 			'sliderTemplates'   => $sliderTemplates,
 			'selected_template' => $selected_slider_template,
-			'cal_url'           => get_option( 'pp_slider_cal_url', '' ),
+			'cal_url'           => get_option( "pp_slider_{$active_schedule_id}_cal_url", get_option( 'pp_slider_cal_url', '' ) ),
 		);
 		wp_localize_script( 'puck-press-slider-color-picker', 'ppSliderTemplates', $templates );
 
@@ -1562,7 +1566,7 @@ class Puck_Press_Admin {
 		$options       = array( 'schedule_id' => $schedule_id );
 
 		$schedule_tm       = new Puck_Press_Schedule_Template_Manager( $schedule_id );
-		$slider_tm         = new Puck_Press_Slider_Template_Manager();
+		$slider_tm         = new Puck_Press_Slider_Template_Manager( $schedule_id );
 		$selected_template = $schedule_tm->get_current_template_key();
 		$selected_slider   = $slider_tm->get_current_template_key();
 
@@ -1591,6 +1595,7 @@ class Puck_Press_Admin {
 			'shortcode'                => $shortcode,
 			'schedule_teams'           => $schedule_teams,
 			'available_teams'          => $available_teams,
+			'cal_url'                  => get_option( "pp_slider_{$schedule_id}_cal_url", get_option( 'pp_slider_cal_url', '' ) ),
 		) );
 	}
 

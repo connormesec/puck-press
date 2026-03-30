@@ -66,8 +66,8 @@ class ScoreboardTemplate extends PuckPressTemplate {
 		// Scroll so the next upcoming game lands as the 3rd visible card (2 past games to its left).
 		// Glider.js handles the visible window via slidesToShow — no PHP slicing needed.
 		$scroll_to    = max( 0, $next_index - 2 );
-		$cal_url      = get_option( 'pp_slider_cal_url', '' ) ?: '#';
 		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
+		$cal_url      = ( $schedule_id > 0 ? get_option( "pp_slider_{$schedule_id}_cal_url", '' ) : get_option( 'pp_slider_cal_url', '' ) ) ?: '#';
 		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
 		$scope        = $container_id ? '#' . $container_id : ':root';
 		$colors       = $schedule_id > 0 ? self::get_slider_colors( $schedule_id ) : null;

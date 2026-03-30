@@ -65,8 +65,8 @@ class CompactTemplate extends PuckPressTemplate {
 		$next_index   = count( $split['past_games'] );
 		$sorted       = $this->sort_games_by_chronological_order( $games );
 		$scroll_to    = max( 0, $next_index - 2 );
-		$cal_url      = get_option( 'pp_slider_cal_url', '' ) ?: '#';
 		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
+		$cal_url      = ( $schedule_id > 0 ? get_option( "pp_slider_{$schedule_id}_cal_url", '' ) : get_option( 'pp_slider_cal_url', '' ) ) ?: '#';
 		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
 		$scope        = $container_id ? '#' . $container_id : ':root';
 		$colors       = $schedule_id > 0 ? self::get_slider_colors( $schedule_id ) : null;

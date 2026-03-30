@@ -715,6 +715,20 @@
         $addBtn.hide();
       }
 
+      // Update slider cal URL field in the modal
+      if (typeof d.cal_url !== 'undefined') {
+        $('#pp-slider-cal-url').val(d.cal_url);
+        if (typeof ppSliderTemplates !== 'undefined') ppSliderTemplates.cal_url = d.cal_url;
+      }
+
+      // Update delete footer
+      const $deleteFooter = $('#pp-schedule-delete-footer');
+      if (d.is_main) {
+        $deleteFooter.hide();
+      } else {
+        $deleteFooter.show().find('.pp-delete-new-schedule-btn').data('schedule-id', scheduleId).attr('data-schedule-id', scheduleId);
+      }
+
       gameScheduleInitializers.forEach(function (fn) { if (typeof fn === 'function') fn(); });
     }
 
@@ -798,16 +812,17 @@
     $(document).on('click', '.pp-delete-new-schedule-btn', function () {
       if (!confirm('Delete this schedule? This cannot be undone.')) return;
       const scheduleId = $(this).data('schedule-id');
-      const $row = $(this).closest('tr');
       $.ajax({
         url: ajaxurl,
         type: 'POST',
         data: { action: 'pp_delete_new_schedule', schedule_id: scheduleId },
         success: function (response) {
           if (response.success) {
-            $row.remove();
+            $('#pp-schedule-group-selector option[value="' + scheduleId + '"]').remove();
+            const firstId = parseInt($('#pp-schedule-group-selector option:first').val(), 10);
+            $('#pp-schedule-group-selector').val(firstId).trigger('change');
           } else {
-            console.error('Failed to delete schedule:', response.data && response.data.message);
+            alert(response.data && response.data.message ? response.data.message : 'Failed to delete schedule.');
           }
         },
         error: function () { console.error('An error occurred while deleting the schedule.'); }

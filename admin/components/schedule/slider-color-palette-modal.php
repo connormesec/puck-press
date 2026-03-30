@@ -53,7 +53,10 @@ $selected_template = $templates->get_current_template_key();
 					<input type="text" id="pp-slider-cal-url" name="cal_url"
 							class="pp-text-input" style="width:100%;box-sizing:border-box;"
 							placeholder="https://example.com/schedule"
-							value="<?php echo esc_attr( get_option( 'pp_slider_cal_url', '' ) ); ?>">
+							value="<?php
+							$_active_sid = (int) get_option( 'pp_admin_active_new_schedule_id', 1 );
+							echo esc_attr( get_option( "pp_slider_{$_active_sid}_cal_url", get_option( 'pp_slider_cal_url', '' ) ) );
+						?>">
 				</div>
 			</form>
 		</div>

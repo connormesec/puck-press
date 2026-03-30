@@ -206,6 +206,12 @@ class Puck_Press_Schedule_Admin_Display {
 			<div class="pp-card-content" id="pp-schedule-teams-content">
 				<?php echo $this->render_schedule_teams_table( $schedule_teams, $is_main, $active_new_schedule_id ); ?>
 			</div>
+			<div id="pp-schedule-delete-footer" class="pp-card-footer" style="padding: 12px 24px; border-top: 1px solid #e0e0e0;<?php echo $is_main ? ' display:none;' : ''; ?>">
+				<button class="pp-button pp-button-danger pp-delete-new-schedule-btn"
+					data-schedule-id="<?php echo esc_attr( $active_new_schedule_id ); ?>">
+					Delete Schedule
+				</button>
+			</div>
 		</div>
 		<?php endif; ?>
 		<?php

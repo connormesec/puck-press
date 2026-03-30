@@ -42,7 +42,7 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 		<?php
 		if ( $tab === 'game-summary' ) :
 			?>
-			nav-tab-active<?php endif; ?>">Post Game Summary</a>
+			nav-tab-active<?php endif; ?>">Past Game Summary</a>
 		<a href="?page=puck-press&tab=insta-post" class="nav-tab
 		<?php
 		if ( $tab === 'insta-post' ) :
