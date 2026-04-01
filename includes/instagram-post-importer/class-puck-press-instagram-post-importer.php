@@ -267,7 +267,35 @@ class Puck_Press_Instagram_Post_Importer {
 			}
 		}
 
+		$this->enforce_post_cap();
+
 		return $post_id;
+	}
+
+	private function enforce_post_cap() {
+		$max = (int) get_option( 'pp_insta_post_max_count', 0 );
+		if ( $max <= 0 ) {
+			return;
+		}
+		$posts = get_posts(
+			array(
+				'post_type'      => 'pp_insta_post',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'date',
+				'order'          => 'ASC',
+				'fields'         => 'ids',
+			)
+		);
+		$over  = count( $posts ) - $max;
+		for ( $i = 0; $i < $over; $i++ ) {
+			$pid      = $posts[ $i ];
+			$thumb_id = get_post_thumbnail_id( $pid );
+			if ( $thumb_id ) {
+				wp_delete_attachment( $thumb_id, true );
+			}
+			wp_delete_post( $pid, true );
+		}
 	}
 
 	/**

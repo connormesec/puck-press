@@ -49,18 +49,20 @@ class Puck_Press_Record_Render_Utils {
 			'title'          => isset( $atts['title'] )          ? $atts['title']          : '',
 		);
 
+		$division_only = isset( $atts['division_only'] ) && $atts['division_only'] === 'true';
+
 		if ( $template->get_key() === 'slim_conference' ) {
 			$data = array_merge(
 				$common,
-				array( 'rows' => $this->wpdb_utils->get_multi_source_stats_with_overall( $this->schedule_id ) )
+				array( 'rows' => $this->wpdb_utils->get_multi_source_stats_with_overall( $this->schedule_id, $division_only ) )
 			);
 		} elseif ( $template->get_key() === 'conference' ) {
 			$data = array_merge(
 				$common,
-				array( 'rows' => $this->wpdb_utils->get_multi_source_stats( $this->schedule_id ) )
+				array( 'rows' => $this->wpdb_utils->get_multi_source_stats( $this->schedule_id, $division_only ) )
 			);
 		} else {
-			$stats = $this->wpdb_utils->get_record_stats( $this->schedule_id );
+			$stats = $this->wpdb_utils->get_record_stats( $this->schedule_id, $division_only );
 			$data  = array_merge(
 				$stats,
 				$common,

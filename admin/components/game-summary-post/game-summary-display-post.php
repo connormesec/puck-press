@@ -15,13 +15,15 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 
 			$enabled = isset( $_POST['pp_enable_game_summary_post'] ) ? 1 : 0;
 			update_option( 'pp_enable_game_summary_post', $enabled );
+			update_option( 'pp_game_summary_max_count', absint( $_POST['pp_game_summary_max_count'] ?? 0 ) );
 
 			echo '<div class="updated"><p>Settings saved.</p></div>';
 		}
 
 		$openai_key = esc_attr( get_option( 'pp_openai_api_key', '' ) );
 		$image_key  = esc_attr( get_option( 'pp_image_api_key', '' ) );
-		$enabled    = get_option( 'pp_enable_game_summary_post', 0 )
+		$enabled    = get_option( 'pp_enable_game_summary_post', 0 );
+		$max_count  = (int) get_option( 'pp_game_summary_max_count', 0 )
 		?>
 		<div class="wrap">
 			<h1>Game Summary Post Maker</h1>
@@ -46,6 +48,14 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 						<th scope="row"><label for="pp_image_api_key">Image API Key</label></th>
 						<td><input type="text" name="pp_image_api_key" id="pp_image_api_key"
 								value="<?php echo $image_key; ?>" class="regular-text" /></td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="pp_game_summary_max_count">Max Game Recap Posts</label></th>
+						<td>
+							<input type="number" name="pp_game_summary_max_count" id="pp_game_summary_max_count"
+								value="<?php echo $max_count; ?>" class="small-text" min="0" />
+							<p class="description">Maximum number of game recap posts to keep. When a new post is created and the limit is exceeded, the oldest post is deleted. Set to 0 for unlimited.</p>
+						</td>
 					</tr>
 				</table>
 				<?php submit_button( 'Save Settings', 'primary', 'pp_save_keys' ); ?>

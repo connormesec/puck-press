@@ -426,9 +426,37 @@ class Puck_Press_Game_Post_Creator {
 			if ( ! empty( $image_buffer ) ) {
 				$this->attach_featured_image_from_base64( $post_id, $image_buffer, $slug );
 			}
+
+			$this->enforce_post_cap();
 		}
 
 		return $post_id;
+	}
+
+	private function enforce_post_cap() {
+		$max = (int) get_option( 'pp_game_summary_max_count', 0 );
+		if ( $max <= 0 ) {
+			return;
+		}
+		$posts = get_posts(
+			array(
+				'post_type'      => 'pp_game_summary',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'orderby'        => 'date',
+				'order'          => 'ASC',
+				'fields'         => 'ids',
+			)
+		);
+		$over  = count( $posts ) - $max;
+		for ( $i = 0; $i < $over; $i++ ) {
+			$pid      = $posts[ $i ];
+			$thumb_id = get_post_thumbnail_id( $pid );
+			if ( $thumb_id ) {
+				wp_delete_attachment( $thumb_id, true );
+			}
+			wp_delete_post( $pid, true );
+		}
 	}
 
 	private function attach_featured_image_from_base64( $post_id, $image_buffer, $slug ) {

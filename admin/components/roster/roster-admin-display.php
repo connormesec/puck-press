@@ -75,6 +75,34 @@ class Puck_Press_Roster_Admin_Display {
 
 				<?php echo $this->render_roster_content(); ?>
 
+				<div class="pp-card" style="margin-top: 16px; margin-bottom: 16px;">
+					<div class="pp-card-header">
+						<h2>Shortcode Attributes</h2>
+						<p>Customize the roster shortcode output</p>
+					</div>
+					<div class="pp-card-content" style="padding: 16px 24px;">
+						<table style="border-collapse: collapse; width: 100%; font-size: 0.875rem;">
+							<thead>
+								<tr style="border-bottom: 1px solid #e0e0e0;">
+									<th style="text-align: left; padding: 8px 12px; font-weight: 600;">Attribute</th>
+									<th style="text-align: left; padding: 8px 12px; font-weight: 600;">Default</th>
+									<th style="text-align: left; padding: 8px 12px; font-weight: 600;">Description</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td style="padding: 8px 12px;"><code>roster</code></td>
+									<td style="padding: 8px 12px;"><code>(default)</code></td>
+									<td style="padding: 8px 12px;">Roster group slug — targets a specific group's roster. Omit for the default group.</td>
+								</tr>
+							</tbody>
+						</table>
+						<p style="margin: 12px 0 0; color: #666; font-size: 0.8rem;">
+							Examples: <code>[pp-roster]</code> &nbsp;|&nbsp; <code>[pp-roster roster="eagles"]</code>
+						</p>
+					</div>
+				</div>
+
 			</main>
 			<?php
 			include plugin_dir_path( __FILE__ ) . 'roster-add-roster-modal.php';

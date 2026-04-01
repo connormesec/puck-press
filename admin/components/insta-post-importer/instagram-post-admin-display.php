@@ -13,12 +13,14 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display {
 			update_option( 'pp_insta_scraper_api_key', sanitize_text_field( $_POST['pp_insta_scraper_api_key'] ) );
 			$enabled = isset( $_POST['pp_enable_insta_post'] ) ? 1 : 0;
 			update_option( 'pp_enable_insta_post', $enabled );
+			update_option( 'pp_insta_post_max_count', absint( $_POST['pp_insta_post_max_count'] ?? 0 ) );
 
 			echo '<div class="updated"><p>Global settings saved.</p></div>';
 		}
 
-		$api_key = esc_attr( get_option( 'pp_insta_scraper_api_key', '' ) );
-		$enabled = get_option( 'pp_enable_insta_post', 0 );
+		$api_key   = esc_attr( get_option( 'pp_insta_scraper_api_key', '' ) );
+		$enabled   = get_option( 'pp_enable_insta_post', 0 );
+		$max_count = (int) get_option( 'pp_insta_post_max_count', 0 );
 
 		require_once plugin_dir_path( __FILE__ ) . '../../../includes/teams/class-puck-press-teams-wpdb-utils.php';
 		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
@@ -45,6 +47,14 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display {
 						<td>
 							<input type="text" name="pp_insta_scraper_api_key" id="pp_insta_scraper_api_key"
 								value="<?php echo $api_key; ?>" class="regular-text" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="pp_insta_post_max_count">Max Instagram Posts</label></th>
+						<td>
+							<input type="number" name="pp_insta_post_max_count" id="pp_insta_post_max_count"
+								value="<?php echo $max_count; ?>" class="small-text" min="0" />
+							<p class="description">Maximum number of Instagram posts to keep. When a new post is created and the limit is exceeded, the oldest post is deleted. Set to 0 for unlimited.</p>
 						</td>
 					</tr>
 				</table>

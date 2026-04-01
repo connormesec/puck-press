@@ -12,13 +12,17 @@ class Puck_Press_Record_Wpdb_Utils {
 	 *
 	 * @return array Flat associative array of stats.
 	 */
-	public function get_record_stats( int $schedule_id = 1 ): array {
+	public function get_record_stats( int $schedule_id = 1, bool $division_only = false ): array {
 		global $wpdb;
 		$table = $wpdb->prefix . 'pp_schedule_games_display';
 
+		$select = $division_only
+			? 'target_team_id, target_team_name, opponent_team_id, opponent_team_name, target_score, opponent_score, home_or_away, game_status'
+			: 'target_score, opponent_score, home_or_away, game_status';
+
 		$games = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT target_score, opponent_score, home_or_away, game_status
+				"SELECT {$select}
                    FROM {$table}
                   WHERE schedule_id = %d
                     AND target_score IS NOT NULL
@@ -32,6 +36,29 @@ class Puck_Press_Record_Wpdb_Utils {
 
 		if ( empty( $games ) ) {
 			return $this->empty_stats();
+		}
+
+		// When division_only is active, build conference keys and filter games.
+		if ( $division_only ) {
+			$conf_keys = array();
+			foreach ( $games as $game ) {
+				$tid = $game['target_team_id'] ?? '';
+				$k   = ( $tid && $tid !== '0' )
+					? "id:{$tid}"
+					: 'name:' . strtolower( trim( $game['target_team_name'] ) );
+				$conf_keys[ $k ] = true;
+			}
+
+			$games = array_filter(
+				$games,
+				function ( $game ) use ( $conf_keys ) {
+					$opp_id  = $game['opponent_team_id'] ?? '';
+					$opp_key = ( $opp_id && $opp_id !== '0' )
+						? "id:{$opp_id}"
+						: 'name:' . strtolower( trim( $game['opponent_team_name'] ) );
+					return isset( $conf_keys[ $opp_key ] );
+				}
+			);
 		}
 
 		$stats = $this->empty_stats();
@@ -105,7 +132,7 @@ class Puck_Press_Record_Wpdb_Utils {
 		return $stats;
 	}
 
-	public function get_multi_source_stats( int $schedule_id = 1 ): array {
+	public function get_multi_source_stats( int $schedule_id = 1, bool $division_only = false ): array {
 		global $wpdb;
 		$table = $wpdb->prefix . 'pp_schedule_games_display';
 
@@ -129,9 +156,19 @@ class Puck_Press_Record_Wpdb_Utils {
 			return array();
 		}
 
-		$teams       = array();
+		// First pass: identify all conference teams (those with their own data source).
 		$target_keys = array();
+		foreach ( $games as $game ) {
+			$tid = $game['target_team_id'] ?? '';
+			$k   = ( $tid && $tid !== '0' )
+				? "id:{$tid}"
+				: 'name:' . strtolower( trim( $game['target_team_name'] ) );
+			$target_keys[ $k ] = true;
+		}
 
+		$teams = array();
+
+		// Second pass: accumulate stats, optionally skipping non-conference games.
 		foreach ( $games as $game ) {
 			$ts      = (int) $game['target_score'];
 			$os      = (int) $game['opponent_score'];
@@ -142,14 +179,21 @@ class Puck_Press_Record_Wpdb_Utils {
 				continue;
 			}
 
+			// When division_only is true, skip games against non-conference opponents.
+			if ( $division_only ) {
+				$opp_id  = $game['opponent_team_id'] ?? '';
+				$opp_key = ( $opp_id && $opp_id !== '0' )
+					? "id:{$opp_id}"
+					: 'name:' . strtolower( trim( $game['opponent_team_name'] ) );
+				if ( ! isset( $target_keys[ $opp_key ] ) ) {
+					continue;
+				}
+			}
+
 			$status_tokens = preg_split( '/[\s\/\-_]+/', $status );
 			$is_ot_so      = in_array( 'OT', $status_tokens, true ) || in_array( 'SO', $status_tokens, true );
 
-			$target_id  = $game['target_team_id'] ?? '';
-			$target_key = ( $target_id && $target_id !== '0' )
-				? "id:{$target_id}"
-				: 'name:' . strtolower( trim( $game['target_team_name'] ) );
-			$target_keys[ $target_key ] = true;
+			$target_id = $game['target_team_id'] ?? '';
 
 			// Process from both perspectives so a game stored under one team's source
 			// is still counted for the opponent team (avoids undercounting GP due to
@@ -275,7 +319,7 @@ class Puck_Press_Record_Wpdb_Utils {
 		}
 	}
 
-	public function get_multi_source_stats_with_overall( int $schedule_id = 1 ): array {
+	public function get_multi_source_stats_with_overall( int $schedule_id = 1, bool $division_only = false ): array {
 		global $wpdb;
 		$table = $wpdb->prefix . 'pp_schedule_games_display';
 
@@ -359,7 +403,16 @@ class Puck_Press_Record_Wpdb_Utils {
 
 		usort(
 			$teams,
-			function ( $a, $b ) {
+			function ( $a, $b ) use ( $division_only ) {
+				if ( $division_only ) {
+					// Sort by conference (division) points when division_only is active.
+					$pts_a = ( $a['wins'] * 2 ) + $a['otl'] + $a['ties'];
+					$pts_b = ( $b['wins'] * 2 ) + $b['otl'] + $b['ties'];
+					if ( $pts_b !== $pts_a ) {
+						return $pts_b <=> $pts_a;
+					}
+					return $b['wins'] <=> $a['wins'];
+				}
 				$pts_a = ( $a['overall_wins'] * 2 ) + $a['overall_otl'] + $a['overall_ties'];
 				$pts_b = ( $b['overall_wins'] * 2 ) + $b['overall_otl'] + $b['overall_ties'];
 				if ( $pts_b !== $pts_a ) {

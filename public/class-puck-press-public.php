@@ -128,6 +128,7 @@ class Puck_Press_Public {
 				'title'          => 'Team Record',
 				'schedule'       => '',
 				'team'           => '',
+				'division_only'  => 'false',
 			),
 			$atts
 		);

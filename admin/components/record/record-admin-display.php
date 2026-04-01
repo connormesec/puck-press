@@ -112,15 +112,20 @@ class Puck_Press_Record_Admin_Display {
 									<td style="padding: 8px 12px;"><code>true</code></td>
 									<td style="padding: 8px 12px;">Show points percentage (P%) column — conference template only</td>
 								</tr>
-								<tr>
+								<tr style="border-bottom: 1px solid #f0f0f0;">
 									<td style="padding: 8px 12px;"><code>schedule</code></td>
 									<td style="padding: 8px 12px;"><code>(default)</code></td>
 									<td style="padding: 8px 12px;">Schedule group slug — targets a specific group's record. Omit for the default group.</td>
 								</tr>
+								<tr>
+									<td style="padding: 8px 12px;"><code>division_only</code></td>
+									<td style="padding: 8px 12px;"><code>false</code></td>
+									<td style="padding: 8px 12px;">Only count games against other teams in the schedule for standings points — for divisional standings.</td>
+								</tr>
 							</tbody>
 						</table>
 						<p style="margin: 12px 0 0; color: #666; font-size: 0.8rem;">
-							Examples: <code>[pp-record show_home_away="false"]</code> &nbsp;|&nbsp; <code>[pp-record schedule="eagles"]</code>
+							Examples: <code>[pp-record show_home_away="false"]</code> &nbsp;|&nbsp; <code>[pp-record schedule="east" division_only="true"]</code>
 						</p>
 					</div>
 				</div>
