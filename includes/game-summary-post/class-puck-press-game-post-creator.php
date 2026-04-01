@@ -409,7 +409,7 @@ class Puck_Press_Game_Post_Creator {
 			'post_title'   => $post_title,
 			'post_content' => $post_body,
 			'post_status'  => 'publish',
-			'post_author'  => 1,
+			'post_author'  => ( ( $pp_user = get_user_by( 'login', 'puck-press' ) ) ? $pp_user->ID : 1 ),
 			'post_name'    => $slug,
 			'post_type'    => 'pp_game_summary',
 		);

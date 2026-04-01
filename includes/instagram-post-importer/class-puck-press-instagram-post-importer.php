@@ -232,7 +232,7 @@ class Puck_Press_Instagram_Post_Importer {
 			'post_title'   => $title,
 			'post_content' => $content,
 			'post_status'  => $status,
-			'post_author'  => get_current_user_id(),
+			'post_author'  => ( ( $pp_user = get_user_by( 'login', 'puck-press' ) ) ? $pp_user->ID : 1 ),
 			'post_type'    => 'pp_insta_post',
 		);
 

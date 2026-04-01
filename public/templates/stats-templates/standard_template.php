@@ -154,7 +154,7 @@ class StandardTemplate extends PuckPressTemplate {
 
 	private function buildSkatersSection( array $skaters, array $skaters_raw, array $col ): string {
 		$html  = '<section class="pp-stats-section">';
-		$html .= '<h2 class="pp-stats-section-title">Skaters</h2>';
+		$html .= '<h2 class="pp-stats-section-title" id="pp-stats-section-title-skaters">Skaters</h2>';
 
 		if ( empty( $skaters ) ) {
 			$html .= '<p class="pp-stats-empty">No skater stats available. Refresh your roster sources to populate data.</p>';
@@ -297,7 +297,7 @@ class StandardTemplate extends PuckPressTemplate {
 
 	private function buildGoaliesSection( array $goalies, array $goalies_raw, array $col ): string {
 		$html  = '<section class="pp-stats-section">';
-		$html .= '<h2 class="pp-stats-section-title">Goalies</h2>';
+		$html .= '<h2 class="pp-stats-section-title"  id="pp-stats-section-title-goalies">Goalies</h2>';
 
 		if ( empty( $goalies ) ) {
 			$html .= '<p class="pp-stats-empty">No goalie stats available. Refresh your roster sources to populate data.</p>';
