@@ -2993,6 +2993,7 @@ class Puck_Press_Admin {
 				'columns'        => $_POST['columns'] ?? 6,
 				'show_headshots' => $_POST['show_headshots'] ?? 'true',
 				'link_players'   => $_POST['link_players'] ?? 'true',
+				'show_title'     => $_POST['show_title'] ?? 'true',
 			)
 		);
 		wp_send_json_success( array( 'html' => $html ) );

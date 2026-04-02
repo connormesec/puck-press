@@ -25,6 +25,7 @@ class Puck_Press_Awards_Render_Utils {
                 'show_headshots' => 'true',
                 'columns'        => 6,
                 'link_players'   => 'true',
+                'show_title'     => 'true',
             ),
             $atts,
             'pp-awards'
@@ -36,6 +37,7 @@ class Puck_Press_Awards_Render_Utils {
         $show_heads = ( 'false' !== strtolower( $atts['show_headshots'] ) );
         $columns    = max( 1, (int) $atts['columns'] );
         $link       = ( 'false' !== strtolower( $atts['link_players'] ) );
+        $show_title = ( 'false' !== strtolower( $atts['show_title'] ) );
 
         if ( empty( $award_str ) && empty( $year ) && empty( $parent ) ) {
             return '<!-- [pp-awards] requires at least one of: award, year, parent -->';
@@ -67,7 +69,7 @@ class Puck_Press_Awards_Render_Utils {
             $filters['parent'] = $parent;
         }
 
-        $content_html = $this->render_content( $filters, $parent, $show_heads, $columns, $link );
+        $content_html = $this->render_content( $filters, $parent, $show_heads, $columns, $link, $show_title );
 
         $html = '<div class="pp-awards-wrap"'
             . ' data-parent="' . esc_attr( $parent ) . '"'
@@ -75,6 +77,7 @@ class Puck_Press_Awards_Render_Utils {
             . ' data-columns="' . esc_attr( $columns ) . '"'
             . ' data-show-headshots="' . esc_attr( $show_heads ? 'true' : 'false' ) . '"'
             . ' data-link-players="' . esc_attr( $link ? 'true' : 'false' ) . '"'
+            . ' data-show-title="' . esc_attr( $show_title ? 'true' : 'false' ) . '"'
             . '>';
 
         if ( $year_filter_mode && count( $available_years ) > 1 ) {
@@ -102,6 +105,7 @@ class Puck_Press_Awards_Render_Utils {
         $show_heads = ( 'false' !== strtolower( $atts['show_headshots'] ?? 'true' ) );
         $columns    = max( 1, (int) ( $atts['columns'] ?? 6 ) );
         $link       = ( 'false' !== strtolower( $atts['link_players'] ?? 'true' ) );
+        $show_title = ( 'false' !== strtolower( $atts['show_title'] ?? 'true' ) );
 
         $filters = array();
         if ( ! empty( $award_str ) ) {
@@ -114,10 +118,10 @@ class Puck_Press_Awards_Render_Utils {
             $filters['parent'] = $parent;
         }
 
-        return $this->render_content( $filters, $parent, $show_heads, $columns, $link );
+        return $this->render_content( $filters, $parent, $show_heads, $columns, $link, $show_title );
     }
 
-    private function render_content( array $filters, string $parent, bool $show_heads, int $columns, bool $link ): string {
+    private function render_content( array $filters, string $parent, bool $show_heads, int $columns, bool $link, bool $show_title = true ): string {
         $awards = $this->wpdb_utils->get_awards_by_filters( $filters );
         if ( empty( $awards ) ) {
             return '<p style="color:#888;font-style:italic;padding:1rem;">No awards found for this selection.</p>';
@@ -126,14 +130,16 @@ class Puck_Press_Awards_Render_Utils {
         $fallback = PuckPressTemplate::HEADSHOT_FALLBACK;
 
         if ( ! empty( $parent ) ) {
-            return $this->render_grouped( $awards, $fallback, $show_heads, $columns, $link, $parent );
+            return $this->render_grouped( $awards, $fallback, $show_heads, $columns, $link, $parent, $show_title );
         }
         return $this->render_flat( $awards, $fallback, $show_heads, $columns, $link );
     }
 
-    private function render_grouped( array $awards, string $fallback, bool $show_heads, int $columns, bool $link, string $parent_label ): string {
+    private function render_grouped( array $awards, string $fallback, bool $show_heads, int $columns, bool $link, string $parent_label, bool $show_title = true ): string {
         $html  = '<div class="pp-awards-group">';
-        $html .= '<h2 class="pp-awards-group-title">' . esc_html( $parent_label ) . '</h2>';
+        if ( $show_title ) {
+            $html .= '<h2 class="pp-awards-group-title">' . esc_html( $parent_label ) . '</h2>';
+        }
 
         foreach ( $awards as $award ) {
             $html .= $this->render_section( $award, $fallback, $show_heads, $columns, $link );

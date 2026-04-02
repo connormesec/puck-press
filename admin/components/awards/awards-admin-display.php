@@ -201,7 +201,8 @@ class Puck_Press_Awards_Admin_Display {
                             <strong>Optional attributes:</strong>
                             <code>columns="6"</code> (default 6),
                             <code>show_headshots="false"</code>,
-                            <code>link_players="false"</code>
+                            <code>link_players="false"</code>,
+                            <code>show_title="false"</code> (hides group title)
                         </p>
                     </div>
                 </div>
