@@ -269,6 +269,7 @@ class Puck_Press {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_post_slider_assets' );
 		$this->loader->add_shortcode( 'pp-league-news', $plugin_public, 'league_news_shortcode' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_league_news_assets' );
+		$this->loader->add_shortcode( 'pp-awards', $plugin_public, 'awards_shortcode' );
 	}
 
 	/**

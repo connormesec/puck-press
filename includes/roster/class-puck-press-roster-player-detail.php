@@ -21,7 +21,7 @@ class Puck_Press_Roster_Player_Detail {
 		'bio'        => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>',
 		'stats'      => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 9h2v11H5zm4-5h2v16H9zm4 8h2v8h-2zm4-4h2v12h-2z"/></svg>',
 		'related'    => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3" fill="currentColor" stroke="none"/><circle cx="6" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="18" cy="19" r="3" fill="currentColor" stroke="none"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>',
-		'historical' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>',
+		'awards'     => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H8v2h8v-2h-3v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>',
 	);
 
 	/**
@@ -67,7 +67,7 @@ class Puck_Press_Roster_Player_Detail {
 	 *                          Empty array when the player has no stats.
 	 * @return string HTML string.
 	 */
-	public static function render( array $player, array $stats_rows ): string {
+	public static function render( array $player, array $stats_rows, array $player_awards = array() ): string {
 		$fallback   = PuckPressTemplate::HEADSHOT_FALLBACK;
 		$full_name  = $player['name'] ?? '';
 		$player_slug = sanitize_title( $full_name );
@@ -236,7 +236,7 @@ class Puck_Press_Roster_Player_Detail {
             <button class="pp-player-tab pp-tab-active" data-tab="bio">' . $icons['bio'] . ' Bio</button>
             <button class="pp-player-tab" data-tab="stats">' . $icons['stats'] . ' Stats</button>
             <button class="pp-player-tab" data-tab="related">' . $icons['related'] . ' Related</button>
-            <button class="pp-player-tab" data-tab="historical">' . $icons['historical'] . ' Historical</button>
+            <button class="pp-player-tab" data-tab="awards">' . $icons['awards'] . ' Awards</button>
         </div>
         <div class="pp-player-tab-panels">
             <div id="pp-panel-bio" class="pp-player-tab-panel pp-panel-active">
@@ -248,8 +248,8 @@ class Puck_Press_Roster_Player_Detail {
             <div id="pp-panel-related" class="pp-player-tab-panel">
                 ' . $related_html . '
             </div>
-            <div id="pp-panel-historical" class="pp-player-tab-panel">
-                <p class="pp-coming-soon">Coming soon.</p>
+            <div id="pp-panel-awards" class="pp-player-tab-panel">
+                ' . self::build_awards_html( $player_awards ) . '
             </div>
         </div>
     </div>
@@ -443,5 +443,32 @@ class Puck_Press_Roster_Player_Detail {
                 </table>
             </div>
         </div>';
+	}
+
+	private static function build_awards_html( array $player_awards ): string {
+		if ( empty( $player_awards ) ) {
+			return '<p class="pp-no-awards">No awards yet.</p>';
+		}
+
+		$badges = '';
+		foreach ( $player_awards as $award ) {
+			$tooltip = esc_attr( $award['year'] . ' ' . $award['award_name'] );
+			$label   = esc_html( $award['award_name'] );
+			$year    = esc_html( $award['year'] );
+
+			if ( $award['icon_type'] === 'image' && ! empty( $award['icon_value'] ) ) {
+				$icon = '<img src="' . esc_url( $award['icon_value'] ) . '" alt="' . $tooltip . '">';
+			} else {
+				$icon = esc_html( $award['icon_value'] ?: '🏅' );
+			}
+
+			$badges .= '<div class="pp-award-badge" title="' . $tooltip . '">'
+				. '<span class="pp-award-badge-icon">' . $icon . '</span>'
+				. '<span class="pp-award-badge-label">' . $label . '</span>'
+				. '<span class="pp-award-badge-year">' . $year . '</span>'
+				. '</div>';
+		}
+
+		return '<div class="pp-award-badges">' . $badges . '</div>';
 	}
 }

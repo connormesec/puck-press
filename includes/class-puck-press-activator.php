@@ -136,6 +136,11 @@ class Puck_Press_Activator {
 		$registry_utils->maybe_create_or_update_tables();
 		$log[] = 'Created: pp_roster_teams';
 
+		require_once plugin_dir_path( __FILE__ ) . 'awards/class-puck-press-awards-wpdb-utils.php';
+		$awards_utils = new Puck_Press_Awards_Wpdb_Utils();
+		$awards_utils->maybe_create_or_update_tables();
+		$log[] = 'Created: pp_awards, pp_award_players';
+
 		$schedules_utils->seed_main_schedule( 'default', 'Main Schedule' );
 		$log[] = 'Seeded default Main Schedule';
 

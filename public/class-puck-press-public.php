@@ -350,6 +350,34 @@ class Puck_Press_Public {
 		return $render->get_html();
 	}
 
+	public function awards_shortcode( $atts = array() ) {
+		require_once plugin_dir_path( __FILE__ ) . '../includes/awards/class-puck-press-awards-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . '../includes/awards/class-puck-press-awards-render-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'templates/class-puck-press-template-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'templates/class-puck-press-awards-template-manager.php';
+
+		$awards_tm  = new Puck_Press_Awards_Template_Manager();
+		$template   = $awards_tm->get_current_template();
+		$css_block  = '';
+		if ( $template ) {
+			$inline_css = $template::get_inline_css();
+			if ( $inline_css ) {
+				$css_block = '<style>' . $inline_css . '</style>';
+			}
+			$fonts = $template::get_template_fonts();
+			foreach ( $fonts as $font_key => $font_name ) {
+				if ( ! empty( $font_name ) ) {
+					$font_url   = 'https://fonts.googleapis.com/css2?family=' . urlencode( $font_name ) . ':wght@400;600;700;800&display=swap';
+					$css_block .= '<link rel="stylesheet" href="' . esc_url( $font_url ) . '">';
+				}
+			}
+		}
+
+		$render = new Puck_Press_Awards_Render_Utils();
+		return $css_block . $render->render_shortcode( $atts );
+	}
+
 	public function stat_leaders_skaters_shortcode( $atts = array() ) {
 		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
 		$slug        = sanitize_title( $atts['roster'] );

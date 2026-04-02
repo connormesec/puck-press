@@ -90,6 +90,15 @@ foreach ( $archived_stats as $archived_row ) {
 	$all_stats_rows[]       = $archived_row;
 }
 
+// ── Look up awards ───────────────────────────────────────────────────────────
+require_once PLUGIN_DIR_PATH . 'includes/awards/class-puck-press-awards-wpdb-utils.php';
+$awards_utils  = new Puck_Press_Awards_Wpdb_Utils();
+$awards_utils->maybe_create_or_update_tables();
+$player_awards = $awards_utils->get_awards_for_player(
+    $player['player_id'],
+    (int) ( $player['team_id'] ?? 0 )
+);
+
 // ── Render ────────────────────────────────────────────────────────────────────
 get_header();
 
@@ -98,6 +107,6 @@ echo Puck_Press_Roster_Render_Utils::build_player_schema( $player );
 
 // Player detail HTML (CSS vars already injected by enqueue_roster_assets() via
 // wp_add_inline_style before wp_head fired).
-echo Puck_Press_Roster_Player_Detail::render( $player, $all_stats_rows );
+echo Puck_Press_Roster_Player_Detail::render( $player, $all_stats_rows, $player_awards );
 
 get_footer();
