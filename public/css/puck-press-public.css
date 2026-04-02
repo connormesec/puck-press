@@ -593,6 +593,10 @@
   font-family: var(--pp-awards-awards_font, inherit);
 }
 
+.pp-awards-wrap.pp-awards-no-bg {
+  background: transparent;
+}
+
 .pp-awards-year-filter {
   display: flex;
   align-items: center;

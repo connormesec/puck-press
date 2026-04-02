@@ -71,7 +71,10 @@ class Puck_Press_Awards_Render_Utils {
 
         $content_html = $this->render_content( $filters, $parent, $show_heads, $columns, $link, $show_title );
 
-        $html = '<div class="pp-awards-wrap"'
+        $no_bg      = get_option( 'pp_awards_no_background', false );
+        $wrap_class = 'pp-awards-wrap' . ( $no_bg ? ' pp-awards-no-bg' : '' );
+
+        $html = '<div class="' . esc_attr( $wrap_class ) . '"'
             . ' data-parent="' . esc_attr( $parent ) . '"'
             . ' data-award="' . esc_attr( $award_str ) . '"'
             . ' data-columns="' . esc_attr( $columns ) . '"'

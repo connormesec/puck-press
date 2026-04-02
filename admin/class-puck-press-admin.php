@@ -411,6 +411,9 @@ class Puck_Press_Admin {
 	public static function pp_ajax_update_awards_template_colors() {
 		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-awards-template-manager.php';
+		if ( isset( $_POST['no_background'] ) ) {
+			update_option( 'pp_awards_no_background', $_POST['no_background'] === '1' );
+		}
 		self::update_template_colors( new Puck_Press_Awards_Template_Manager() );
 	}
 

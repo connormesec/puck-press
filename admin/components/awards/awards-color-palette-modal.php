@@ -35,6 +35,12 @@ $selected_awards_template = $awards_templates->get_current_template_key();
 
         <div class="pp-modal-content">
             <form id="pp-awards-color-palette-form">
+                <div class="pp-form-row" style="margin-bottom:1rem;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                        <input type="checkbox" id="pp-awards-no-background" <?php checked( get_option( 'pp_awards_no_background', false ) ); ?>>
+                        No background (transparent)
+                    </label>
+                </div>
                 <p class="pp-section-label">Colors</p>
                 <div class="pp-form-row" id="pp-awards-dynamic-color-fields">
                 </div>

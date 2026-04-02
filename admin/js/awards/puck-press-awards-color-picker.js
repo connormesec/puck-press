@@ -21,6 +21,9 @@
             ajaxAction:             'puck_press_update_awards_colors',
             containerSuffix:        '_awards_container',
             fontFieldsContainerId:  '#pp-awards-dynamic-font-fields',
+            extraData: function () {
+                return { no_background: $('#pp-awards-no-background').is(':checked') ? '1' : '0' };
+            },
         });
     });
 })(jQuery);
