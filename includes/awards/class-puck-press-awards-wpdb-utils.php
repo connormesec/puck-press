@@ -47,9 +47,11 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
     );
 
     public function maybe_create_or_update_tables(): void {
+        global $wpdb;
         foreach ( array_keys( $this->table_schemas ) as $table ) {
             $this->maybe_create_or_update_table( $table );
         }
+        $wpdb->query( "UPDATE {$wpdb->prefix}pp_awards SET show_in_shortcode = 1 WHERE show_in_shortcode IS NULL" );
     }
 
     // ── Award CRUD ────────────────────────────────────────────────────────────
@@ -60,19 +62,19 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 
         $name            = sanitize_text_field( $data['name'] ?? '' );
         $year            = sanitize_text_field( $data['year'] ?? '' );
-        $shortcode_label = sanitize_text_field( $data['shortcode_label'] ?? '' );
-        $parent_name     = isset( $data['parent_name'] ) ? trim( sanitize_text_field( $data['parent_name'] ) ) : null;
-        $icon_type       = sanitize_key( $data['icon_type'] ?? 'emoji' );
-        $icon_value      = ( $icon_type === 'image' ) ? esc_url_raw( $data['icon_value'] ?? '' ) : sanitize_text_field( $data['icon_value'] ?? '🏅' );
+        $shortcode_label   = sanitize_text_field( $data['shortcode_label'] ?? '' );
+        $parent_name       = isset( $data['parent_name'] ) ? trim( sanitize_text_field( $data['parent_name'] ) ) : null;
+        $icon_type         = sanitize_key( $data['icon_type'] ?? 'emoji' );
+        $icon_value        = ( $icon_type === 'image' ) ? esc_url_raw( $data['icon_value'] ?? '' ) : sanitize_text_field( $data['icon_value'] ?? '🏅' );
         $sort_order        = (int) ( $data['sort_order'] ?? 0 );
         $show_in_shortcode = isset( $data['show_in_shortcode'] ) ? (int) $data['show_in_shortcode'] : 1;
 
-        if ( empty( $name ) || empty( $year ) || empty( $shortcode_label ) ) {
-            return new WP_Error( 'missing_fields', 'Name, year, and shortcode label are required.' );
+        if ( empty( $name ) || empty( $year ) ) {
+            return new WP_Error( 'missing_fields', 'Name and year are required.' );
         }
 
-        if ( mb_strlen( $shortcode_label ) > 4 ) {
-            return new WP_Error( 'label_too_long', 'Shortcode label must be 4 characters or fewer.' );
+        if ( empty( $shortcode_label ) ) {
+            $shortcode_label = mb_strtoupper( mb_substr( $name, 0, 4 ) );
         }
 
         if ( empty( $icon_value ) ) {
@@ -121,13 +123,6 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 
         if ( isset( $data['name'] ) ) {
             $update['name'] = sanitize_text_field( $data['name'] );
-        }
-        if ( isset( $data['shortcode_label'] ) ) {
-            $label = sanitize_text_field( $data['shortcode_label'] );
-            if ( mb_strlen( $label ) > 4 ) {
-                return new WP_Error( 'label_too_long', 'Shortcode label must be 4 characters or fewer.' );
-            }
-            $update['shortcode_label'] = $label;
         }
         if ( isset( $data['year'] ) ) {
             $update['year'] = sanitize_text_field( $data['year'] );
@@ -208,6 +203,17 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
         global $wpdb;
         $table = $wpdb->prefix . 'pp_awards';
         return $wpdb->get_col( "SELECT DISTINCT year FROM $table ORDER BY year DESC" ) ?? array();
+    }
+
+    public function get_distinct_years_for_parent( string $parent ): array {
+        global $wpdb;
+        $table = $wpdb->prefix . 'pp_awards';
+        return $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT DISTINCT year FROM $table WHERE LOWER(parent_name) = LOWER(%s) AND (show_in_shortcode = 1 OR show_in_shortcode IS NULL) ORDER BY year DESC",
+                $parent
+            )
+        ) ?? array();
     }
 
     // ── Player CRUD ──────────────────────────────────────────────────────────
@@ -349,7 +355,7 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
         }
 
         if ( ! isset( $filters['include_hidden'] ) || ! $filters['include_hidden'] ) {
-            $where[] = 'a.show_in_shortcode = 1';
+            $where[] = '(a.show_in_shortcode = 1 OR a.show_in_shortcode IS NULL)';
         }
 
         if ( empty( $where ) ) {

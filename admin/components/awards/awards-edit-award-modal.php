@@ -25,10 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <input type="text" id="pp-edit-award-name" class="pp-form-input">
             </div>
             <div class="pp-form-group">
-                <label class="pp-form-label">Shortcode Label <span style="color:red;">*</span> <span style="color:#888;font-size:0.8em;">(max 4 chars)</span></label>
-                <input type="text" id="pp-edit-award-shortcode-label" class="pp-form-input" maxlength="4" style="max-width:120px;">
-            </div>
-            <div class="pp-form-group">
                 <label class="pp-form-label">Parent Group</label>
                 <select id="pp-edit-award-parent" class="pp-form-input pp-award-parent-select" style="width:100%;"></select>
             </div>

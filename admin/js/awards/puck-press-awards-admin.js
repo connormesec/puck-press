@@ -4,13 +4,15 @@
 
   // ── Year filter ──────────────────────────────────────────────────────────
   $('#pp-award-year-filter').on('change', function () {
-    var y = $(this).val();
     var url = new URL(window.location.href);
-    if (y) {
-      url.searchParams.set('award_year', y);
-    } else {
-      url.searchParams.delete('award_year');
-    }
+    url.searchParams.set('award_year', $(this).val());
+    window.location.href = url.toString();
+  });
+
+  // ── Group filter ─────────────────────────────────────────────────────────
+  $('#pp-award-group-filter').on('change', function () {
+    var url = new URL(window.location.href);
+    url.searchParams.set('award_group', $(this).val());
     window.location.href = url.toString();
   });
 
@@ -103,7 +105,6 @@
       nonce: cfg.nonce,
       name: $('#pp-new-award-name').val(),
       year: $('#pp-new-award-year').val(),
-      shortcode_label: $('#pp-new-award-shortcode-label').val(),
       parent_name: $('#pp-new-award-parent').val() || '',
       icon_type: iconType,
       icon_value: iconValue,
@@ -124,8 +125,7 @@
     $('#pp-edit-award-slug').val($btn.data('slug'));
     $('#pp-edit-award-year').val($btn.data('year'));
     $('#pp-edit-award-name').val($btn.data('name'));
-    $('#pp-edit-award-shortcode-label').val($btn.data('shortcode-label'));
-    $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
+$('#pp-edit-award-sort-order').val($btn.data('sort-order'));
 
     var iconType = $btn.data('icon-type') || 'emoji';
     $('input[name="pp-edit-award-icon-type"][value="' + iconType + '"]').prop('checked', true).trigger('change');
@@ -160,7 +160,6 @@
       id: $('#pp-edit-award-id').val(),
       name: $('#pp-edit-award-name').val(),
       year: $('#pp-edit-award-year').val(),
-      shortcode_label: $('#pp-edit-award-shortcode-label').val(),
       parent_name: $('#pp-edit-award-parent').val() || '',
       icon_type: iconType,
       icon_value: iconValue,

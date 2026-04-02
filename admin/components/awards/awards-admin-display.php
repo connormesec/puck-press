@@ -17,9 +17,21 @@ class Puck_Press_Awards_Admin_Display {
     public function render(): string {
         $this->wpdb_utils->maybe_create_or_update_tables();
 
-        $years       = $this->wpdb_utils->get_distinct_years();
-        $active_year = isset( $_GET['award_year'] ) ? sanitize_text_field( $_GET['award_year'] ) : ( $years[0] ?? '' );
-        $awards      = $active_year ? $this->wpdb_utils->get_all_awards( $active_year ) : $this->wpdb_utils->get_all_awards();
+        $years        = $this->wpdb_utils->get_distinct_years();
+        $parents      = $this->wpdb_utils->get_distinct_parent_names();
+        $active_year  = isset( $_GET['award_year'] ) ? sanitize_text_field( $_GET['award_year'] ) : ( $years[0] ?? '' );
+        $active_group = isset( $_GET['award_group'] ) ? sanitize_text_field( $_GET['award_group'] ) : '';
+
+        $awards = $this->wpdb_utils->get_all_awards( $active_year ?: null );
+        if ( $active_group ) {
+            $awards = array_filter(
+                $awards,
+                function ( $a ) use ( $active_group ) {
+                    return strtolower( $a['parent_name'] ?? '' ) === strtolower( $active_group );
+                }
+            );
+            $awards = array_values( $awards );
+        }
 
         ob_start();
         ?>
@@ -38,8 +50,18 @@ class Puck_Press_Awards_Admin_Display {
                         <button type="button" id="pp-add-award-btn" class="button button-primary">+ New Award</button>
                         <button type="button" id="pp-awards-colorPaletteBtn" class="button">Customize Colors</button>
 
+                        <?php if ( ! empty( $parents ) ) : ?>
+                        <label for="pp-award-group-filter" style="margin-left:auto;">Group:</label>
+                        <select id="pp-award-group-filter" class="pp-select" style="min-width:120px;">
+                            <option value="">All</option>
+                            <?php foreach ( $parents as $pn ) : ?>
+                                <option value="<?php echo esc_attr( $pn ); ?>" <?php selected( $active_group, $pn ); ?>><?php echo esc_html( $pn ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php endif; ?>
+
                         <?php if ( ! empty( $years ) ) : ?>
-                        <label for="pp-award-year-filter" style="margin-left:auto;">Year:</label>
+                        <label for="pp-award-year-filter">Year:</label>
                         <select id="pp-award-year-filter" class="pp-select" style="min-width:100px;">
                             <option value="">All</option>
                             <?php foreach ( $years as $y ) : ?>
@@ -65,9 +87,8 @@ class Puck_Press_Awards_Admin_Display {
                         <div class="pp-card pp-award-card" data-award-id="<?php echo esc_attr( $award['id'] ); ?>" style="margin-bottom:1.5rem;">
                             <div class="pp-card-header" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
                                 <span style="font-size:1.5rem;line-height:1;"><?php echo $icon_html; ?></span>
-                                <span style="font-weight:700;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;background:#f0f0f0;padding:2px 8px;border-radius:3px;"><?php echo esc_html( $award['shortcode_label'] ); ?></span>
+                                <span style="font-weight:700;font-size:0.75rem;background:#e8f0fe;color:#1a56db;padding:2px 8px;border-radius:3px;"><?php echo esc_html( $award['year'] ); ?></span>
                                 <strong><?php echo esc_html( $award['name'] ); ?></strong>
-                                <span style="color:#888;">&middot; Year: <?php echo esc_html( $award['year'] ); ?></span>
                                 <?php if ( ! empty( $award['parent_name'] ) ) : ?>
                                     <span style="color:#888;">&middot; Group: <?php echo esc_html( $award['parent_name'] ); ?></span>
                                 <?php endif; ?>
@@ -121,7 +142,6 @@ class Puck_Press_Awards_Admin_Display {
                                     data-award-id="<?php echo esc_attr( $award['id'] ); ?>"
                                     data-name="<?php echo esc_attr( $award['name'] ); ?>"
                                     data-year="<?php echo esc_attr( $award['year'] ); ?>"
-                                    data-shortcode-label="<?php echo esc_attr( $award['shortcode_label'] ); ?>"
                                     data-parent-name="<?php echo esc_attr( $award['parent_name'] ); ?>"
                                     data-icon-type="<?php echo esc_attr( $award['icon_type'] ); ?>"
                                     data-icon-value="<?php echo esc_attr( $award['icon_value'] ); ?>"
@@ -141,6 +161,50 @@ class Puck_Press_Awards_Admin_Display {
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
+
+                <?php
+                $parent_names = $this->wpdb_utils->get_distinct_parent_names();
+                $all_awards   = $active_year ? $awards : $this->wpdb_utils->get_all_awards();
+                ?>
+                <div class="pp-card" style="margin-top:2rem;">
+                    <div class="pp-card-header"><strong>Shortcodes</strong></div>
+                    <div class="pp-card-body" style="font-size:0.85rem;line-height:1.8;">
+                        <?php if ( ! empty( $parent_names ) ) : ?>
+                        <p style="margin:0 0 0.5rem;font-weight:600;">By Parent Group <span style="color:#888;font-weight:400;">(with year dropdown)</span></p>
+                        <table class="widefat striped" style="border:0;margin-bottom:1.25rem;">
+                            <tbody>
+                                <?php foreach ( $parent_names as $pn ) : ?>
+                                <tr>
+                                    <td style="width:50%;"><code>[pp-awards parent="<?php echo esc_attr( $pn ); ?>"]</code></td>
+                                    <td><?php echo esc_html( $pn ); ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php endif; ?>
+
+                        <?php if ( ! empty( $all_awards ) ) : ?>
+                        <p style="margin:0 0 0.5rem;font-weight:600;">By Individual Award <span style="color:#888;font-weight:400;">(single award, no dropdown)</span></p>
+                        <table class="widefat striped" style="border:0;margin-bottom:1.25rem;">
+                            <tbody>
+                                <?php foreach ( $all_awards as $sa ) : ?>
+                                <tr>
+                                    <td style="width:50%;"><code>[pp-awards award="<?php echo esc_attr( $sa['slug'] ); ?>"]</code></td>
+                                    <td><?php echo esc_html( $sa['year'] . ' ' . $sa['name'] ); ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php endif; ?>
+
+                        <p style="color:#888;margin:0.75rem 0 0;">
+                            <strong>Optional attributes:</strong>
+                            <code>columns="6"</code> (default 6),
+                            <code>show_headshots="false"</code>,
+                            <code>link_players="false"</code>
+                        </p>
+                    </div>
+                </div>
 
             </main>
         </div>

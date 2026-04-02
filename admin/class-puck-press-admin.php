@@ -2828,6 +2828,8 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_bulk_add_team_to_award', array( self::class, 'pp_ajax_bulk_add_team_to_award' ) );
 		add_action( 'wp_ajax_pp_toggle_award_visibility', array( self::class, 'pp_ajax_toggle_award_visibility' ) );
 		add_action( 'wp_ajax_pp_get_teams_for_awards', array( self::class, 'pp_ajax_get_teams_for_awards' ) );
+		add_action( 'wp_ajax_pp_get_awards_html', array( self::class, 'pp_ajax_get_awards_html' ) );
+		add_action( 'wp_ajax_nopriv_pp_get_awards_html', array( self::class, 'pp_ajax_get_awards_html' ) );
 	}
 
 	public function register_insta_loopback_hooks() {
@@ -2976,5 +2978,23 @@ class Puck_Press_Admin {
 			);
 		}
 		wp_send_json_success( array( 'teams' => $results ) );
+	}
+
+	public static function pp_ajax_get_awards_html(): void {
+		require_once plugin_dir_path( __DIR__ ) . 'includes/awards/class-puck-press-awards-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/awards/class-puck-press-awards-render-utils.php';
+
+		$render = new Puck_Press_Awards_Render_Utils();
+		$html   = $render->render_awards_html(
+			array(
+				'year'           => sanitize_text_field( $_POST['year'] ?? '' ),
+				'parent'         => sanitize_text_field( $_POST['parent'] ?? '' ),
+				'award'          => sanitize_text_field( $_POST['award'] ?? '' ),
+				'columns'        => $_POST['columns'] ?? 6,
+				'show_headshots' => $_POST['show_headshots'] ?? 'true',
+				'link_players'   => $_POST['link_players'] ?? 'true',
+			)
+		);
+		wp_send_json_success( array( 'html' => $html ) );
 	}
 }

@@ -593,6 +593,39 @@
   font-family: var(--pp-awards-awards_font, inherit);
 }
 
+.pp-awards-year-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pp-awards-year-filter label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--pp-awards-section_title, #1A1A1A);
+}
+
+.pp-awards-year-select {
+  padding: 0.4rem 2rem 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--pp-awards-section_border, #E0E0E0);
+  border-radius: 0.375rem;
+  background: var(--pp-awards-card_bg, #FFFFFF);
+  color: var(--pp-awards-card_text, #1A1A1A);
+  cursor: pointer;
+  appearance: auto;
+}
+
+.pp-awards-content {
+  transition: opacity 0.2s ease;
+}
+
+.pp-awards-content.pp-loading {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .pp-awards-group {
   margin-bottom: 2.5rem;
 }

@@ -374,6 +374,9 @@ class Puck_Press_Public {
 			}
 		}
 
+		wp_enqueue_script( 'pp-awards-year-filter', plugin_dir_url( __FILE__ ) . 'js/pp-awards-year-filter.js', array( 'jquery' ), $this->version, true );
+		wp_localize_script( 'pp-awards-year-filter', 'ppAwardsFilter', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
+
 		$render = new Puck_Press_Awards_Render_Utils();
 		return $css_block . $render->render_shortcode( $atts );
 	}

@@ -41,6 +41,21 @@ class Puck_Press_Awards_Render_Utils {
             return '<!-- [pp-awards] requires at least one of: award, year, parent -->';
         }
 
+        $year_filter_mode = empty( $year ) && ! empty( $parent ) && empty( $award_str );
+
+        if ( $year_filter_mode ) {
+            $available_years = ! empty( $parent )
+                ? $this->wpdb_utils->get_distinct_years_for_parent( $parent )
+                : $this->wpdb_utils->get_distinct_years();
+
+            if ( empty( $available_years ) ) {
+                return '<!-- [pp-awards] no matching awards found -->';
+            }
+
+            $url_year = isset( $_GET['pp_awards_year'] ) ? sanitize_text_field( $_GET['pp_awards_year'] ) : '';
+            $year     = in_array( $url_year, $available_years, true ) ? $url_year : $available_years[0];
+        }
+
         $filters = array();
         if ( ! empty( $award_str ) ) {
             $filters['slugs'] = array_map( 'trim', explode( ',', $award_str ) );
@@ -52,22 +67,68 @@ class Puck_Press_Awards_Render_Utils {
             $filters['parent'] = $parent;
         }
 
+        $content_html = $this->render_content( $filters, $parent, $show_heads, $columns, $link );
+
+        $html = '<div class="pp-awards-wrap"'
+            . ' data-parent="' . esc_attr( $parent ) . '"'
+            . ' data-award="' . esc_attr( $award_str ) . '"'
+            . ' data-columns="' . esc_attr( $columns ) . '"'
+            . ' data-show-headshots="' . esc_attr( $show_heads ? 'true' : 'false' ) . '"'
+            . ' data-link-players="' . esc_attr( $link ? 'true' : 'false' ) . '"'
+            . '>';
+
+        if ( $year_filter_mode && count( $available_years ) > 1 ) {
+            $html .= '<div class="pp-awards-year-filter">';
+            $html .= '<label for="pp-awards-year-select">Year:</label>';
+            $html .= '<select class="pp-awards-year-select">';
+            foreach ( $available_years as $y ) {
+                $selected = ( $y === $year ) ? ' selected' : '';
+                $html    .= '<option value="' . esc_attr( $y ) . '"' . $selected . '>' . esc_html( $y ) . '</option>';
+            }
+            $html .= '</select>';
+            $html .= '</div>';
+        }
+
+        $html .= '<div class="pp-awards-content">' . $content_html . '</div>';
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    public function render_awards_html( array $atts ): string {
+        $parent     = sanitize_text_field( $atts['parent'] ?? '' );
+        $year       = sanitize_text_field( $atts['year'] ?? '' );
+        $award_str  = sanitize_text_field( $atts['award'] ?? '' );
+        $show_heads = ( 'false' !== strtolower( $atts['show_headshots'] ?? 'true' ) );
+        $columns    = max( 1, (int) ( $atts['columns'] ?? 6 ) );
+        $link       = ( 'false' !== strtolower( $atts['link_players'] ?? 'true' ) );
+
+        $filters = array();
+        if ( ! empty( $award_str ) ) {
+            $filters['slugs'] = array_map( 'trim', explode( ',', $award_str ) );
+        }
+        if ( ! empty( $year ) ) {
+            $filters['year'] = $year;
+        }
+        if ( ! empty( $parent ) ) {
+            $filters['parent'] = $parent;
+        }
+
+        return $this->render_content( $filters, $parent, $show_heads, $columns, $link );
+    }
+
+    private function render_content( array $filters, string $parent, bool $show_heads, int $columns, bool $link ): string {
         $awards = $this->wpdb_utils->get_awards_by_filters( $filters );
         if ( empty( $awards ) ) {
-            return '<!-- [pp-awards] no matching awards found -->';
+            return '<p style="color:#888;font-style:italic;padding:1rem;">No awards found for this selection.</p>';
         }
 
         $fallback = PuckPressTemplate::HEADSHOT_FALLBACK;
-        $html     = '<div class="pp-awards-wrap">';
 
         if ( ! empty( $parent ) ) {
-            $html .= $this->render_grouped( $awards, $fallback, $show_heads, $columns, $link, $parent );
-        } else {
-            $html .= $this->render_flat( $awards, $fallback, $show_heads, $columns, $link );
+            return $this->render_grouped( $awards, $fallback, $show_heads, $columns, $link, $parent );
         }
-
-        $html .= '</div>';
-        return $html;
+        return $this->render_flat( $awards, $fallback, $show_heads, $columns, $link );
     }
 
     private function render_grouped( array $awards, string $fallback, bool $show_heads, int $columns, bool $link, string $parent_label ): string {
