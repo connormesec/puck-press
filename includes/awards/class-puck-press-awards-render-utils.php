@@ -132,11 +132,8 @@ class Puck_Press_Awards_Render_Utils {
     }
 
     private function render_grouped( array $awards, string $fallback, bool $show_heads, int $columns, bool $link, string $parent_label ): string {
-        $first_award = $awards[0] ?? array();
-        $icon_html   = $this->render_award_icon( $first_award );
-
         $html  = '<div class="pp-awards-group">';
-        $html .= '<h2 class="pp-awards-group-title">' . $icon_html . ' ' . esc_html( $parent_label ) . '</h2>';
+        $html .= '<h2 class="pp-awards-group-title">' . esc_html( $parent_label ) . '</h2>';
 
         foreach ( $awards as $award ) {
             $html .= $this->render_section( $award, $fallback, $show_heads, $columns, $link );
@@ -155,8 +152,9 @@ class Puck_Press_Awards_Render_Utils {
     }
 
     private function render_section( array $award, string $fallback, bool $show_heads, int $columns, bool $link ): string {
+        $icon_html = $this->render_award_icon( $award );
         $html  = '<div class="pp-awards-section">';
-        $html .= '<h3 class="pp-awards-section-title">' . esc_html( $award['year'] . ' ' . $award['name'] ) . '</h3>';
+        $html .= '<h3 class="pp-awards-section-title">' . $icon_html . ' ' . esc_html( $award['year'] . ' ' . $award['name'] ) . '</h3>';
         $html .= '<div class="pp-awards-grid" style="grid-template-columns:repeat(' . $columns . ',1fr);">';
 
         foreach ( $award['players'] as $p ) {
