@@ -87,7 +87,8 @@
 .pp-st-item {
     display: flex;
     align-items: stretch;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
+    margin-top: 6px;
     text-decoration: none;
     flex: 1;
     overflow: hidden;

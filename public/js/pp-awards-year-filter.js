@@ -18,7 +18,7 @@
                 columns: $wrap.data('columns') || 6,
                 show_headshots: $wrap.data('show-headshots') || 'true',
                 link_players: $wrap.data('link-players') || 'true',
-                show_title: $wrap.data('show-title') || 'true'
+                show_title: $wrap.attr('data-show-title') || 'true'
             }, function (res) {
                 if (res.success && res.data.html) {
                     $content.html(res.data.html);
