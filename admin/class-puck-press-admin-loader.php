@@ -80,6 +80,8 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-roster-sources-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-players-table-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-pages-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-standings-card.php';
+		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-standings-admin-preview-card.php';
 
 		// Stats Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stats-admin-preview-card.php';

@@ -108,6 +108,16 @@ class Puck_Press_Record_Admin_Display {
 									<td style="padding: 8px 12px;">Show goal differential (+/-) — requires show_goals=true</td>
 								</tr>
 								<tr style="border-bottom: 1px solid #f0f0f0;">
+									<td style="padding: 8px 12px;"><code>title</code></td>
+									<td style="padding: 8px 12px;"><code>Team Record</code></td>
+									<td style="padding: 8px 12px;">Title text shown above the record card</td>
+								</tr>
+								<tr style="border-bottom: 1px solid #f0f0f0;">
+									<td style="padding: 8px 12px;"><code>show_title</code></td>
+									<td style="padding: 8px 12px;"><code>true</code></td>
+									<td style="padding: 8px 12px;">Show or hide the title</td>
+								</tr>
+								<tr style="border-bottom: 1px solid #f0f0f0;">
 									<td style="padding: 8px 12px;"><code>show_pct</code></td>
 									<td style="padding: 8px 12px;"><code>true</code></td>
 									<td style="padding: 8px 12px;">Show points percentage (P%) column — conference template only</td>

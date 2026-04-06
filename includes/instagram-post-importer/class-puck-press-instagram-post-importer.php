@@ -195,10 +195,12 @@ class Puck_Press_Instagram_Post_Importer {
 				if ( empty( $post['postTitle'] ) || empty( $post['imgSrc'] ) || empty( $post['featuredImageBuffer'] ) ) {
 					continue;
 				}
+				$full_text  = $post['postText'] ?? $post['postTitle'];
+				$clean_title = $this->extract_title( $full_text );
 				$formatted_posts[] = array(
 					'insta_id'     => ! empty( $post['post_id'] ) ? $post['post_id'] : ( $post['postSlug'] ?? '' ),
-					'slug'         => $this->title_to_slug( $post['postTitle'] ),
-					'post_title'   => $post['postTitle'],
+					'slug'         => $this->title_to_slug( $clean_title ),
+					'post_title'   => $clean_title,
 					'post_body'    => $post['postText'] ?? '',
 					'image_url'    => $post['imgSrc'],
 					'image_buffer' => $post['featuredImageBuffer'],
@@ -400,5 +402,30 @@ class Puck_Press_Instagram_Post_Importer {
 			$slug = rtrim( $slug, '-' );
 		}
 		return $slug ?: 'instagram-post';
+	}
+
+	private function extract_title( string $caption ): string {
+		$text = html_entity_decode( $caption, ENT_QUOTES, 'UTF-8' );
+		$text = preg_replace( '/\s+/', ' ', trim( $text ) );
+
+		if ( empty( $text ) ) {
+			return 'Instagram Post';
+		}
+
+		if ( preg_match( '/^(.+?[.!?])\s/', $text, $m ) && mb_strlen( $m[1] ) <= 200 ) {
+			return trim( $m[1] );
+		}
+
+		if ( mb_strlen( $text ) <= 200 ) {
+			return $text;
+		}
+
+		$cut = mb_substr( $text, 0, 200 );
+		$last_space = mb_strrpos( $cut, ' ' );
+		if ( $last_space && $last_space > 100 ) {
+			$cut = mb_substr( $cut, 0, $last_space );
+		}
+
+		return rtrim( $cut, '.,;:!?&# ' ) . '…';
 	}
 }

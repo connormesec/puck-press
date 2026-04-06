@@ -251,6 +251,7 @@ class Puck_Press {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_slider_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_record_assets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_standings_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_stats_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_stat_leaders_assets' );
 		$this->loader->add_action( 'init', $plugin_public, 'register_ajax_hooks' );
@@ -262,6 +263,7 @@ class Puck_Press {
 		$this->loader->add_shortcode( 'pp-slider', $plugin_public, 'slider_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-roster', $plugin_public, 'roster_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-record', $plugin_public, 'record_builder_shortcode' );
+		$this->loader->add_shortcode( 'pp-standings', $plugin_public, 'standings_shortcode' );
 		$this->loader->add_shortcode( 'pp-stats', $plugin_public, 'stats_builder_shortcode' );
 		$this->loader->add_shortcode( 'pp-stat-leaders-skaters', $plugin_public, 'stat_leaders_skaters_shortcode' );
 		$this->loader->add_shortcode( 'pp-stat-leaders-goalies', $plugin_public, 'stat_leaders_goalies_shortcode' );
@@ -270,6 +272,22 @@ class Puck_Press {
 		$this->loader->add_shortcode( 'pp-league-news', $plugin_public, 'league_news_shortcode' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_league_news_assets' );
 		$this->loader->add_shortcode( 'pp-awards', $plugin_public, 'awards_shortcode' );
+
+		// Data shortcodes
+		$this->loader->add_shortcode( 'pp-last-game', $plugin_public, 'last_game_shortcode' );
+		$this->loader->add_shortcode( 'pp-next-game', $plugin_public, 'next_game_shortcode' );
+		$this->loader->add_shortcode( 'pp-top-scorer', $plugin_public, 'top_scorer_shortcode' );
+		$this->loader->add_shortcode( 'pp-record-text', $plugin_public, 'record_shortcode' );
+		$this->loader->add_shortcode( 'pp-streak', $plugin_public, 'streak_shortcode' );
+		$this->loader->add_shortcode( 'pp-top-goalie', $plugin_public, 'top_goalie_shortcode' );
+		$this->loader->add_shortcode( 'pp-games-remaining', $plugin_public, 'games_remaining_shortcode' );
+		$this->loader->add_shortcode( 'pp-player', $plugin_public, 'player_shortcode' );
+		$this->loader->add_shortcode( 'pp-next-home-game', $plugin_public, 'next_home_game_shortcode' );
+
+		// REST API
+		require_once plugin_dir_path( __FILE__ ) . 'api/class-puck-press-rest-api.php';
+		$rest_api = new Puck_Press_Rest_Api();
+		$this->loader->add_action( 'rest_api_init', $rest_api, 'register_routes' );
 	}
 
 	/**

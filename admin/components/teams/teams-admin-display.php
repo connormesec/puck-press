@@ -15,6 +15,7 @@ class Puck_Press_Teams_Admin_Display {
     private $pp_sched_admin;
     private $roster_sources_card;
     private $players_table_card;
+    private $standings_card;
 
     public function __construct() {
         $teams_utils          = new Puck_Press_Teams_Wpdb_Utils();
@@ -44,6 +45,14 @@ class Puck_Press_Teams_Admin_Display {
         );
         $this->roster_sources_card = new Puck_Press_Teams_Admin_Roster_Sources_Card( $this->active_team_id );
         $this->players_table_card  = new Puck_Press_Teams_Admin_Players_Table_Card( $this->active_team_id );
+        $this->standings_card      = new Puck_Press_Teams_Admin_Standings_Card(
+            array(
+                'title'    => 'Division Standings',
+                'subtitle' => 'League-wide standings for this team\'s division',
+                'id'       => 'standings',
+            ),
+            $this->active_team_id
+        );
     }
 
     public function render(): string {
@@ -173,6 +182,9 @@ class Puck_Press_Teams_Admin_Display {
         <h3 class="pp-section-header" style="margin: 24px 0 12px;">Roster</h3>
         <?php echo $this->roster_sources_card->render(); ?>
         <?php echo $this->players_table_card->render(); ?>
+
+        <h3 class="pp-section-header" style="margin: 24px 0 12px;">Division Standings</h3>
+        <?php echo $this->standings_card->render(); ?>
 
         <!-- Season archives card -->
         <div class="pp-card" style="margin-bottom:16px;">

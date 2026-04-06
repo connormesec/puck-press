@@ -249,11 +249,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 	function render_game_summary_test() {
 		global $wpdb;
 
-		$schedule_id = $wpdb->get_var(
-			"SELECT id FROM {$wpdb->prefix}pp_schedules WHERE is_main = 1 LIMIT 1"
-		);
-
-		$table = $wpdb->prefix . 'pp_schedule_games_display';
+		$table = $wpdb->prefix . 'pp_team_games_display';
 		$today = current_time( 'Y-m-d' );
 
 		$games = $wpdb->get_results(
@@ -261,11 +257,10 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 				"SELECT game_id, source_type, team_id, game_timestamp, game_date_day,
                         target_team_name, opponent_team_name, target_score, opponent_score, post_link
                  FROM {$table}
-                 WHERE schedule_id = %d
-                   AND game_timestamp < %s
+                 WHERE game_timestamp < %s
+                   AND source_type IN ('achaGameScheduleUrl', 'usphlGameScheduleUrl')
                  ORDER BY game_timestamp DESC
                  LIMIT 50",
-				intval( $schedule_id ),
 				$today
 			)
 		);

@@ -171,8 +171,8 @@ class Puck_Press_Schedule_Process_Usphl_Url {
 			$opponent_team_id   = $game['away_id'];
 			$target_full_name   = $game['home_team'];
 			$opponent_full_name = $game['away_team'];
-			$target_logo        = $game['home_smlogo'];
-			$opponent_logo      = $game['away_smlogo'];
+			$target_logo        = $game['home_smlogo'] ?? $game['home_logo'] ?? null;
+			$opponent_logo      = $game['away_smlogo'] ?? $game['away_logo'] ?? null;
 			$target_score       = $game['home_goals'];
 			$opponent_score     = $game['away_goals'];
 			$home_or_away       = 'home';
@@ -181,8 +181,8 @@ class Puck_Press_Schedule_Process_Usphl_Url {
 			$opponent_team_id   = $game['home_id'];
 			$target_full_name   = $game['away_team'];
 			$opponent_full_name = $game['home_team'];
-			$target_logo        = $game['away_smlogo'];
-			$opponent_logo      = $game['home_smlogo'];
+			$target_logo        = $game['away_smlogo'] ?? $game['away_logo'] ?? null;
+			$opponent_logo      = $game['home_smlogo'] ?? $game['home_logo'] ?? null;
 			$target_score       = $game['away_goals'];
 			$opponent_score     = $game['home_goals'];
 			$home_or_away       = 'away';

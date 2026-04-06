@@ -404,6 +404,13 @@ class Puck_Press_Admin {
 		self::update_template_colors( new Puck_Press_Record_Template_Manager( $schedule_id ) );
 	}
 
+	public static function pp_ajax_update_standings_template_colors() {
+		$team_id = isset( $_POST['team_id'] ) ? (int) $_POST['team_id'] : 0;
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-standings-template-manager.php';
+		self::update_template_colors( new Puck_Press_Standings_Template_Manager( $team_id ) );
+	}
+
 	public static function pp_ajax_update_stats_template_colors() {
 		self::update_template_colors( new Puck_Press_Stats_Template_Manager() );
 	}
@@ -687,6 +694,48 @@ class Puck_Press_Admin {
 				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-add-game', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-add-game.js', array( 'jquery', 'puck-press-admin-shared', 'select2-js' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-schedule', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-bulk-edit-schedule.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-standings-admin', plugin_dir_url( __FILE__ ) . 'js/standings/puck-press-standings.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-standings-color-picker', plugin_dir_url( __FILE__ ) . 'js/standings/puck-press-standings-color-picker.js', array( 'jquery', 'select2-js', 'puck-press-color-picker-shared' ), $this->version, false );
+
+				$standings_team_id = (int) get_option( 'pp_admin_active_team_id', 0 );
+				require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-template-manager-abstract.php';
+				require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-standings-template-manager.php';
+				$standings_tm              = new Puck_Press_Standings_Template_Manager( $standings_team_id );
+				$selected_standings_tpl    = $standings_tm->get_current_template_key();
+				if ( empty( $selected_standings_tpl ) ) {
+					$all_tpl_keys           = array_keys( $standings_tm->get_all_template_colors() );
+					$selected_standings_tpl = ! empty( $all_tpl_keys ) ? $all_tpl_keys[0] : '';
+				}
+				$standings_templates_data  = array(
+					'standingsTemplates' => $standings_tm->get_all_template_colors(),
+					'colorLabels'        => $standings_tm->get_all_template_color_labels(),
+					'fontSettings'       => $standings_tm->get_all_template_fonts(),
+					'fontLabels'         => $standings_tm->get_all_template_font_labels(),
+					'selected_template'  => $selected_standings_tpl,
+				);
+				wp_localize_script( 'puck-press-standings-color-picker', 'ppStandingsTemplates', $standings_templates_data );
+				wp_localize_script( 'puck-press-standings-color-picker', 'ppStandingsAdmin', array( 'teamId' => $standings_team_id ) );
+
+				$standings_font_vars_css = ':root {';
+				foreach ( $standings_tm->get_all_template_fonts() as $tpl_key => $font_set ) {
+					foreach ( $font_set as $font_key => $font_name ) {
+						if ( ! empty( $font_name ) ) {
+							wp_enqueue_style(
+								"pp-admin-standings-gf-{$tpl_key}-{$font_key}",
+								'https://fonts.googleapis.com/css2?family=' . urlencode( $font_name ) . ':wght@400;600;700;800&display=swap',
+								array(),
+								null
+							);
+							$safe                  = str_replace( array( "'", '"', ';', '}' ), '', $font_name );
+							$standings_font_vars_css .= "--pp-{$tpl_key}-{$font_key}: '{$safe}', sans-serif;";
+						}
+					}
+				}
+				$standings_font_vars_css .= '}';
+				if ( $standings_font_vars_css !== ':root {}' ) {
+					wp_add_inline_style( 'puck-press', $standings_font_vars_css );
+				}
 				break;
 			case 'record':
 				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
@@ -839,6 +888,9 @@ class Puck_Press_Admin {
 		$selected_slider_template = $slider_template_manager->get_current_template_key();
 		$templates                = array(
 			'sliderTemplates'   => $sliderTemplates,
+			'colorLabels'       => $slider_template_manager->get_all_template_color_labels(),
+			'fontSettings'      => $slider_template_manager->get_all_template_fonts(),
+			'fontLabels'        => $slider_template_manager->get_all_template_font_labels(),
 			'selected_template' => $selected_slider_template,
 			'cal_url'           => get_option( "pp_slider_{$active_schedule_id}_cal_url", get_option( 'pp_slider_cal_url', '' ) ),
 		);
@@ -1099,6 +1151,10 @@ class Puck_Press_Admin {
 		);
 		$roster_sources_card = new Puck_Press_Teams_Admin_Roster_Sources_Card( $id );
 		$players_card        = new Puck_Press_Teams_Admin_Players_Table_Card( $id );
+		$standings_card      = new Puck_Press_Teams_Admin_Standings_Card(
+			array( 'title' => 'Division Standings', 'subtitle' => 'League-wide standings for this team\'s division', 'id' => 'standings' ),
+			$id
+		);
 
 		wp_send_json_success(
 			array(
@@ -1112,6 +1168,7 @@ class Puck_Press_Admin {
 				'games_html'          => $games_card->render(),
 				'roster_sources_html' => $roster_sources_card->render(),
 				'players_html'        => $players_card->render(),
+				'standings_html'      => $standings_card->render(),
 				'pages_card_html'     => ( new Puck_Press_Teams_Admin_Pages_Card( $id ) )->render(),
 			)
 		);
@@ -1261,6 +1318,10 @@ class Puck_Press_Admin {
 		);
 		$roster_sources_card = new Puck_Press_Teams_Admin_Roster_Sources_Card( $team_id );
 		$players_card        = new Puck_Press_Teams_Admin_Players_Table_Card( $team_id );
+		$standings_card      = new Puck_Press_Teams_Admin_Standings_Card(
+			array( 'title' => 'Division Standings', 'subtitle' => 'League-wide standings for this team\'s division', 'id' => 'standings' ),
+			$team_id
+		);
 
 		wp_send_json_success(
 			array(
@@ -1269,6 +1330,7 @@ class Puck_Press_Admin {
 				'games_html'           => $games_card->render(),
 				'roster_sources_html'  => $roster_sources_card->render(),
 				'players_html'         => $players_card->render(),
+				'standings_html'       => $standings_card->render(),
 				'pages_card_html'      => ( new Puck_Press_Teams_Admin_Pages_Card( $team_id ) )->render(),
 			)
 		);
@@ -2233,6 +2295,36 @@ class Puck_Press_Admin {
 		wp_send_json_success( array( 'message' => 'Roster refreshed', 'results' => $results ) );
 	}
 
+	public static function pp_ajax_refresh_team_standings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		if ( ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'Invalid team ID.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-source-resolver.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-fetch-acha.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-fetch-usphl.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-refresher.php';
+
+		$refresher = new Puck_Press_Standings_Refresher();
+		$log       = $refresher->refresh_team( $team_id );
+
+		$utils   = new Puck_Press_Standings_Wpdb_Utils();
+		$cached  = $utils->get_standings_for_team( $team_id );
+
+		wp_send_json_success( array(
+			'message'    => implode( ' ', $log ),
+			'standings'  => $cached['standings_data'] ?? array(),
+			'division'   => $cached['division_name'] ?? '',
+			'computed_at' => $cached['computed_at'] ?? '',
+		) );
+	}
+
 	public static function pp_ajax_create_new_roster(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
@@ -2781,6 +2873,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_delete_team_roster_source', array( self::class, 'pp_ajax_delete_team_roster_source' ) );
 		add_action( 'wp_ajax_pp_update_team_roster_source_status', array( self::class, 'pp_ajax_update_team_roster_source_status' ) );
 		add_action( 'wp_ajax_pp_refresh_team_roster', array( self::class, 'pp_ajax_refresh_team_roster' ) );
+		add_action( 'wp_ajax_pp_refresh_team_standings', array( self::class, 'pp_ajax_refresh_team_standings' ) );
 		add_action( 'wp_ajax_pp_add_team_player', array( self::class, 'pp_ajax_add_team_player' ) );
 		add_action( 'wp_ajax_pp_edit_team_player', array( self::class, 'pp_ajax_edit_team_player' ) );
 		add_action( 'wp_ajax_pp_delete_team_player', array( self::class, 'pp_ajax_delete_team_player' ) );
@@ -2806,6 +2899,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_puck_press_update_slider_colors', array( self::class, 'pp_ajax_update_slider_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_roster_colors', array( self::class, 'pp_ajax_update_roster_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_record_colors', array( self::class, 'pp_ajax_update_record_template_colors' ) );
+		add_action( 'wp_ajax_puck_press_update_standings_colors', array( self::class, 'pp_ajax_update_standings_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_stats_colors', array( self::class, 'pp_ajax_update_stats_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_awards_colors', array( self::class, 'pp_ajax_update_awards_template_colors' ) );
 		add_action( 'wp_ajax_puck_press_update_post_slider_colors', array( self::class, 'pp_ajax_update_post_slider_template_colors' ) );

@@ -6,8 +6,8 @@
   --card-h: 140px;
 
   display: none; /* hidden until Glider.js initializes; JS adds .pp-cs-ready */
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--pp-compact-slider_font,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
 .pp-cs-container.pp-cs-ready {

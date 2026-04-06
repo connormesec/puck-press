@@ -257,18 +257,18 @@ class ConferenceTemplate extends PuckPressTemplate {
 	// ── Helpers ───────────────────────────────────────────────────────────────
 
 	private function is_final( string $status ): bool {
-		return in_array( $status, array( 'Final', 'Final OT', 'Final/OT', 'Final SO', 'Final/SO' ), true );
+		$normalized = strtoupper( str_replace( '/', ' ', $status ) );
+		return in_array( $normalized, array( 'FINAL', 'FINAL OT', 'FINAL SO' ), true );
 	}
 
 	private function status_label( string $status ): string {
-		$map = array(
-			'Final'    => 'FINAL',
-			'Final OT' => 'FINAL/OT',
-			'Final/OT' => 'FINAL/OT',
-			'Final SO' => 'FINAL/SO',
-			'Final/SO' => 'FINAL/SO',
+		$normalized = strtoupper( str_replace( '/', ' ', $status ) );
+		$map        = array(
+			'FINAL'    => 'FINAL',
+			'FINAL OT' => 'FINAL/OT',
+			'FINAL SO' => 'FINAL/SO',
 		);
-		return $map[ $status ] ?? strtoupper( $status );
+		return $map[ $normalized ] ?? strtoupper( $status );
 	}
 
 	// ── Phase 2: Data normalization ───────────────────────────────────────────
@@ -337,10 +337,10 @@ class ConferenceTemplate extends PuckPressTemplate {
 
 	private function compute_records( array $games ): array {
 		$records        = array();
-		$final_statuses = array( 'Final', 'Final OT', 'Final/OT', 'Final SO', 'Final/SO' );
+		$final_statuses = array( 'FINAL', 'FINAL OT', 'FINAL SO' );
 
 		foreach ( $games as $game ) {
-			if ( ! in_array( $game['game_status'], $final_statuses, true ) ) {
+			if ( ! in_array( strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) ), $final_statuses, true ) ) {
 				continue;
 			}
 

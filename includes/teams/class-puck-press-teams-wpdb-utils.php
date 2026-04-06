@@ -207,6 +207,18 @@ class Puck_Press_Teams_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
             PRIMARY KEY (id),
             KEY team_id (team_id)
         ",
+        'pp_team_standings_cache' => "
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            team_id BIGINT(20) UNSIGNED NOT NULL,
+            source_id BIGINT(20) UNSIGNED NOT NULL,
+            league_type VARCHAR(20) NOT NULL,
+            division_name VARCHAR(200) DEFAULT NULL,
+            standings_data LONGTEXT NOT NULL,
+            computed_at DATETIME NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY team_source (team_id, source_id),
+            KEY team_id (team_id)
+        ",
     );
 
     public function maybe_create_or_update_tables(): void {

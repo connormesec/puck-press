@@ -125,6 +125,7 @@ class Puck_Press_Public {
 				'show_goals'     => 'true',
 				'show_diff'      => 'true',
 				'show_pct'       => 'true',
+				'show_title'     => 'true',
 				'title'          => 'Team Record',
 				'schedule'       => '',
 				'team'           => '',
@@ -132,6 +133,10 @@ class Puck_Press_Public {
 			),
 			$atts
 		);
+
+		if ( 'false' === strtolower( $atts['show_title'] ) ) {
+			$atts['title'] = '';
+		}
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/record/class-puck-press-record-render-utils.php';
@@ -143,6 +148,53 @@ class Puck_Press_Public {
 		$schedule_id = Puck_Press_Group_Resolver::resolve( sanitize_title( $atts['schedule'] ), 'pp_schedules' );
 		$render      = new Puck_Press_Record_Render_Utils( $schedule_id );
 		return $render->get_current_template_html( $atts );
+	}
+
+	public function standings_shortcode( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'team'           => '',
+				'show_home_away' => 'true',
+				'show_goals'     => 'true',
+				'show_pct'       => 'true',
+				'show_streak'    => 'true',
+				'show_title'     => 'true',
+				'title'          => '',
+				'highlight'      => 'true',
+			),
+			$atts
+		);
+
+		$team_slug = sanitize_title( $atts['team'] );
+		if ( empty( $team_slug ) ) {
+			return '';
+		}
+
+		global $wpdb;
+		$team_id = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}pp_teams WHERE slug = %s OR id = %d LIMIT 1",
+				$team_slug,
+				(int) $atts['team']
+			)
+		);
+		if ( ! $team_id ) {
+			return '';
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/standings/class-puck-press-standings-render-utils.php';
+		$render = new Puck_Press_Standings_Render_Utils( $team_id );
+		return $render->get_current_template_html( $atts );
+	}
+
+	public function enqueue_standings_assets() {
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) || ! has_shortcode( $post->post_content, 'pp-standings' ) ) {
+			return;
+		}
+		require_once plugin_dir_path( __FILE__ ) . 'templates/class-puck-press-template-manager-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'templates/class-puck-press-standings-template-manager.php';
+		new Puck_Press_Standings_Template_Manager();
 	}
 
 	private static function resolve_team_attr( string $value ): string {
@@ -379,6 +431,262 @@ class Puck_Press_Public {
 
 		$render = new Puck_Press_Awards_Render_Utils();
 		return $css_block . $render->render_shortcode( $atts );
+	}
+
+	public function last_game_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'schedule'    => '',
+				'field'       => 'date',
+				'date_format' => 'M j, Y',
+			),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+		$game        = $sc->get_last_game( $schedule_id );
+
+		if ( ! $game ) {
+			return '';
+		}
+
+		return esc_html( $sc->extract_game_field( $game, sanitize_key( $atts['field'] ), $atts['date_format'] ) );
+	}
+
+	public function next_game_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'schedule'    => '',
+				'field'       => 'date',
+				'date_format' => 'M j, Y',
+			),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+		$game        = $sc->get_next_game( $schedule_id );
+
+		if ( ! $game ) {
+			return '';
+		}
+
+		return esc_html( $sc->extract_game_field( $game, sanitize_key( $atts['field'] ), $atts['date_format'] ) );
+	}
+
+	public function top_scorer_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'teams' => '',
+				'field' => 'name',
+			),
+			$atts
+		);
+
+		$team_ids = array_filter( array_map( 'absint', explode( ',', $atts['teams'] ) ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc     = new Puck_Press_Data_Shortcodes();
+		$player = $sc->get_top_scorer( $team_ids );
+
+		if ( ! $player ) {
+			return '';
+		}
+
+		$field = sanitize_key( $atts['field'] );
+		$map   = array(
+			'name'         => 'name',
+			'goals'        => 'goals',
+			'assists'      => 'assists',
+			'points'       => 'points',
+			'games_played' => 'games_played',
+			'team'         => 'team_name',
+			'headshot'     => 'headshot_link',
+			'pos'          => 'pos',
+		);
+
+		$key = $map[ $field ] ?? 'name';
+		$val = $player[ $key ] ?? '';
+		return esc_html( ( $val === null || $val === 'null' ) ? '' : $val );
+	}
+
+	public function record_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'schedule' => '',
+				'field'    => 'record',
+			),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+		$record      = $sc->get_record( $schedule_id );
+
+		if ( empty( $record ) ) {
+			return '';
+		}
+
+		return esc_html( $sc->extract_record_field( $record, sanitize_key( $atts['field'] ) ) );
+	}
+
+	public function streak_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array( 'schedule' => '' ),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+
+		return esc_html( $sc->get_streak( $schedule_id ) );
+	}
+
+	public function top_goalie_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'teams' => '',
+				'field' => 'name',
+				'sort'  => 'wins',
+			),
+			$atts
+		);
+
+		$team_ids = array_filter( array_map( 'absint', explode( ',', $atts['teams'] ) ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc     = new Puck_Press_Data_Shortcodes();
+		$goalie = $sc->get_top_goalie( $team_ids, sanitize_key( $atts['sort'] ) );
+
+		if ( ! $goalie ) {
+			return '';
+		}
+
+		$field = sanitize_key( $atts['field'] );
+		$map   = array(
+			'name'                  => 'name',
+			'wins'                  => 'wins',
+			'losses'                => 'losses',
+			'gaa'                   => 'goals_against_average',
+			'goals_against_average' => 'goals_against_average',
+			'sv_pct'                => 'save_percentage',
+			'save_percentage'       => 'save_percentage',
+			'games_played'          => 'games_played',
+			'saves'                 => 'saves',
+			'shots_against'         => 'shots_against',
+			'team'                  => 'team_name',
+			'headshot'              => 'headshot_link',
+			'pos'                   => 'pos',
+		);
+
+		$key = $map[ $field ] ?? 'name';
+		$val = $goalie[ $key ] ?? '';
+		return esc_html( ( $val === null || $val === 'null' ) ? '' : $val );
+	}
+
+	public function games_remaining_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array( 'schedule' => '' ),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+		$upcoming    = $sc->get_upcoming_games( $schedule_id );
+
+		return (string) count( $upcoming );
+	}
+
+	public function player_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'lookup' => '',
+				'teams'  => '',
+				'field'  => 'name',
+			),
+			$atts
+		);
+
+		if ( empty( $atts['lookup'] ) ) {
+			return '';
+		}
+
+		$team_ids = array_filter( array_map( 'absint', explode( ',', $atts['teams'] ) ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc     = new Puck_Press_Data_Shortcodes();
+		$player = $sc->get_player_by_lookup( sanitize_text_field( $atts['lookup'] ), $team_ids );
+
+		if ( ! $player ) {
+			return '';
+		}
+
+		$field = sanitize_key( $atts['field'] );
+		$map   = array(
+			'name'           => 'name',
+			'number'         => 'number',
+			'pos'            => 'pos',
+			'position'       => 'pos',
+			'ht'             => 'ht',
+			'wt'             => 'wt',
+			'shoots'         => 'shoots',
+			'hometown'       => 'hometown',
+			'last_team'      => 'last_team',
+			'year_in_school' => 'year_in_school',
+			'class'          => 'year_in_school',
+			'major'          => 'major',
+			'team'           => 'team_name',
+			'headshot'       => 'headshot_link',
+			'hero_image'     => 'hero_image_url',
+			'slug'           => 'name',
+		);
+
+		if ( $field === 'slug' ) {
+			return sanitize_title( $player['name'] ?? '' );
+		}
+		if ( $field === 'url' ) {
+			return esc_url( home_url( '/player/' . sanitize_title( $player['name'] ?? '' ) . '/' ) );
+		}
+
+		$key = $map[ $field ] ?? 'name';
+		$val = $player[ $key ] ?? '';
+		return esc_html( ( $val === null || $val === 'null' ) ? '' : $val );
+	}
+
+	public function next_home_game_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'schedule'    => '',
+				'field'       => 'date',
+				'date_format' => 'M j, Y',
+			),
+			$atts
+		);
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc          = new Puck_Press_Data_Shortcodes();
+		$schedule_id = $sc->resolve_schedule_id( sanitize_text_field( $atts['schedule'] ) );
+		$upcoming    = $sc->get_upcoming_games( $schedule_id );
+
+		$home_game = null;
+		foreach ( $upcoming as $g ) {
+			if ( ( $g['home_or_away'] ?? '' ) === 'home' ) {
+				$home_game = $g;
+				break;
+			}
+		}
+
+		if ( ! $home_game ) {
+			return '';
+		}
+
+		return esc_html( $sc->extract_game_field( $home_game, sanitize_key( $atts['field'] ), $atts['date_format'] ) );
 	}
 
 	public function stat_leaders_skaters_shortcode( $atts = array() ) {

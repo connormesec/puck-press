@@ -54,6 +54,14 @@ class CompactTemplate extends PuckPressTemplate {
 		);
 	}
 
+	public static function get_default_fonts(): array {
+		return array( 'slider_font' => '' );
+	}
+
+	public static function get_font_labels(): array {
+		return array( 'slider_font' => 'Slider Font' );
+	}
+
 	public static function get_js_dependencies(): array {
 		return array( 'jquery', 'glider-js' );
 	}
@@ -70,7 +78,8 @@ class CompactTemplate extends PuckPressTemplate {
 		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
 		$scope        = $container_id ? '#' . $container_id : ':root';
 		$colors       = $schedule_id > 0 ? self::get_slider_colors( $schedule_id ) : null;
-		$inline_css   = self::get_inline_css( $scope, $colors, null );
+		$fonts        = $schedule_id > 0 ? self::get_slider_fonts( $schedule_id ) : null;
+		$inline_css   = self::get_inline_css( $scope, $colors, $fonts );
 		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
 		ob_start();

@@ -10,6 +10,7 @@
       saveBtnId:              '#pp-slider-palette-save-colors',
       formId:                 '#pp-slider-color-palette-form',
       colorFieldsContainerId: '#pp-slider-dynamic-color-fields',
+      fontFieldsContainerId:  '#pp-slider-dynamic-font-fields',
       templateSelectorId:     '#pp-slider-template-selector',
       templatesData:          ppSliderTemplates,
       templatesKey:           'sliderTemplates',
@@ -18,6 +19,10 @@
       calUrlFieldId:          '#pp-slider-cal-url',
       calUrlShowForTemplates: ['scoreboard', 'compact'],
       extraData:              () => ({ schedule_id: getActiveScheduleId() }),
+      onFontChange: (templateKey, fontKey, cssValue) => {
+        const el = document.getElementById('pp-slider-' + getActiveScheduleId());
+        if (el) el.style.setProperty('--pp-' + templateKey + '-' + fontKey, cssValue);
+      },
       onSaveSuccess: (response, closeModal) => {
         if (response.data.active_slider_html) {
           $('#pp-game-slider-preview').html(response.data.active_slider_html);

@@ -233,6 +233,29 @@ class Puck_Press_Cron {
 			);
 		}
 
+		// Standings refresh
+		$standings_ok = false;
+		try {
+			$standings_refresher = new Puck_Press_Standings_Refresher();
+			$standings_log       = $standings_refresher->refresh_all_teams();
+			foreach ( $standings_log as $msg ) {
+				$this->log_message( 'Puck Press Cron: Standings — ' . $msg );
+			}
+			$standings_ok = true;
+		} catch ( Exception $e ) {
+			$this->log_error( 'Puck Press Cron: Standings error — ' . $e->getMessage() );
+			$this->log_error( 'Puck Press Cron: Stack trace — ' . $e->getTraceAsString() );
+		}
+
+		if ( $standings_ok ) {
+			$failure_counts['standings'] = 0;
+		} else {
+			$failure_counts['standings'] = ( $failure_counts['standings'] ?? 0 ) + 1;
+			$this->log_error(
+				sprintf( 'Puck Press Cron: Standings has failed %d consecutive time(s).', $failure_counts['standings'] )
+			);
+		}
+
 		// Create game posts
 		try {
 			include_once plugin_dir_path( __FILE__ ) . 'game-summary-post/class-puck-press-game-post-creator.php';
@@ -279,7 +302,7 @@ class Puck_Press_Cron {
 		// Strip any orphaned team_* keys left over from a previous version of the importer.
 		$failure_counts = array_intersect_key(
 			$failure_counts,
-			array_flip( array( 'schedule', 'roster', 'game_posts', 'instagram' ) )
+			array_flip( array( 'schedule', 'roster', 'standings', 'game_posts', 'instagram' ) )
 		);
 
 		update_option( self::OPTION_FAILURE_COUNTS, $failure_counts );
@@ -306,6 +329,11 @@ class Puck_Press_Cron {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-usphl-url.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-process-csv-data.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-team-roster-importer.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-wpdb-utils.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-source-resolver.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-fetch-acha.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-fetch-usphl.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-refresher.php';
 	}
 
 	/**

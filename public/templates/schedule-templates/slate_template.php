@@ -126,7 +126,11 @@ class SlateTemplate extends PuckPressTemplate {
 		$html .= '<div class="slate-match-col">';
 		$html .= '<span class="slate-vs-at">' . esc_html( $vs_at ) . '</span>';
 		$html .= $logo_html;
-		$html .= '<span class="slate-opp-name">' . esc_html( $game['opponent_team_name'] ?? '' ) . '</span>';
+		$html .= '<span class="slate-opp-name">' . esc_html( $game['opponent_team_name'] ?? '' );
+		if ( ! empty( $game['opponent_team_nickname'] ) ) {
+			$html .= ' <span class="slate-opp-nickname">' . esc_html( $game['opponent_team_nickname'] ) . '</span>';
+		}
+		$html .= '</span>';
 		$html .= '</div>';
 		if ( ! empty( $game['promo_ticket_link'] ) ) {
 			$html .= '<div class="slate-action-col">';
@@ -191,7 +195,11 @@ class SlateTemplate extends PuckPressTemplate {
 		$html .= '<div class="slate-match-col">';
 		$html .= '<span class="slate-vs-at">' . esc_html( $vs_at ) . '</span>';
 		$html .= $logo_html;
-		$html .= '<span class="slate-opp-name">' . esc_html( $game['opponent_team_name'] ?? '' ) . '</span>';
+		$html .= '<span class="slate-opp-name">' . esc_html( $game['opponent_team_name'] ?? '' );
+		if ( ! empty( $game['opponent_team_nickname'] ) ) {
+			$html .= ' <span class="slate-opp-nickname">' . esc_html( $game['opponent_team_nickname'] ) . '</span>';
+		}
+		$html .= '</span>';
 		$html .= '</div>';
 		if ( ! empty( $result['display'] ) ) {
 			$html .= '<div class="slate-result-col">';
@@ -235,11 +243,11 @@ class SlateTemplate extends PuckPressTemplate {
 	}
 
 	private function formatResult( array $game ): array {
-		$status  = $game['game_status'] ?? '';
+		$status  = strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) );
 		$t_score = (int) ( $game['target_score'] ?? 0 );
 		$o_score = (int) ( $game['opponent_score'] ?? 0 );
 
-		if ( ! in_array( $status, array( 'Final', 'Final OT', 'Final SO', 'Final/SO', 'Final/OT' ), true ) ) {
+		if ( ! in_array( $status, array( 'FINAL', 'FINAL OT', 'FINAL SO' ), true ) ) {
 			return array(
 				'display'   => '',
 				'css_class' => '',
@@ -255,9 +263,9 @@ class SlateTemplate extends PuckPressTemplate {
 		}
 
 		$suffix = '';
-		if ( $status === 'Final OT' || $status === 'Final/OT' ) {
+		if ( $status === 'FINAL OT' ) {
 			$suffix = ' (OT)';
-		} elseif ( $status === 'Final SO' || $status === 'Final/SO' ) {
+		} elseif ( $status === 'FINAL SO' ) {
 			$suffix = ' (SO)';
 		}
 

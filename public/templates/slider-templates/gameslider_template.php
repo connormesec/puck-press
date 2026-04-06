@@ -42,6 +42,14 @@ class GameSliderTemplate extends PuckPressTemplate {
 		);
 	}
 
+	public static function get_default_fonts(): array {
+		return array( 'slider_font' => '' );
+	}
+
+	public static function get_font_labels(): array {
+		return array( 'slider_font' => 'Slider Font' );
+	}
+
 	// use this to set additional js dependencies make sure to also update the registry in the template manager abstract file
 	public static function get_js_dependencies() {
 		return array( 'jquery', 'glider-js' );
@@ -55,7 +63,8 @@ class GameSliderTemplate extends PuckPressTemplate {
 		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
 		$scope        = $container_id ? '#' . $container_id : ':root';
 		$colors       = $schedule_id > 0 ? self::get_slider_colors( $schedule_id ) : null;
-		$inline_css   = self::get_inline_css( $scope, $colors, null );
+		$fonts        = $schedule_id > 0 ? self::get_slider_fonts( $schedule_id ) : null;
+		$inline_css   = self::get_inline_css( $scope, $colors, $fonts );
 		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
 		return $css_block . $this->buildSlider( $games, $container_id );

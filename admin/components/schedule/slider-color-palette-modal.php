@@ -48,6 +48,10 @@ $selected_template = $templates->get_current_template_key();
 				<div class="pp-form-row" id="pp-slider-dynamic-color-fields">
 					<!-- Color inputs will be dynamically generated here -->
 				</div>
+				<p class="pp-form-label" style="font-weight:600;margin-top:1rem;">Typography</p>
+				<div class="pp-form-row" id="pp-slider-dynamic-font-fields">
+					<!-- Font inputs will be dynamically generated here -->
+				</div>
 				<div class="pp-form-row" style="margin-top: 12px;">
 					<label for="pp-slider-cal-url" class="pp-form-label">Schedule Page URL</label>
 					<input type="text" id="pp-slider-cal-url" name="cal_url"

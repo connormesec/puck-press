@@ -75,6 +75,7 @@ class RecordTemplate extends PuckPressTemplate {
 		$show_home_away = ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN );
 		$show_goals     = ! isset( $values['show_goals'] ) || filter_var( $values['show_goals'], FILTER_VALIDATE_BOOLEAN );
 		$show_diff      = ! isset( $values['show_diff'] ) || filter_var( $values['show_diff'], FILTER_VALIDATE_BOOLEAN );
+		$title          = $values['title'] ?? '';
 
 		// W-L-OTL (always three segments); append -T only if regulation ties exist
 		$record_str = "{$wins}-{$losses}-{$otl}";
@@ -101,6 +102,9 @@ class RecordTemplate extends PuckPressTemplate {
 		echo $css_block;
 		?>
 		<div class="pp-record-card <?php echo esc_attr( $key ); ?>_record_container"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
+			<?php if ( ! empty( $title ) ) : ?>
+				<h4 class="pp-record-title"><?php echo esc_html( $title ); ?></h4>
+			<?php endif; ?>
 			<div class="pp-record-header">
 				<div class="pp-record-stat-row pp-record-stat-row--main">
 					<div class="pp-record-stat">

@@ -169,10 +169,10 @@ class ArenaTemplate extends PuckPressTemplate {
 		$away_w = $away_l   = $away_t = 0;
 		$gf     = $ga       = 0;
 
-		$finals = array( 'Final', 'Final OT', 'Final SO', 'Final/SO', 'Final/OT' );
+		$finals = array( 'FINAL', 'FINAL OT', 'FINAL SO' );
 
 		foreach ( $past_games as $game ) {
-			if ( ! in_array( $game['game_status'] ?? '', $finals, true ) ) {
+			if ( ! in_array( strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) ), $finals, true ) ) {
 				continue;
 			}
 
@@ -354,11 +354,11 @@ class ArenaTemplate extends PuckPressTemplate {
 	}
 
 	private function buildResult( array $game ): array {
-		$status = $game['game_status'] ?? '';
+		$status = strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) );
 		$ts     = (int) ( $game['target_score'] ?? 0 );
 		$os     = (int) ( $game['opponent_score'] ?? 0 );
 
-		if ( ! in_array( $status, array( 'Final', 'Final OT', 'Final SO', 'Final/SO', 'Final/OT' ), true ) ) {
+		if ( ! in_array( $status, array( 'FINAL', 'FINAL OT', 'FINAL SO' ), true ) ) {
 			return array(
 				'display' => '',
 				'cls'     => '',
@@ -377,10 +377,10 @@ class ArenaTemplate extends PuckPressTemplate {
 		}
 
 		$suffix = '';
-		if ( in_array( $status, array( 'Final OT', 'Final/OT' ), true ) ) {
+		if ( $status === 'FINAL OT' ) {
 			$suffix = ' (OT)';
 		}
-		if ( in_array( $status, array( 'Final SO', 'Final/SO' ), true ) ) {
+		if ( $status === 'FINAL SO' ) {
 			$suffix = ' (SO)';
 		}
 

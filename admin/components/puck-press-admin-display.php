@@ -68,6 +68,11 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 		if ( $tab === 'awards' ) :
 			?>
 			nav-tab-active<?php endif; ?>">Awards</a>
+		<a href="?page=puck-press&tab=api" class="nav-tab
+		<?php
+		if ( $tab === 'api' ) :
+			?>
+			nav-tab-active<?php endif; ?>">API</a>
 	</nav>
 
 	<div class="tab-content">
@@ -127,6 +132,11 @@ $tab         = isset( $_GET['tab'] ) ? $_GET['tab'] : $default_tab;
 				include plugin_dir_path( __DIR__ ) . 'components/awards/awards-admin-display.php';
 				$awards_admin_display = new Puck_Press_Awards_Admin_Display();
 				echo $awards_admin_display->render();
+				break;
+			case 'api':
+				include_once plugin_dir_path( __DIR__ ) . 'components/api/api-admin-display.php';
+				$api_display = new Puck_Press_Api_Admin_Display();
+				echo $api_display->render();
 				break;
 			default:
 				include plugin_dir_path( __DIR__ ) . 'components/teams/teams-admin-display.php';

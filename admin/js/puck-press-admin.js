@@ -86,6 +86,7 @@
 		$('#pp-record-preview-wrapper').removeClass('loading');
 		$('#pp-stats-preview-wrapper').removeClass('loading');
 		$('#pp-stat-leaders-preview-wrapper').removeClass('loading');
+		$('#pp-standings-preview-wrapper').removeClass('loading');
 	});
 })(jQuery);
 

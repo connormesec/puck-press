@@ -83,7 +83,7 @@
 .slate-date-col {
   display: flex;
   flex-direction: column;
-  min-width: 130px;
+  min-width: 90px;
   flex-shrink: 0;
 }
 
@@ -133,6 +133,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.slate-opp-nickname {
+  font-weight: 700;
 }
 
 /* ── Result column (past games) ──────────────────────── */
@@ -286,6 +290,10 @@
 
   .slate-opp-name {
     font-size: 14px;
+  }
+
+  .slate-opp-nickname {
+    display: none;
   }
 
   .slate-game-main-row {

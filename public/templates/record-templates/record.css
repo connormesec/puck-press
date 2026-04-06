@@ -5,10 +5,23 @@
 .pp-record-card {
   font-family: var(--pp-record-record_font, inherit);
   background: var(--pp-record-card_bg, #1a1a2e);
-  border: 2px solid var(--pp-record-border, #0f3460);
   overflow: hidden;
   color: var(--pp-record-value_text, #ffffff);
   box-sizing: border-box;
+  container-type: inline-size;
+}
+
+/* ── Title ──────────────────────────────────────────────── */
+
+.pp-record-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-record-value_text, #ffffff);
+  margin: 0;
+  padding: 20px 24px 0;
+  text-align: center;
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -33,6 +46,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -40,7 +54,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 52px;
+  min-width: 0;
 }
 
 .pp-record-stat-value {
@@ -62,7 +76,7 @@
 .pp-record-stat-divider {
   font-size: 1.4rem;
   color: var(--pp-record-label_text, #a0a0b0);
-  padding-bottom: 14px;
+  padding-bottom: 20px;
   flex-shrink: 0;
 }
 
@@ -71,6 +85,7 @@
 .pp-record-goals-row {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 28px;
   padding: 14px 0;
   border-top: 1px solid var(--pp-record-border, #0f3460);
@@ -109,6 +124,7 @@
 .pp-record-split-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 9px 14px;
   border-radius: 7px;
@@ -121,18 +137,136 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--pp-record-label_text, #a0a0b0);
-  min-width: 38px;
+  min-width: 0;
 }
 
 .pp-record-split-record {
   font-size: 1rem;
   font-weight: 700;
   color: var(--pp-record-value_text, #ffffff);
-  min-width: 56px;
+  min-width: 0;
 }
 
 .pp-record-split-goals {
   font-size: 0.72rem;
   color: var(--pp-record-label_text, #a0a0b0);
   margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Responsive — container queries for parent-aware sizing */
+
+@container (max-width: 340px) {
+
+  .pp-record-title {
+    font-size: 1.05rem;
+    padding: 14px 14px 0;
+  }
+
+  .pp-record-header {
+    padding: 14px 14px 6px;
+  }
+
+  .pp-record-stats {
+    padding: 8px 14px;
+  }
+
+  .pp-record-stat-row--main {
+    gap: 6px;
+  }
+
+  .pp-record-stat-value {
+    font-size: 1.35rem;
+  }
+
+  .pp-record-stat-label {
+    font-size: 0.55rem;
+  }
+
+  .pp-record-stat-divider {
+    font-size: 1rem;
+    padding-bottom: 20px;
+  }
+
+  .pp-record-goals-row {
+    gap: 16px;
+    padding: 10px 0;
+  }
+
+  .pp-record-goal-stat .pp-record-stat-value {
+    font-size: 1.05rem;
+  }
+
+  .pp-record-split-row {
+    gap: 8px;
+    padding: 7px 10px;
+  }
+
+  .pp-record-split-record {
+    font-size: 0.85rem;
+  }
+
+  .pp-record-split-goals {
+    font-size: 0.65rem;
+  }
+}
+
+@container (max-width: 240px) {
+
+  .pp-record-title {
+    font-size: 0.85rem;
+    padding: 10px 8px 0;
+  }
+
+  .pp-record-header {
+    padding: 10px 8px 4px;
+  }
+
+  .pp-record-stats {
+    padding: 6px 8px;
+  }
+
+  .pp-record-stat-row--main {
+    gap: 4px;
+  }
+
+  .pp-record-stat-divider {
+    display: none;
+  }
+
+  .pp-record-stat-value {
+    font-size: 1.1rem;
+  }
+
+  .pp-record-stat-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .pp-record-goals-row {
+    gap: 10px;
+    padding: 8px 0;
+    margin-bottom: 8px;
+  }
+
+  .pp-record-goal-stat .pp-record-stat-value {
+    font-size: 0.9rem;
+  }
+
+  .pp-record-split-row {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .pp-record-split-label {
+    font-size: 0.55rem;
+  }
+
+  .pp-record-split-record {
+    font-size: 0.75rem;
+  }
+
+  .pp-record-split-goals {
+    display: none;
+  }
 }

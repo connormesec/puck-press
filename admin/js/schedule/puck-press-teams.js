@@ -112,6 +112,7 @@
             $('#pp-card-team-game-list').replaceWith(team.games_html);
             $('#pp-card-roster-sources').replaceWith(team.roster_sources_html);
             $('#pp-card-roster-players').replaceWith(team.players_html);
+            if (team.standings_html) { $('#pp-card-standings').replaceWith(team.standings_html); }
             if (team.pages_card_html) { $('#pp-card-team-pages').replaceWith(team.pages_card_html); }
             $('#pp-active-team-id').val(team.id);
             $('#pp-refresh-team-btn').data('team-id', team.id).attr('data-team-id', team.id);
@@ -221,6 +222,7 @@
           $('#pp-card-team-game-list').replaceWith(d.games_html);
           $('#pp-card-roster-sources').replaceWith(d.roster_sources_html);
           $('#pp-card-roster-players').replaceWith(d.players_html);
+          if (d.standings_html) { $('#pp-card-standings').replaceWith(d.standings_html); }
           if (d.pages_card_html) { $('#pp-card-team-pages').replaceWith(d.pages_card_html); }
           $('#pp-active-team-id').val(d.team_id);
           $('#pp-refresh-team-btn').data('team-id', d.team_id).attr('data-team-id', d.team_id);
@@ -544,7 +546,7 @@
         onSuccess: (response) => {
           const type = $('#pp-source-type').val();
 
-          if (type === 'achaGameScheduleUrl') {
+          if (type === 'achaGameScheduleUrl' || type === 'usphlGameScheduleUrl') {
             refreshGamesTable().then(() => { location.reload(); });
             return;
           }
