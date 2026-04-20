@@ -192,6 +192,7 @@
 }
 .results_text_score {
   font-size: 20px;
+  color: var(--pp-pill-text);
 }
 
 .pill_right_actions {

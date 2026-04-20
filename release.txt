@@ -1,0 +1,151 @@
+PUCK PRESS — RELEASE PROCESS
+==============================
+
+OVERVIEW
+--------
+Puck Press is deployed by distributing PHP files directly. There is no build
+pipeline (no npm, webpack, or composer). A "release" means: bump the version
+in source, commit, tag, and push. GitHub hosts the canonical source and the
+update mechanism reads GitHub releases to notify WordPress admins.
+
+
+WHAT A RELEASE MEANS
+--------------------
+When told to "trigger a release" or "release X.Y.Z":
+
+  1. Determine the next version number (see VERSIONING below)
+  2. Update puck-press.php in two places:
+       - Line 18 header comment:  Version: X.Y.Z
+       - Line 37 PHP constant:    define( 'PUCK_PRESS_VERSION', 'X.Y.Z' );
+  3. Check if a DB migration is needed (see DB MIGRATIONS below)
+  4. Commit with a descriptive message summarizing what changed
+  5. Create a git tag:            git tag X.Y.Z
+  6. Push branch and tag:         git push && git push --tags
+
+The GitHub update mechanism (includes/update.php / PDUpdater) polls
+https://api.github.com/repos/connormesec/puck-press/releases and compares
+the latest tag against the installed PUCK_PRESS_VERSION. Once the tag is
+pushed, WordPress sites with the plugin will see an available update.
+
+
+VERSIONING
+----------
+Current version: 1.0.22
+Tag format:      1.0.XX  (zero-padded patch, e.g. 1.0.23, 1.0.24)
+Convention:      SemVer-inspired but currently all releases are 1.0.X
+
+Rules of thumb:
+  - Patch (1.0.X): bug fixes, small features, template changes
+  - Minor (1.X.0): significant new subsystems (rare — hasn't happened yet)
+  - Major (X.0.0): breaking changes to DB schema or public API
+
+Note: The repo has used both zero-padded (1.0.01) and non-padded (1.0.9)
+tags historically. Newer tags (1.0.19+) are non-padded. Keep using
+non-padded going forward.
+
+
+FILES THAT MUST BE UPDATED ON EVERY RELEASE
+--------------------------------------------
+  puck-press.php
+    - Version header (line 18)
+    - PUCK_PRESS_VERSION constant (line 37)
+
+FILES THAT SHOULD BE UPDATED (currently neglected)
+--------------------------------------------------
+  README.txt
+    - "Stable tag:" field is stale (shows 4.3, should match plugin version)
+    - No changelog section exists; add one if targeting WordPress.org
+
+  Note: README.txt is only required if publishing to wordpress.org plugin
+  directory. For self-hosted GitHub distribution it has no functional impact.
+
+
+DB MIGRATIONS
+-------------
+Current db_version: 7.0
+Migration chain runs on plugins_loaded via class-puck-press-activator.php.
+Each migration is idempotent and version-gated with version_compare().
+
+When to add a migration:
+  - Adding a new column or table to an existing wpdb schema
+  - Renaming or dropping tables
+  - Changing option key names across existing installs
+
+How to add a migration:
+  1. Add maybe_run_newfeature_migration() to Puck_Press_Activator
+  2. Inside it: check version_compare( $db_version, '8.0', '>=' ) and return
+     early if already applied
+  3. Run dbDelta() or $wpdb->query() for the schema change
+  4. update_option( 'pp_db_version', '8.0' )
+  5. Chain the call in class-puck-press.php on plugins_loaded (lines 143-149)
+
+The pp_db_version option is independent of PUCK_PRESS_VERSION. A plugin
+version bump does NOT automatically increment pp_db_version — only add a new
+db_version when the schema actually changes.
+
+
+CHECKLIST — TRIGGERING A RELEASE
+---------------------------------
+Before releasing, verify:
+
+  [ ] All intended changes are committed to main
+  [ ] puck-press.php Version header updated (line 18)
+  [ ] puck-press.php PUCK_PRESS_VERSION constant updated (line 37)
+  [ ] If schema changed: new migration added and pp_db_version incremented
+  [ ] Git tag created matching the version string
+  [ ] Branch and tag pushed to GitHub
+
+Optional (recommended for significant releases):
+  [ ] Create a GitHub Release from the tag with release notes
+      (shows in WordPress update screen description)
+      Command: /opt/homebrew/bin/gh release create X.Y.Z --title "X.Y.Z" --notes "..." --latest
+
+
+LIMITATIONS
+-----------
+1. No automated testing — no test suite exists. All validation is manual
+   against a local WordPress installation.
+
+2. No staging environment or rollback mechanism beyond reverting the tag.
+   To roll back: install the previous tag's code manually.
+
+3. No changelog enforcement — nothing validates that version numbers were
+   actually bumped before tagging. Easy to push a tag that points to the
+   wrong version constant.
+
+4. Two version fields in puck-press.php must be kept in sync manually.
+   If they diverge, the WordPress plugin header (line 18) controls what
+   WordPress displays; the PHP constant (line 37) controls update logic.
+   They MUST match.
+
+5. README.txt is stale and not maintained. If the plugin is ever submitted
+   to the WordPress.org directory, README.txt must be brought up to date
+   including a proper changelog and a correct "Stable tag:" field.
+
+6. The update check reads GitHub *releases* (not just tags). If only a tag
+   is pushed without creating a GitHub Release object, the PDUpdater may
+   not surface the update in WordPress admin. When in doubt, also create
+   a GitHub Release via the web UI or gh CLI:
+     gh release create X.Y.Z --title "X.Y.Z" --notes "..."
+
+7. PP_FAKE_NOW in wp-config.php is a dev-only constant and must never be
+   set on production. It is not version-controlled and has no release impact,
+   but it will silently break schedule and record display if left defined.
+
+
+QUICK REFERENCE
+---------------
+Version locations:
+  puck-press.php:18    Version header (WordPress reads this)
+  puck-press.php:37    PUCK_PRESS_VERSION constant (code reads this)
+
+DB version location:
+  wp_options row:      pp_db_version  (currently 7.0)
+  Migration source:    includes/class-puck-press-activator.php
+
+GitHub remote:
+  https://github.com/connormesec/puck-press
+
+Update mechanism:
+  includes/update.php (PDUpdater class)
+  Polls: https://api.github.com/repos/connormesec/puck-press/releases

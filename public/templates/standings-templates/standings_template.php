@@ -70,10 +70,11 @@ class StandingsTemplate extends PuckPressTemplate {
 
     public function render_with_options( array $values, array $options ): string {
         $rows           = $values['rows'] ?? array();
-        $show_home_away = ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN );
-        $show_goals     = ! isset( $values['show_goals'] )     || filter_var( $values['show_goals'],     FILTER_VALIDATE_BOOLEAN );
-        $show_pct       = ! isset( $values['show_pct'] )       || filter_var( $values['show_pct'],       FILTER_VALIDATE_BOOLEAN );
-        $show_streak    = ! isset( $values['show_streak'] )    || filter_var( $values['show_streak'],    FILTER_VALIDATE_BOOLEAN );
+        $compact        = isset( $values['compact'] ) && filter_var( $values['compact'], FILTER_VALIDATE_BOOLEAN );
+        $show_home_away = ! $compact && ( ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN ) );
+        $show_goals     = ! $compact && ( ! isset( $values['show_goals'] )     || filter_var( $values['show_goals'],     FILTER_VALIDATE_BOOLEAN ) );
+        $show_pct       = ! $compact && ( ! isset( $values['show_pct'] )       || filter_var( $values['show_pct'],       FILTER_VALIDATE_BOOLEAN ) );
+        $show_streak    = ! $compact && ( ! isset( $values['show_streak'] )    || filter_var( $values['show_streak'],    FILTER_VALIDATE_BOOLEAN ) );
         $show_title     = ! isset( $values['show_title'] )     || filter_var( $values['show_title'],     FILTER_VALIDATE_BOOLEAN );
         $highlight      = ! isset( $values['highlight'] )      || filter_var( $values['highlight'],      FILTER_VALIDATE_BOOLEAN );
         $title          = $values['title'] ?? '';
@@ -88,6 +89,10 @@ class StandingsTemplate extends PuckPressTemplate {
             if ( (int) ( $row['sol'] ?? 0 ) > 0 ) {
                 $any_sol = true;
             }
+        }
+        if ( $compact ) {
+            $any_sol  = false;
+            $any_ties = false;
         }
 
         $key          = static::get_key();
@@ -104,7 +109,7 @@ class StandingsTemplate extends PuckPressTemplate {
         ob_start();
         echo $css_block;
         ?>
-        <div class="<?php echo esc_attr( $key ); ?>_container pp-standings-wrapper"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
+        <div class="<?php echo esc_attr( $key ); ?>_container pp-standings-wrapper<?php echo $compact ? ' pp-standings-wrapper--compact' : ''; ?>"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
             <?php if ( $show_title && ! empty( $display_title ) ) : ?>
             <h3 class="pp-standings-title"><?php echo esc_html( $display_title ); ?></h3>
             <?php endif; ?>
@@ -152,6 +157,9 @@ class StandingsTemplate extends PuckPressTemplate {
                             $l   = (int) ( $row['l'] ?? 0 );
                             $otl = (int) ( $row['otl'] ?? 0 );
                             $sol = (int) ( $row['sol'] ?? 0 );
+                            if ( $compact ) {
+                                $otl += $sol;
+                            }
                             $t   = (int) ( $row['t'] ?? 0 );
                             $gp  = (int) ( $row['gp'] ?? 0 );
                             $pts = (int) ( $row['pts'] ?? 0 );

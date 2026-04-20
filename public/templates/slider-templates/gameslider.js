@@ -12,7 +12,7 @@
 function initializeSlider() {
     //document.addEventListener('DOMContentLoaded', function () {
         const gliderEl = document.querySelector('.glider');
-        if (!gliderEl) return;
+        if (!gliderEl || !gliderEl.offsetWidth) return;
 
         const glider = new Glider(gliderEl, {
             slidesToShow: 1,

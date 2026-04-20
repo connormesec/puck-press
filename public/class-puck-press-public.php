@@ -154,6 +154,7 @@ class Puck_Press_Public {
 		$atts = shortcode_atts(
 			array(
 				'team'           => '',
+				'compact'        => 'false',
 				'show_home_away' => 'true',
 				'show_goals'     => 'true',
 				'show_pct'       => 'true',
@@ -690,26 +691,28 @@ class Puck_Press_Public {
 	}
 
 	public function stat_leaders_skaters_shortcode( $atts = array() ) {
-		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
-		$slug        = sanitize_title( $atts['roster'] );
-		$show_header = 'false' !== strtolower( trim( $atts['show_header'] ) );
+		$atts         = shortcode_atts( array( 'roster' => '', 'show_header' => 'true', 'template' => '' ), $atts );
+		$slug         = sanitize_title( $atts['roster'] );
+		$show_header  = 'false' !== strtolower( trim( $atts['show_header'] ) );
+		$template_key = sanitize_key( $atts['template'] );
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stat-leaders/class-puck-press-stat-leaders-render-utils.php';
 
 		$teams  = $this->resolve_stat_leaders_teams( $slug );
-		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'skaters', $teams, $show_header );
+		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'skaters', $teams, $show_header, $template_key );
 		return $render->get_current_template_html();
 	}
 
 	public function stat_leaders_goalies_shortcode( $atts = array() ) {
-		$atts        = shortcode_atts( array( 'roster' => '', 'show_header' => 'true' ), $atts );
-		$slug        = sanitize_title( $atts['roster'] );
-		$show_header = 'false' !== strtolower( trim( $atts['show_header'] ) );
+		$atts         = shortcode_atts( array( 'roster' => '', 'show_header' => 'true', 'template' => '' ), $atts );
+		$slug         = sanitize_title( $atts['roster'] );
+		$show_header  = 'false' !== strtolower( trim( $atts['show_header'] ) );
+		$template_key = sanitize_key( $atts['template'] );
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/stat-leaders/class-puck-press-stat-leaders-render-utils.php';
 
 		$teams  = $this->resolve_stat_leaders_teams( $slug );
-		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'goalies', $teams, $show_header );
+		$render = new Puck_Press_Stat_Leaders_Render_Utils( 'goalies', $teams, $show_header, $template_key );
 		return $render->get_current_template_html();
 	}
 
@@ -746,7 +749,8 @@ class Puck_Press_Public {
 		}
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-template-manager-abstract.php';
 		require_once plugin_dir_path( __FILE__ ) . '../public/templates/class-puck-press-stat-leaders-template-manager.php';
-		new Puck_Press_Stat_Leaders_Template_Manager();
+		$manager = new Puck_Press_Stat_Leaders_Template_Manager();
+		$manager->enqueue_all_template_assets();
 	}
 
 	public function enqueue_scripts() {

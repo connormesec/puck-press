@@ -30,9 +30,8 @@ class Puck_Press_Standings_Refresher {
 
             $other       = json_decode( $source['other_data'] ?? '{}', true );
             $season_id   = (string) ( $other['season_id'] ?? '' );
-            $division_id = (string) ( $other['division_id'] ?? '' );
             $league_type = $source['type'] === 'usphlGameScheduleUrl' ? 'usphl' : 'acha';
-            $dedup_key   = "{$league_type}:{$season_id}:{$division_id}";
+            $dedup_key   = "{$league_type}:{$season_id}";
 
             if ( isset( $fetched[ $dedup_key ] ) ) {
                 $cached_result = $fetched[ $dedup_key ];
@@ -83,8 +82,7 @@ class Puck_Press_Standings_Refresher {
             require_once plugin_dir_path( __DIR__ ) . 'class-puck-press-tts-api.php';
             $fetcher = new Puck_Press_Standings_Fetch_Usphl( $api_team_id, $season_id );
         } else {
-            $division_id = (string) ( $other['division_id'] ?? '' );
-            $fetcher     = new Puck_Press_Standings_Fetch_Acha( $api_team_id, $season_id, $division_id );
+            $fetcher = new Puck_Press_Standings_Fetch_Acha( $api_team_id, $season_id );
         }
 
         return $fetcher->fetch();

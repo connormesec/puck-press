@@ -18,6 +18,8 @@
 .pp-standings-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    container-type: inline-size;
+    container-name: standings-scroll;
 }
 
 .pp-standings-table {
@@ -25,6 +27,12 @@
     border-collapse: collapse;
     font-size: 13px;
     white-space: nowrap;
+}
+
+.pp-standings-wrapper .pp-standings-scroll .pp-standings-table {
+    border: none;
+    margin: 0;
+    text-align: left;
 }
 
 .pp-standings-header-row {
@@ -38,12 +46,16 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.pp-standings-wrapper .pp-standings-th {
     color: var(--pp-standings-header_text, #ffffff);
 }
 
 .pp-standings-th--team {
     text-align: left;
-    min-width: 180px;
+    min-width: 120px;
+    max-width: 200px;
 }
 
 .pp-standings-th--pts {
@@ -68,13 +80,17 @@
 
 .pp-standings-row--highlight .pp-standings-td {
     color: var(--pp-standings-highlight_text, #1a1a2e);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .pp-standings-td {
     padding: 8px 10px;
     text-align: center;
     color: var(--pp-standings-row_text, #111827);
+}
+
+.pp-standings-wrapper .pp-standings-td {
+    border-top: none;
 }
 
 .pp-standings-td--team {
@@ -92,8 +108,9 @@
 }
 
 .pp-standings-team-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: 200px;
 }
 
 .pp-standings-td--pts {
@@ -115,6 +132,23 @@
     color: #dc2626;
 }
 
+.pp-standings-wrapper--compact .pp-standings-th--team,
+.pp-standings-wrapper--compact .pp-standings-td--team {
+    max-width: 140px;
+    min-width: 50px;
+}
+
+.pp-standings-wrapper--compact .pp-standings-th,
+.pp-standings-wrapper--compact .pp-standings-td {
+    padding: 6px 8px;
+}
+
+@container standings-scroll (max-width: 290px) {
+    .pp-standings-team-name {
+        display: none;
+    }
+}
+
 @media (max-width: 768px) {
     .pp-standings-table {
         font-size: 12px;
@@ -126,7 +160,12 @@
     }
 
     .pp-standings-th--team {
-        min-width: 140px;
+        min-width: 80px;
+        max-width: 150px;
+    }
+
+    .pp-standings-team-name {
+        max-width: 150px;
     }
 
     .pp-standings-team-logo {

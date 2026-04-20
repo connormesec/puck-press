@@ -108,18 +108,6 @@ class CardStackTemplate extends PuckPressTemplate {
 
 		$content = '<div class="cardstack_roster_container clearfix">';
 
-		// Skaters (players without assigned positions) - shown first
-		$skaters = $this->getPlayersWithoutPositions( $players );
-		if ( ! empty( $skaters ) ) {
-			$content .= '<div class="player_group">';
-			$content .= '<div class="player_position_title"><h2>Skaters</h2></div>';
-			foreach ( $skaters as $player ) {
-				$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
-				$content  .= $this->createPlayerCard( $player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats );
-			}
-			$content .= '</div>';
-		}
-
 		// forwards
 		$content .= '<div class="player_group">';
 		$content .= '<div class="player_position_title"><h2>Forwards</h2></div>';
@@ -147,6 +135,18 @@ class CardStackTemplate extends PuckPressTemplate {
 			$content  .= $this->createPlayerCard( $player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats );
 		}
 		$content .= '</div>';
+
+		// Skaters (players without assigned positions) - shown last
+		$skaters = $this->getPlayersWithoutPositions( $players );
+		if ( ! empty( $skaters ) ) {
+			$content .= '<div class="player_group">';
+			$content .= '<div class="player_position_title"><h2>Skaters</h2></div>';
+			foreach ( $skaters as $player ) {
+				$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
+				$content  .= $this->createPlayerCard( $player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats );
+			}
+			$content .= '</div>';
+		}
 
 		$content .= '</div>';
 

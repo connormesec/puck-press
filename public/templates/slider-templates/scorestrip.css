@@ -1,0 +1,223 @@
+/* =============================================================================
+   Score Strip Slider Template
+   ============================================================================= */
+
+.pp-ss-container {
+  --ss-h: 80px;
+
+  display: none; /* hidden until Glider.js initialises; JS adds .pp-ss-ready */
+  width: 100%;
+  background: var(--pp-scorestrip-strip_bg);
+  font-family: var(--pp-scorestrip-strip_font,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.pp-ss-container.pp-ss-ready {
+  display: block;
+}
+
+/* ── Outer flex row: [prev] [glider] [next] ── */
+.pp-ss-inner {
+  display: flex;
+  align-items: stretch;
+  height: var(--ss-h);
+}
+
+/* ── Nav arrow buttons — flush with strip height ── */
+.pp-ss-nav {
+  flex-shrink: 0;
+  width: 44px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pp-scorestrip-nav_bg);
+  color: var(--pp-scorestrip-nav_text);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.pp-ss-nav:hover {
+  opacity: 0.8;
+}
+
+.pp-ss-nav.disabled,
+.pp-ss-nav:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ── Glider wrapper — fills remaining width ── */
+.pp-ss-glider-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── Glider.js overrides ── */
+.pp-ss-container .glider {
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+}
+
+.pp-ss-container .glider-track {
+  display: flex;
+  width: 100%;
+  height: var(--ss-h);
+  margin: 0;
+  padding: 0;
+}
+
+.pp-ss-container .glider-slide {
+  height: var(--ss-h) !important;
+  min-width: 0;
+}
+
+/* ── Score item (completed game) ── */
+.pp-ss-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: var(--ss-h);
+  border-right: 1px solid var(--pp-scorestrip-item_divider);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── Date label ── */
+.pp-ss-date {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pp-scorestrip-date_text);
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Two-row matchup block ── */
+.pp-ss-matchup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pp-ss-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ── Team logos ── */
+.pp-ss-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pp-ss-logo--lg {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+/* ── Team name ── */
+.pp-ss-team {
+  flex: 1;
+  min-width: 0;
+  color: var(--pp-scorestrip-team_dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-ss-row--won .pp-ss-team {
+  color: var(--pp-scorestrip-team_bright);
+}
+
+/* ── Score ── */
+.pp-ss-pts {
+  min-width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pp-scorestrip-score_loser);
+}
+
+.pp-ss-row--won .pp-ss-pts {
+  color: var(--pp-scorestrip-score_winner);
+}
+
+/* ── Status / "Final" tag ── */
+.pp-ss-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pp-scorestrip-date_text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* "Next" badge variant */
+.pp-ss-tag--next {
+  background: var(--pp-scorestrip-next_badge_bg);
+  color: var(--pp-scorestrip-next_badge_text);
+  padding: 4px 7px;
+  border-radius: 3px;
+}
+
+/* ── Upcoming game item ── */
+.pp-ss-upcoming {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-ss-upcoming-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pp-scorestrip-team_bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.pp-ss-upcoming-detail {
+  font-size: 11px;
+  color: var(--pp-scorestrip-date_text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  line-height: 1;
+}
+
+/* ── Mobile scrollbar ── */
+@media (max-width: 640px) {
+  .pp-ss-container .glider::-webkit-scrollbar {
+    opacity: 1;
+    -webkit-appearance: none;
+    height: 2px;
+  }
+
+  .pp-ss-container .glider::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}

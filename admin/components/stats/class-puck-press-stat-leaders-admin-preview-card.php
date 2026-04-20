@@ -32,11 +32,13 @@ class Puck_Press_Stat_Leaders_Admin_Preview_Card extends Puck_Press_Admin_Previe
 		$show_team   = (bool) get_option( 'pp_stat_leaders_show_team', 1 );
 
 		$this->data = array(
-			'skater_rows' => $this->wpdb_utils->get_skater_leaders(),
-			'goalie_rows' => $this->wpdb_utils->get_goalie_leaders(),
-			'show_team'   => $show_team,
-			'more_link'   => is_string( $more_link ) ? $more_link : '',
-			'team_colors' => is_array( $team_colors ) ? $team_colors : array(),
+			'skater_rows'       => $this->wpdb_utils->get_skater_leaders(),
+			'goalie_rows'       => $this->wpdb_utils->get_goalie_leaders(),
+			'skater_categories' => $this->wpdb_utils->get_skater_categories(),
+			'goalie_categories' => $this->wpdb_utils->get_goalie_categories(),
+			'show_team'         => $show_team,
+			'more_link'         => is_string( $more_link ) ? $more_link : '',
+			'team_colors'       => is_array( $team_colors ) ? $team_colors : array(),
 		);
 
 		$this->templates             = $this->template_manager->get_all_templates();
@@ -49,12 +51,14 @@ class Puck_Press_Stat_Leaders_Admin_Preview_Card extends Puck_Press_Admin_Previe
 		foreach ( $this->templates as $template ) {
 			$skater_data = array(
 				'rows'        => $this->data['skater_rows'],
+				'categories'  => $this->data['skater_categories'],
 				'show_team'   => $this->data['show_team'],
 				'more_link'   => $this->data['more_link'],
 				'team_colors' => $this->data['team_colors'],
 			);
 			$goalie_data = array(
 				'rows'        => $this->data['goalie_rows'],
+				'categories'  => $this->data['goalie_categories'],
 				'show_team'   => $this->data['show_team'],
 				'more_link'   => $this->data['more_link'],
 				'team_colors' => $this->data['team_colors'],
@@ -81,12 +85,14 @@ class Puck_Press_Stat_Leaders_Admin_Preview_Card extends Puck_Press_Admin_Previe
 		}
 		$skater_data = array(
 			'rows'        => $this->data['skater_rows'],
+			'categories'  => $this->data['skater_categories'],
 			'show_team'   => $this->data['show_team'],
 			'more_link'   => $this->data['more_link'],
 			'team_colors' => $this->data['team_colors'],
 		);
 		$goalie_data = array(
 			'rows'        => $this->data['goalie_rows'],
+			'categories'  => $this->data['goalie_categories'],
 			'show_team'   => $this->data['show_team'],
 			'more_link'   => $this->data['more_link'],
 			'team_colors' => $this->data['team_colors'],

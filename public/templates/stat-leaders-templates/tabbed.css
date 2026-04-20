@@ -1,0 +1,192 @@
+/* =============================================================
+   Tabbed Top 3 Leaders Template
+   CSS variables injected into .pp-stat-leaders-tabbed-container:
+     --pp-tabbed-bg, --pp-tabbed-tab_text, --pp-tabbed-tab_active_text,
+     --pp-tabbed-tab_underline, --pp-tabbed-card_bg, --pp-tabbed-player_name,
+     --pp-tabbed-player_meta, --pp-tabbed-stat_value,
+     --pp-tabbed-more_link_color, --pp-tabbed-header_text,
+     --pp-tabbed-tabbed_font
+   All rules scoped under .pp-stat-leaders-tabbed-container.
+   ============================================================= */
+
+.pp-stat-leaders-tabbed-container {
+  background: var(--pp-tabbed-bg, #ffffff);
+  font-family: var(--pp-tabbed-tabbed_font, inherit);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pp-stat-leaders-tabbed-container * {
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-title {
+  color: var(--pp-tabbed-header_text, #0d0d0d);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-more-link {
+  color: var(--pp-tabbed-more_link_color, #007aff);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-more-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--pp-tabbed-tab_text, #5f6368);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition: color 0.15s, border-bottom-color 0.15s;
+  font-family: inherit;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-tab:hover {
+  color: var(--pp-tabbed-tab_active_text, #0d0d0d);
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-tab.pp-tab-active {
+  color: var(--pp-tabbed-tab_active_text, #0d0d0d);
+  border-bottom-color: var(--pp-tabbed-tab_underline, #007aff);
+}
+
+/* ── Panels ──────────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-panel[hidden] {
+  display: none;
+}
+
+.pp-stat-leaders-tabbed-container .pp-tabbed-panels {
+  padding-top: 16px;
+}
+
+/* ── Cards row ───────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-cards {
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  background: var(--pp-tabbed-card_bg, #f5f7f8);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* ── Headshot ────────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-headshot {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #ddd;
+}
+
+/* ── Card body ───────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── Player meta (jersey / position) ─────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-player-meta {
+  color: var(--pp-tabbed-player_meta, #1565c0);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ── Player name ─────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-player-name {
+  color: var(--pp-tabbed-player_name, #0d0d0d);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ── Player team ─────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-player-team {
+  color: var(--pp-tabbed-tab_text, #5f6368);
+  font-size: 0.78rem;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ── Stat value ──────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-stat-value {
+  color: var(--pp-tabbed-stat_value, #0d0d0d);
+  font-size: 1.9rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.pp-stat-leaders-tabbed-container .pp-tabbed-empty {
+  color: var(--pp-tabbed-tab_text, #5f6368);
+  font-size: 0.875rem;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pp-stat-leaders-tabbed-container .pp-tabbed-cards {
+    flex-direction: column;
+  }
+}

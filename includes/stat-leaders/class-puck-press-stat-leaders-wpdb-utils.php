@@ -78,6 +78,115 @@ class Puck_Press_Stat_Leaders_Wpdb_Utils {
 		return $rows;
 	}
 
+	public function get_skater_categories( array $teams = array(), int $n = 3 ): array {
+		require_once plugin_dir_path( __FILE__ ) . '../stats/class-puck-press-stats-wpdb-utils.php';
+		$utils    = new Puck_Press_Stats_Wpdb_Utils();
+		$skaters  = $utils->get_skater_stats( $teams );
+		$settings = get_option( 'pp_stat_leaders_skater_settings', self::get_default_skater_settings() );
+
+		$categories = array();
+		if ( ! empty( $settings['show_goals'] ) ) {
+			$categories[] = array(
+				'label'    => 'Goals',
+				'stat_key' => 'goals',
+				'players'  => $this->find_top_n( $skaters, 'goals', $n ),
+			);
+		}
+		if ( ! empty( $settings['show_assists'] ) ) {
+			$categories[] = array(
+				'label'    => 'Assists',
+				'stat_key' => 'assists',
+				'players'  => $this->find_top_n( $skaters, 'assists', $n ),
+			);
+		}
+		if ( ! empty( $settings['show_points'] ) ) {
+			$categories[] = array(
+				'label'    => 'Points',
+				'stat_key' => 'points',
+				'players'  => $this->find_top_n( $skaters, 'points', $n ),
+			);
+		}
+		return $categories;
+	}
+
+	public function get_goalie_categories( array $teams = array(), int $n = 3 ): array {
+		require_once plugin_dir_path( __FILE__ ) . '../stats/class-puck-press-stats-wpdb-utils.php';
+		$utils    = new Puck_Press_Stats_Wpdb_Utils();
+		$goalies  = $utils->get_goalie_stats( $teams );
+		$settings = get_option( 'pp_stat_leaders_goalie_settings', self::get_default_goalie_settings() );
+
+		$active_goalies = array_values(
+			array_filter( $goalies, fn( $g ) => (int) ( $g['games_played'] ?? 0 ) > 0 && (float) ( $g['goals_against_average'] ?? 0 ) > 0.0 )
+		);
+
+		$categories = array();
+		if ( ! empty( $settings['show_gaa'] ) ) {
+			$categories[] = array(
+				'label'    => 'Goals Against Avg.',
+				'stat_key' => 'goals_against_average',
+				'players'  => $this->find_top_n( $active_goalies, 'goals_against_average', $n, 'asc', 2 ),
+			);
+		}
+		if ( ! empty( $settings['show_saves'] ) ) {
+			$categories[] = array(
+				'label'    => 'Saves',
+				'stat_key' => 'saves',
+				'players'  => $this->find_top_n( $goalies, 'saves', $n ),
+			);
+		}
+		if ( ! empty( $settings['show_sv_pct'] ) ) {
+			$categories[] = array(
+				'label'    => 'Save %',
+				'stat_key' => 'save_percentage',
+				'players'  => $this->find_top_n( $active_goalies, 'save_percentage', $n, 'desc', 3 ),
+			);
+		}
+		if ( ! empty( $settings['show_wins'] ) ) {
+			$categories[] = array(
+				'label'    => 'Wins',
+				'stat_key' => 'wins',
+				'players'  => $this->find_top_n( $goalies, 'wins', $n ),
+			);
+		}
+		return $categories;
+	}
+
+	private function find_top_n( array $players, string $stat_key, int $n, string $dir = 'desc', int $decimals = 0 ): array {
+		if ( empty( $players ) ) {
+			return array();
+		}
+
+		$sorted = $players;
+		usort(
+			$sorted,
+			function ( $a, $b ) use ( $stat_key, $dir ) {
+				$av = (float) ( $a[ $stat_key ] ?? 0 );
+				$bv = (float) ( $b[ $stat_key ] ?? 0 );
+				return $dir === 'asc' ? $av <=> $bv : $bv <=> $av;
+			}
+		);
+
+		$top = array_slice( $sorted, 0, $n );
+
+		return array_map(
+			function ( $player ) use ( $stat_key, $decimals ) {
+				$raw    = $player[ $stat_key ] ?? 0;
+				$value  = $decimals > 0 ? number_format( (float) $raw, $decimals ) : (string) (int) $raw;
+				$number = (string) ( $player['number'] ?? '' );
+				$pos    = (string) ( $player['pos'] ?? '' );
+				return array(
+					'name'     => (string) ( $player['name'] ?? '' ),
+					'team'     => (string) ( $player['team_name'] ?? '' ),
+					'value'    => $value,
+					'headshot' => (string) ( $player['headshot_link'] ?? '' ),
+					'position' => $pos,
+					'number'   => $number,
+				);
+			},
+			$top
+		);
+	}
+
 	private function find_leader( array $players, string $stat_key, string $label, string $dir = 'desc', int $decimals = 0 ): ?array {
 		if ( empty( $players ) ) {
 			return null;

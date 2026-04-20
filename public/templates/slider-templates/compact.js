@@ -10,7 +10,7 @@
 
 function initCompactSlider() {
   const el = document.querySelector('.pp-cs-glider');
-  if (!el) return;
+  if (!el || !el.offsetWidth) return;
 
   // Reveal before init so Glider.js can read real dimensions.
   el.closest('.pp-cs-container').classList.add('pp-cs-ready');

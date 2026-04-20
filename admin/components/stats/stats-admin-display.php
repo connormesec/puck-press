@@ -232,6 +232,10 @@ class Puck_Press_Stats_Admin_Display {
 									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stat-leaders-skaters show_header="false"]</code></td>
 									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Hide the "Stat Leaders" header and "More" link. Works on both skater and goalie shortcodes. Default is <code>true</code>.</td>
 								</tr>
+								<tr>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;"><code>[pp-stat-leaders-skaters template="tabbed"]</code></td>
+									<td style="padding:8px 12px;border:1px solid #e0e0e0;">Use a specific template, overriding the one selected above. Works on both skater and goalie shortcodes. Available keys: <code>leaders</code> (standard), <code>tabbed</code> (tabbed top&nbsp;3). Omit to use the currently selected template.</td>
+								</tr>
 							</tbody>
 						</table>
 					</div>

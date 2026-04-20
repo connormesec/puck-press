@@ -654,7 +654,19 @@
     function applyScheduleView(scheduleId, d) {
       // Update preview cards
       if (d.active_preview_html) $('#pp-game-schedule-preview').html(d.active_preview_html);
-      if (d.active_slider_html)  $('#pp-game-slider-preview').html(d.active_slider_html);
+      if (d.slider_preview_html && typeof ppSliderTemplates !== 'undefined') {
+        $('#pp-game-slider-preview').html(d.slider_preview_html);
+        for (const k of Object.keys(ppSliderTemplates.sliderTemplates)) {
+          $('.' + k + '_slider_container').hide();
+        }
+        const activeSlider = d.selected_slider_template || ppSliderTemplates.selected_template;
+        if (activeSlider) {
+          $('.' + activeSlider + '_slider_container').show();
+          ppSliderTemplates.selected_template = activeSlider;
+        }
+      } else if (d.active_slider_html) {
+        $('#pp-game-slider-preview').html(d.active_slider_html);
+      }
 
       // Update shortcode display
       if (d.shortcode) {

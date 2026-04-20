@@ -10,7 +10,7 @@
 
 function initScoreboardSlider() {
     const el = document.querySelector('.pp-sb-glider');
-    if (!el) return;
+    if (!el || !el.offsetWidth) return;
 
     // Reveal before init so Glider.js can read real dimensions.
     // Browser does not paint between synchronous JS statements, so no FOUC.

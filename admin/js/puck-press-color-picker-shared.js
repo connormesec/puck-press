@@ -273,6 +273,7 @@
                 $('.' + k + cfg.containerSuffix).hide();
             }
             $('.' + key + cfg.containerSuffix).show();
+            if (cfg.onTemplateChange) cfg.onTemplateChange(key);
         });
 
         // ── Init CSS vars on page load ────────────────────────────────────────

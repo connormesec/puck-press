@@ -88,6 +88,11 @@ class Puck_Press_Teams_Admin_Standings_Card extends Puck_Press_Admin_Card_Abstra
                             <td style="padding: 6px 10px;">Team slug or numeric ID</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 6px 10px;"><code>compact</code></td>
+                            <td style="padding: 6px 10px;"><code>false</code></td>
+                            <td style="padding: 6px 10px;">Hide all optional columns (goals, home/away, P%, streak) — shows only Team, GP, W, L, OTL, and Pts</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
                             <td style="padding: 6px 10px;"><code>show_home_away</code></td>
                             <td style="padding: 6px 10px;"><code>true</code></td>
                             <td style="padding: 6px 10px;">Show home / away record columns</td>
@@ -125,7 +130,7 @@ class Puck_Press_Teams_Admin_Standings_Card extends Puck_Press_Admin_Card_Abstra
                     </tbody>
                 </table>
                 <p style="margin: 8px 0 0; color: #666; font-size: 0.8rem;">
-                    Example: <code>[pp-standings team="<?php echo esc_html( $team_slug ); ?>" show_streak="false" title="Conference Standings"]</code>
+                    Example: <code>[pp-standings team="<?php echo esc_html( $team_slug ); ?>" compact="true"]</code>
                 </p>
             </details>
 

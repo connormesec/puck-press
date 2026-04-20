@@ -37,6 +37,7 @@ class Puck_Press_Standings_Render_Utils {
         $data = array(
             'rows'           => $cached['standings_data'],
             'division_name'  => $cached['division_name'] ?? '',
+            'compact'        => $atts['compact'] ?? 'false',
             'show_home_away' => $atts['show_home_away'] ?? 'true',
             'show_goals'     => $atts['show_goals'] ?? 'true',
             'show_pct'       => $atts['show_pct'] ?? 'true',

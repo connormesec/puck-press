@@ -96,12 +96,6 @@ class PhotoGridTemplate extends PuckPressTemplate {
 
 		$output = $css_block . '<div class="photogrid_roster_container">';
 
-		// Players with no recognized position
-		$skaters = $this->getPlayersWithoutPositions( $players );
-		if ( ! empty( $skaters ) ) {
-			$output .= $this->buildSection( 'Skaters', $skaters );
-		}
-
 		$forwards = $this->getPlayersByPositions( $players, array( 'F', 'C', 'LW', 'RW' ) );
 		if ( ! empty( $forwards ) ) {
 			$output .= $this->buildSection( 'Forwards', $forwards );
@@ -115,6 +109,12 @@ class PhotoGridTemplate extends PuckPressTemplate {
 		$goalies = $this->getPlayersByPositions( $players, array( 'G' ) );
 		if ( ! empty( $goalies ) ) {
 			$output .= $this->buildSection( 'Goalies', $goalies );
+		}
+
+		// Players with no recognized position - shown last
+		$skaters = $this->getPlayersWithoutPositions( $players );
+		if ( ! empty( $skaters ) ) {
+			$output .= $this->buildSection( 'Skaters', $skaters );
 		}
 
 		$output .= '</div>';

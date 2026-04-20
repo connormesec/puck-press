@@ -49,6 +49,7 @@ class Puck_Press_Data_Shortcodes {
                     AND ( target_score IS NULL
                           OR game_status IS NULL
                           OR game_status = '' )
+					AND ( game_timestamp IS NULL OR game_timestamp > %d )
                   ORDER BY
                     CASE WHEN game_timestamp IS NULL THEN 1 ELSE 0 END ASC,
                     game_timestamp ASC,
