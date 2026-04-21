@@ -208,6 +208,76 @@
   line-height: 1;
 }
 
+/* ── Recap overlay — slides up from below on hover/tap ── */
+.pp-ss-item--has-recap {
+  position: relative;
+  overflow: hidden;
+}
+
+.pp-ss-recap-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  background: var(--pp-scorestrip-overlay_bg);
+  color: var(--pp-scorestrip-overlay_text);
+  transform: translateY(100%);
+  transition: transform 0.22s ease;
+}
+
+.pp-ss-item--has-recap:hover .pp-ss-recap-overlay,
+.pp-ss-item--recap-open .pp-ss-recap-overlay {
+  transform: translateY(0);
+}
+
+.pp-ss-recap-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.pp-ss-recap-title {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  flex: 1;
+}
+
+.pp-ss-recap-link {
+  display: block;
+  margin-top: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  line-height: 1;
+}
+
+.pp-ss-recap-hint {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--pp-scorestrip-recap_hint);
+  pointer-events: none;
+  line-height: 0;
+}
+
 /* ── Mobile scrollbar ── */
 @media (max-width: 640px) {
   .pp-ss-container .glider::-webkit-scrollbar {

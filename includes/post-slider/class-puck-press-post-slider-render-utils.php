@@ -74,7 +74,7 @@ class Puck_Press_Post_Slider_Render_Utils {
         }
         return $template->render_with_options( $this->posts, array(
             'more_url'  => $this->more_url,
-            'more_text' => $this->more_text,
+            'more_text' => $this->more_text === 'false' ? '' : $this->more_text,
         ) );
     }
 }

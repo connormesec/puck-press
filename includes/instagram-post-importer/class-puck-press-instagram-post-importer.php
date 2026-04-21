@@ -195,13 +195,13 @@ class Puck_Press_Instagram_Post_Importer {
 				if ( empty( $post['postTitle'] ) || empty( $post['imgSrc'] ) || empty( $post['featuredImageBuffer'] ) ) {
 					continue;
 				}
-				$full_text  = $post['postText'] ?? $post['postTitle'];
-				$clean_title = $this->extract_title( $full_text );
+				$full_text         = $post['postText'] ?? $post['postTitle'];
+				$split             = $this->split_caption( $full_text );
 				$formatted_posts[] = array(
 					'insta_id'     => ! empty( $post['post_id'] ) ? $post['post_id'] : ( $post['postSlug'] ?? '' ),
-					'slug'         => $this->title_to_slug( $clean_title ),
-					'post_title'   => $clean_title,
-					'post_body'    => $post['postText'] ?? '',
+					'slug'         => $this->title_to_slug( $split['title'] ),
+					'post_title'   => $split['title'],
+					'post_body'    => $split['body'],
 					'image_url'    => $post['imgSrc'],
 					'image_buffer' => $post['featuredImageBuffer'],
 				);
@@ -405,27 +405,62 @@ class Puck_Press_Instagram_Post_Importer {
 	}
 
 	private function extract_title( string $caption ): string {
+		return $this->split_caption( $caption )['title'];
+	}
+
+	/**
+	 * Splits an Instagram caption into a title and body.
+	 *
+	 * The title is the first sentence (ending in .!?) or the text up to the
+	 * first line break, whichever comes first. The body is everything after.
+	 *
+	 * @return array{ title: string, body: string }
+	 */
+	private function split_caption( string $caption ): array {
 		$text = html_entity_decode( $caption, ENT_QUOTES, 'UTF-8' );
-		$text = preg_replace( '/\s+/', ' ', trim( $text ) );
+		$text = trim( $text );
 
 		if ( empty( $text ) ) {
-			return 'Instagram Post';
+			return array( 'title' => 'Instagram Post', 'body' => '' );
 		}
 
-		if ( preg_match( '/^(.+?[.!?])\s/', $text, $m ) && mb_strlen( $m[1] ) <= 200 ) {
-			return trim( $m[1] );
+		// Split at the first line break — a line break terminates the title.
+		$parts      = preg_split( '/\r\n|\r|\n/', $text, 2 );
+		$first_line = preg_replace( '/\s+/', ' ', trim( $parts[0] ) );
+		$rest       = isset( $parts[1] ) ? trim( $parts[1] ) : '';
+
+		// Within the first line, also check for sentence-ending punctuation.
+		if ( preg_match( '/^(.+?[.!?])\s/', $first_line . ' ', $m ) && mb_strlen( $m[1] ) <= 200 ) {
+			$title      = trim( $m[1] );
+			$after      = trim( mb_substr( $first_line, mb_strlen( $title ) ) );
+			$body_parts = array_filter( array( $after, $rest ) );
+			return array(
+				'title' => $title,
+				'body'  => implode( "\n\n", $body_parts ),
+			);
 		}
 
-		if ( mb_strlen( $text ) <= 200 ) {
-			return $text;
+		// No sentence end — use the entire first line as the title.
+		if ( mb_strlen( $first_line ) <= 200 ) {
+			return array(
+				'title' => $first_line ?: 'Instagram Post',
+				'body'  => $rest,
+			);
 		}
 
-		$cut = mb_substr( $text, 0, 200 );
+		// First line is too long — truncate at a word boundary.
+		$cut        = mb_substr( $first_line, 0, 200 );
 		$last_space = mb_strrpos( $cut, ' ' );
 		if ( $last_space && $last_space > 100 ) {
 			$cut = mb_substr( $cut, 0, $last_space );
 		}
+		$title      = rtrim( $cut, '.,;:!?&# ' ) . '…';
+		$after      = trim( mb_substr( $first_line, mb_strlen( $cut ) ) );
+		$body_parts = array_filter( array( $after, $rest ) );
 
-		return rtrim( $cut, '.,;:!?&# ' ) . '…';
+		return array(
+			'title' => $title,
+			'body'  => implode( "\n\n", $body_parts ),
+		);
 	}
 }

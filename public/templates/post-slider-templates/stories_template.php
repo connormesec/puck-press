@@ -56,7 +56,7 @@ class StoriesTemplate extends PuckPressTemplate {
         $featured   = ! empty( $posts ) ? $posts[0] : null;
         $list_posts = array_slice( $posts, 1, 5 );
         $more_url   = ! empty( $options['more_url'] ) ? esc_url( $options['more_url'] ) : '#';
-        $more_text  = ! empty( $options['more_text'] ) ? esc_html( $options['more_text'] ) : 'More Posts';
+        $more_text  = esc_html( $options['more_text'] ?? 'More Posts' );
 
         ob_start();
         ?>
@@ -99,7 +99,9 @@ class StoriesTemplate extends PuckPressTemplate {
                             </a>
                         <?php endforeach; ?>
 
-                        <a href="<?php echo $more_url; ?>" class="pp-st-more"><?php echo $more_text; ?></a>
+                        <?php if ( $more_text ) : ?>
+                            <a href="<?php echo $more_url; ?>" class="pp-st-more"><?php echo $more_text; ?></a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php else : ?>

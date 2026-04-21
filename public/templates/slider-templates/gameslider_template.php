@@ -39,6 +39,23 @@ class GameSliderTemplate extends PuckPressTemplate {
 			'body_text_color'   => '#000000',
 			'nav_arrow_color'   => '#215533',
 			'border_color'      => '#000000',
+			'overlay_bg'        => '#333333',
+			'overlay_text'      => '#f5f5f5',
+			'recap_hint_color'  => '#215533',
+		);
+	}
+
+	public static function get_color_labels(): array {
+		return array(
+			'header_text_color' => 'Header Text',
+			'header_bg_color'   => 'Header Background',
+			'body_bg_color'     => 'Card Background',
+			'body_text_color'   => 'Card Text',
+			'nav_arrow_color'   => 'Nav Arrow',
+			'border_color'      => 'Card Border',
+			'overlay_bg'        => 'Recap Overlay Background',
+			'overlay_text'      => 'Recap Overlay Text',
+			'recap_hint_color'  => 'Recap Indicator Dots',
 		);
 	}
 
@@ -101,13 +118,33 @@ class GameSliderTemplate extends PuckPressTemplate {
 	private function render_game_slide( $game ) {
 		$now            = new DateTime();
 		$is_future_game = false;
+		$date_label     = '';
 
 		if ( ! empty( $game['game_timestamp'] ) ) {
 			try {
 				$game_time      = new DateTime( $game['game_timestamp'] );
 				$is_future_game = $game_time >= $now;
+				$date_label     = $game_time->format( 'M j' );
 			} catch ( Exception $e ) {
 				$is_future_game = false;
+			}
+		}
+
+		if ( empty( $date_label ) ) {
+			$date_label = $game['game_date_day'] ?? '';
+		}
+
+		$post_link  = ! $is_future_game ? ( $game['post_link'] ?? '' ) : '';
+		$has_recap  = ! empty( $post_link );
+
+		$post_title_truncated = '';
+		if ( $has_recap ) {
+			$post_id = url_to_postid( $post_link );
+			if ( $post_id ) {
+				$raw                  = get_the_title( $post_id );
+				$post_title_truncated = mb_strlen( $raw ) > 55
+					? mb_substr( $raw, 0, 52 ) . '…'
+					: $raw;
 			}
 		}
 
@@ -147,6 +184,32 @@ class GameSliderTemplate extends PuckPressTemplate {
 				<div class="details">
 					<span class="time"><?php echo esc_html( $game['game_date_day'] ?? '' ); ?></span>
 				</div>
+				<?php if ( $has_recap ) : ?>
+				<div class="gs-recap-overlay">
+					<div class="gs-recap-meta">
+						<span class="gs-recap-date"><?php echo esc_html( $date_label ); ?></span>
+						<?php if ( ! empty( $game['venue'] ) ) : ?>
+							<span class="gs-recap-sep" aria-hidden="true">·</span>
+							<span class="gs-recap-venue"><?php echo esc_html( $game['venue'] ); ?></span>
+						<?php endif; ?>
+					</div>
+					<?php if ( $post_title_truncated ) : ?>
+						<div class="gs-recap-title"><?php echo esc_html( $post_title_truncated ); ?></div>
+					<?php endif; ?>
+					<a class="gs-recap-link"
+					   href="<?php echo esc_url( $post_link ); ?>"
+					   target="_blank" rel="noopener noreferrer">
+						Read Recap →
+					</a>
+				</div>
+				<div class="gs-recap-hint" aria-hidden="true">
+					<svg width="18" height="4" viewBox="0 0 18 4" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="2"  cy="2" r="1.75"/>
+						<circle cx="9"  cy="2" r="1.75"/>
+						<circle cx="16" cy="2" r="1.75"/>
+					</svg>
+				</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php

@@ -44,6 +44,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <option value="LD">LD</option>
                             <option value="RD">RD</option>
                             <option value="G">G</option>
+                            <option value="Coach">Coach</option>
                         </select>
                     </div>
 
@@ -90,10 +91,20 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <option value="LD">LD</option>
                         <option value="RD">RD</option>
                         <option value="G">G</option>
+                        <option value="Coach">Coach</option>
                     </select>
                 </div>
                 <div class="pp-form-group">
-                    <label class="pp-form-label">Team Logo</label>
+                    <label class="pp-form-label">Headshot <span style="color:#888;font-size:0.8em;">(optional)</span></label>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <button type="button" id="pp-awp-ext-headshot-btn" class="button">Choose Headshot</button>
+                        <img id="pp-awp-ext-headshot-preview" src="" alt="" style="width:36px;height:48px;object-fit:cover;border-radius:3px;display:none;">
+                        <input type="hidden" id="pp-awp-ext-headshot-url" value="">
+                        <button type="button" id="pp-awp-ext-headshot-clear" class="button" style="display:none;">Clear</button>
+                    </div>
+                </div>
+                <div class="pp-form-group">
+                    <label class="pp-form-label">Team Logo <span style="color:#888;font-size:0.8em;">(optional)</span></label>
                     <div style="display:flex;align-items:center;gap:0.5rem;">
                         <button type="button" id="pp-awp-ext-logo-btn" class="button">Choose Logo</button>
                         <img id="pp-awp-ext-logo-preview" src="" alt="" style="width:24px;height:24px;object-fit:contain;display:none;">

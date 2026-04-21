@@ -73,7 +73,7 @@ class Puck_Press_Post_Slider_Admin_Display {
                                 <tr style="border-bottom: 1px solid #f0f0f0;">
                                     <td style="padding: 8px 12px;"><code>count</code></td>
                                     <td style="padding: 8px 12px;"><code>6</code></td>
-                                    <td style="padding: 8px 12px;">Total posts to show (1 featured + up to 5 in the list)</td>
+                                    <td style="padding: 8px 12px;">Total number of posts to display. The Cards template shows this many cards in a grid; Stories uses 1 featured + up to 5 in the list.</td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid #f0f0f0;">
                                     <td style="padding: 8px 12px;"><code>more_url</code></td>
@@ -106,7 +106,7 @@ class Puck_Press_Post_Slider_Admin_Display {
                         </div>
                         <div>
                             <button id="pp-post-slider-colorPaletteBtn" class="pp-button pp-button-secondary">
-                                Customize Colors
+                                Customize Colors &amp; Fonts
                             </button>
                         </div>
                     </div>

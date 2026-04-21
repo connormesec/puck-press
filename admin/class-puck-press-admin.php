@@ -870,7 +870,10 @@ class Puck_Press_Admin {
 	}
 
 	public function localize_scripts() {
-		$active_schedule_id   = (int) get_option( 'pp_admin_active_new_schedule_id', 1 );
+		$schedules_utils      = new Puck_Press_Schedules_Wpdb_Utils();
+		$all_schedules        = $schedules_utils->get_all_schedules();
+		$fallback_schedule_id = ! empty( $all_schedules ) ? (int) $all_schedules[0]['id'] : 1;
+		$active_schedule_id   = (int) get_option( 'pp_admin_active_new_schedule_id', $fallback_schedule_id );
 		$template_manager  = new Puck_Press_Schedule_Template_Manager( $active_schedule_id );
 		$scheduleTemplates = $template_manager->get_all_template_colors();
 		$selected_template = $template_manager->get_current_template_key();
@@ -1017,6 +1020,8 @@ class Puck_Press_Admin {
 		$ps_templates_data    = array(
 			'postSliderTemplates' => $ps_template_manager->get_all_template_colors(),
 			'colorLabels'         => $ps_template_manager->get_all_template_color_labels(),
+			'fontSettings'        => $ps_template_manager->get_all_template_fonts(),
+			'fontLabels'          => $ps_template_manager->get_all_template_font_labels(),
 			'selected_template'   => $ps_selected_template,
 		);
 		wp_localize_script( 'puck-press-post-slider-color-picker', 'ppPostSliderData', $ps_templates_data );
@@ -1695,6 +1700,14 @@ class Puck_Press_Admin {
 			'schedule_teams'           => $schedule_teams,
 			'available_teams'          => $available_teams,
 			'cal_url'                  => get_option( "pp_slider_{$schedule_id}_cal_url", get_option( 'pp_slider_cal_url', '' ) ),
+			'schedule_template_colors' => $schedule_tm->get_all_template_colors(),
+			'schedule_color_labels'    => $schedule_tm->get_all_template_color_labels(),
+			'schedule_font_settings'   => $schedule_tm->get_all_template_fonts(),
+			'schedule_font_labels'     => $schedule_tm->get_all_template_font_labels(),
+			'slider_template_colors'   => $slider_tm->get_all_template_colors(),
+			'slider_color_labels'      => $slider_tm->get_all_template_color_labels(),
+			'slider_font_settings'     => $slider_tm->get_all_template_fonts(),
+			'slider_font_labels'       => $slider_tm->get_all_template_font_labels(),
 		) );
 	}
 
@@ -2923,6 +2936,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_remove_award_player', array( self::class, 'pp_ajax_remove_award_player' ) );
 		add_action( 'wp_ajax_pp_get_parent_names', array( self::class, 'pp_ajax_get_parent_names' ) );
 		add_action( 'wp_ajax_pp_bulk_add_team_to_award', array( self::class, 'pp_ajax_bulk_add_team_to_award' ) );
+		add_action( 'wp_ajax_pp_bulk_add_external_players', array( self::class, 'pp_ajax_bulk_add_external_players' ) );
 		add_action( 'wp_ajax_pp_toggle_award_visibility', array( self::class, 'pp_ajax_toggle_award_visibility' ) );
 		add_action( 'wp_ajax_pp_get_teams_for_awards', array( self::class, 'pp_ajax_get_teams_for_awards' ) );
 		add_action( 'wp_ajax_pp_get_awards_html', array( self::class, 'pp_ajax_get_awards_html' ) );
@@ -3045,6 +3059,64 @@ class Puck_Press_Admin {
 
 		$result = $utils->bulk_add_team_players( $award_id, $team_id );
 		wp_send_json_success( $result );
+	}
+
+	public static function pp_ajax_bulk_add_external_players(): void {
+		$utils    = self::pp_awards_check();
+		$award_id = absint( $_POST['award_id'] ?? 0 );
+
+		if ( ! $award_id ) {
+			wp_send_json_error( array( 'message' => 'Award ID is required.' ) );
+		}
+
+		$raw = isset( $_POST['players'] ) ? wp_unslash( $_POST['players'] ) : '';
+		if ( empty( $raw ) ) {
+			wp_send_json_error( array( 'message' => 'No player data received.' ) );
+		}
+
+		$players = json_decode( $raw, true );
+		if ( ! is_array( $players ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid player data format.' ) );
+		}
+
+		$sort    = $utils->get_next_player_sort_order( $award_id );
+		$added   = 0;
+		$skipped = 0;
+		$errors  = array();
+
+		foreach ( $players as $p ) {
+			$result = $utils->add_player(
+				array(
+					'award_id'      => $award_id,
+					'player_name'   => sanitize_text_field( $p['player_name'] ?? '' ),
+					'team_name'     => sanitize_text_field( $p['team_name'] ?? '' ),
+					'position'      => sanitize_text_field( $p['position'] ?? '' ),
+					'headshot_url'  => ! empty( $p['headshot_url'] ) ? esc_url_raw( $p['headshot_url'] ) : '',
+					'team_logo_url' => ! empty( $p['team_logo_url'] ) ? esc_url_raw( $p['team_logo_url'] ) : '',
+					'is_external'   => 1,
+					'sort_order'    => $sort,
+				)
+			);
+
+			if ( is_wp_error( $result ) ) {
+				if ( 'duplicate' === $result->get_error_code() ) {
+					++$skipped;
+				} else {
+					$errors[] = $result->get_error_message();
+				}
+			} else {
+				++$added;
+				++$sort;
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'added'   => $added,
+				'skipped' => $skipped,
+				'errors'  => $errors,
+			)
+		);
 	}
 
 	public static function pp_ajax_toggle_award_visibility(): void {

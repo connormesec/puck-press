@@ -94,6 +94,25 @@
     $(this).hide();
   });
 
+  // ── WP Media picker for headshot (external mode) ──────────────────────
+  $('#pp-awp-ext-headshot-btn').on('click', function (e) {
+    e.preventDefault();
+    var frame = wp.media({ multiple: false });
+    frame.on('select', function () {
+      var url = frame.state().get('selection').first().toJSON().url;
+      $('#pp-awp-ext-headshot-url').val(url);
+      $('#pp-awp-ext-headshot-preview').attr('src', url).show();
+      $('#pp-awp-ext-headshot-clear').show();
+    });
+    frame.open();
+  });
+
+  $('#pp-awp-ext-headshot-clear').on('click', function () {
+    $('#pp-awp-ext-headshot-url').val('');
+    $('#pp-awp-ext-headshot-preview').hide();
+    $(this).hide();
+  });
+
   // ── WP Media picker for team logo (external mode) ─────────────────────
   $('#pp-awp-ext-logo-btn').on('click', function (e) {
     e.preventDefault();

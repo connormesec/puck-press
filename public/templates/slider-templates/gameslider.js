@@ -53,5 +53,34 @@ function initializeSlider() {
         glider.setOption({ duration: 0 });
         glider.scrollItem(targetIndex);
         glider.setOption({ duration: 0.25 });
+
+    // Tap-to-open recap overlay (mobile). Guard prevents duplicate listeners on re-init.
+    const container = document.querySelector('.gameslider_slider_container');
+    if (container && !container.dataset.tapInit) {
+        container.dataset.tapInit = '1';
+
+        const closeAll = () =>
+            container.querySelectorAll('.entry--recap-open')
+                .forEach(c => c.classList.remove('entry--recap-open'));
+
+        container.addEventListener('click', (e) => {
+            const hint    = e.target.closest('.gs-recap-hint');
+            const overlay = e.target.closest('.gs-recap-overlay');
+            const link    = e.target.closest('.gs-recap-link');
+
+            if (hint) {
+                const entry  = hint.closest('.entry');
+                const isOpen = entry.classList.contains('entry--recap-open');
+                closeAll();
+                if (!isOpen) entry.classList.add('entry--recap-open');
+                e.stopPropagation();
+            } else if (overlay && !link) {
+                closeAll();
+                e.stopPropagation();
+            }
+        });
+
+        document.addEventListener('click', closeAll);
+    }
     //})
 };

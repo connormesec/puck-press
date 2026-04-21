@@ -19,7 +19,7 @@ $ps_selected       = $ps_templates->get_current_template_key();
         <div class="pp-form-row">
             <div class="pp-modal-header">
                 <h3 class="pp-modal-title">Customize Colors</h3>
-                <p class="pp-modal-subtitle">Customize your post slider.</p>
+                <p class="pp-modal-subtitle">Customize your post slider colors and typography.</p>
             </div>
 
             <div class="pp-modal-header">
@@ -37,6 +37,9 @@ $ps_selected       = $ps_templates->get_current_template_key();
             <form id="pp-post-slider-color-palette-form">
                 <div class="pp-form-row" id="pp-post-slider-dynamic-color-fields">
                     <!-- Color inputs will be dynamically generated here -->
+                </div>
+                <div class="pp-form-row" id="pp-post-slider-dynamic-font-fields">
+                    <!-- Font inputs will be dynamically generated here -->
                 </div>
             </form>
         </div>

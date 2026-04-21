@@ -222,6 +222,9 @@ $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
     // Reset external fields
     $('#pp-awp-ext-name, #pp-awp-ext-team').val('');
     $('#pp-awp-ext-position').val('F');
+    $('#pp-awp-ext-headshot-url').val('');
+    $('#pp-awp-ext-headshot-preview').hide();
+    $('#pp-awp-ext-headshot-clear').hide();
     $('#pp-awp-ext-logo-url').val('');
     $('#pp-awp-ext-logo-preview').hide();
 
@@ -251,6 +254,7 @@ $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
       data.player_name = $('#pp-awp-ext-name').val();
       data.team_name = $('#pp-awp-ext-team').val();
       data.position = $('#pp-awp-ext-position').val();
+      data.headshot_url = $('#pp-awp-ext-headshot-url').val();
       data.team_logo_url = $('#pp-awp-ext-logo-url').val();
     } else {
       data.is_external = 0;
@@ -362,5 +366,163 @@ $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
       }
     });
   });
+
+  // ── Bulk Add External Players (CSV) ────────────────────────────────────
+
+  var bulkExtParsed = [];
+
+  function parseCsv(text) {
+    var rows = [];
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    lines.forEach(function (line) {
+      if (line.trim() === '') return;
+      var fields = [];
+      var cur = '';
+      var inQuotes = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+          fields.push(cur.trim());
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      fields.push(cur.trim());
+      rows.push(fields);
+    });
+    return rows;
+  }
+
+  $('#pp-bulk-ext-download-template').on('click', function (e) {
+    e.preventDefault();
+    var csv = 'Name,Team,Position,Headshot URL,Logo URL\nJohn Doe,DePaul,F,,\nJane Smith,Loyola,G,,\n';
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'award-players-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $(document).on('click', '.pp-bulk-add-external-btn', function () {
+    var awardId = $(this).data('award-id');
+    $('#pp-bulk-ext-award-id').val(awardId);
+    $('#pp-bulk-ext-file').val('');
+    $('#pp-bulk-ext-preview').hide();
+    $('#pp-bulk-ext-preview-table tbody').empty();
+    $('#pp-bulk-ext-preview-more').hide();
+    $('#pp-bulk-ext-error').hide();
+    $('#pp-bulk-ext-result').hide();
+    $('#pp-bulk-external-modal-confirm').prop('disabled', true);
+    bulkExtParsed = [];
+    $('#pp-bulk-external-modal').css('display', 'flex');
+  });
+
+  $('#pp-bulk-external-modal-close, #pp-bulk-external-modal-cancel').on('click', function () {
+    $('#pp-bulk-external-modal').css('display', 'none');
+  });
+
+  $('#pp-bulk-ext-file').on('change', function () {
+    var file = this.files[0];
+    $('#pp-bulk-ext-error').hide();
+    $('#pp-bulk-ext-preview').hide();
+    $('#pp-bulk-external-modal-confirm').prop('disabled', true);
+    bulkExtParsed = [];
+
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var rows = parseCsv(e.target.result);
+      if (rows.length < 2) {
+        $('#pp-bulk-ext-error').text('CSV must have a header row and at least one data row.').show();
+        return;
+      }
+      // Skip header row (index 0)
+      var dataRows = rows.slice(1);
+      var valid = [];
+      var hasError = false;
+      dataRows.forEach(function (r, idx) {
+        var name = r[0] || '';
+        var team = r[1] || '';
+        if (!name || !team) {
+          $('#pp-bulk-ext-error').text('Row ' + (idx + 2) + ' is missing Name or Team and will be skipped.').show();
+          hasError = true;
+          return;
+        }
+        valid.push({
+          player_name: name,
+          team_name: team,
+          position: r[2] || '',
+          headshot_url: r[3] || '',
+          team_logo_url: r[4] || ''
+        });
+      });
+
+      if (valid.length === 0) {
+        if (!hasError) $('#pp-bulk-ext-error').text('No valid rows found in CSV.').show();
+        return;
+      }
+
+      bulkExtParsed = valid;
+
+      // Populate preview table (first 5 rows)
+      var $tbody = $('#pp-bulk-ext-preview-table tbody').empty();
+      var previewRows = valid.slice(0, 5);
+      previewRows.forEach(function (p) {
+        $tbody.append(
+          '<tr>' +
+          '<td>' + $('<span>').text(p.player_name).html() + '</td>' +
+          '<td>' + $('<span>').text(p.team_name).html() + '</td>' +
+          '<td>' + $('<span>').text(p.position).html() + '</td>' +
+          '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + $('<span>').text(p.headshot_url).html() + '</td>' +
+          '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + $('<span>').text(p.team_logo_url).html() + '</td>' +
+          '</tr>'
+        );
+      });
+
+      if (valid.length > 5) {
+        $('#pp-bulk-ext-preview-more').text('…and ' + (valid.length - 5) + ' more row(s) not shown.').show();
+      }
+
+      $('#pp-bulk-ext-preview').show();
+      $('#pp-bulk-external-modal-confirm').prop('disabled', false);
+    };
+    reader.readAsText(file);
+  });
+
+  $('#pp-bulk-external-modal-confirm').on('click', function () {
+    if (!bulkExtParsed.length) return;
+
+    var $btn = $(this);
+    $btn.prop('disabled', true).text('Adding...');
+    $('#pp-bulk-ext-error').hide();
+    $('#pp-bulk-ext-result').hide();
+
+    $.post(cfg.ajaxUrl, {
+      action: 'pp_bulk_add_external_players',
+      nonce: cfg.nonce,
+      award_id: $('#pp-bulk-ext-award-id').val(),
+      players: JSON.stringify(bulkExtParsed)
+    }, function (res) {
+      $btn.prop('disabled', false).text('Add Players');
+      if (res.success) {
+        var d = res.data;
+        var msg = 'Added ' + d.added + ' player(s).';
+        if (d.skipped > 0) msg += ' ' + d.skipped + ' already on award (skipped).';
+        if (d.errors && d.errors.length) msg += ' ' + d.errors.length + ' row(s) had errors.';
+        $('#pp-bulk-ext-result').text(msg).show();
+        setTimeout(function () { window.location.reload(); }, 1500);
+      } else {
+        $('#pp-bulk-ext-error').text((res.data && res.data.message) || 'An error occurred.').show();
+      }
+    });
+  });
+
   });
 })(jQuery);

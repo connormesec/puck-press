@@ -49,7 +49,7 @@ class CarouselTemplate extends PuckPressTemplate {
         $inline_css = self::get_inline_css( ':root', $colors );
         $css_block  = $inline_css ? '<style>' . $inline_css . '</style>' : '';
 
-        $more_text = ! empty( $options['more_text'] ) ? esc_html( $options['more_text'] ) : 'More Info';
+        $more_text = esc_html( $options['more_text'] ?? 'More Info' );
 
         ob_start();
         ?>
@@ -79,8 +79,9 @@ class CarouselTemplate extends PuckPressTemplate {
                     </button>
                     <div class="pp-cr-info">
                         <div class="pp-cr-title"></div>
-                        <a href="#" class="pp-cr-btn"><?php echo $more_text; ?></a>
-                    </div>
+                        <?php if ( $more_text ) : ?>
+                            <a href="#" class="pp-cr-btn"><?php echo $more_text; ?></a>
+                        <?php endif; ?>
                     <button class="pp-cr-nav pp-cr-nav--next" aria-label="Next">
                         <span class="pp-cr-nav-line"></span>
                         <span class="pp-cr-nav-label">NEXT</span>

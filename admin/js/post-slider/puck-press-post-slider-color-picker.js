@@ -13,6 +13,7 @@
       templatesKey:           'postSliderTemplates',
       ajaxAction:             'puck_press_update_post_slider_colors',
       containerSuffix:        '_post_slider_container',
+      fontFieldsContainerId:  '#pp-post-slider-dynamic-font-fields',
     });
   });
 })(jQuery);

@@ -668,6 +668,45 @@
         $('#pp-game-slider-preview').html(d.active_slider_html);
       }
 
+      // Update schedule color globals and reapply CSS vars for the new schedule.
+      if (d.schedule_template_colors && typeof ppScheduleTemplates !== 'undefined') {
+        ppScheduleTemplates.scheduleTemplates = d.schedule_template_colors;
+        if (d.schedule_color_labels)  ppScheduleTemplates.colorLabels  = d.schedule_color_labels;
+        if (d.schedule_font_settings) ppScheduleTemplates.fontSettings = d.schedule_font_settings;
+        if (d.schedule_font_labels)   ppScheduleTemplates.fontLabels   = d.schedule_font_labels;
+        if (d.selected_template)      ppScheduleTemplates.selected_template = d.selected_template;
+        Object.entries(ppScheduleTemplates.scheduleTemplates).forEach(function(entry) {
+          Object.entries(entry[1]).forEach(function(c) {
+            document.documentElement.style.setProperty('--pp-' + entry[0] + '-' + c[0], c[1]);
+          });
+        });
+        Object.entries(ppScheduleTemplates.fontSettings || {}).forEach(function(entry) {
+          Object.entries(entry[1]).forEach(function(f) {
+            if (!f[1] || !f[0].endsWith('_font')) return;
+            document.documentElement.style.setProperty('--pp-' + entry[0] + '-' + f[0], "'" + f[1] + "', sans-serif");
+          });
+        });
+      }
+
+      // Update slider color globals and reapply CSS vars for the new schedule.
+      if (d.slider_template_colors && typeof ppSliderTemplates !== 'undefined') {
+        ppSliderTemplates.sliderTemplates = d.slider_template_colors;
+        if (d.slider_color_labels)  ppSliderTemplates.colorLabels  = d.slider_color_labels;
+        if (d.slider_font_settings) ppSliderTemplates.fontSettings = d.slider_font_settings;
+        if (d.slider_font_labels)   ppSliderTemplates.fontLabels   = d.slider_font_labels;
+        Object.entries(ppSliderTemplates.sliderTemplates).forEach(function(entry) {
+          Object.entries(entry[1]).forEach(function(c) {
+            document.documentElement.style.setProperty('--pp-' + entry[0] + '-' + c[0], c[1]);
+          });
+        });
+        Object.entries(ppSliderTemplates.fontSettings || {}).forEach(function(entry) {
+          Object.entries(entry[1]).forEach(function(f) {
+            if (!f[1] || !f[0].endsWith('_font')) return;
+            document.documentElement.style.setProperty('--pp-' + entry[0] + '-' + f[0], "'" + f[1] + "', sans-serif");
+          });
+        });
+      }
+
       // Update shortcode display
       if (d.shortcode) {
         $('#pp-new-schedule-shortcode').val(d.shortcode).attr('size', d.shortcode.length);

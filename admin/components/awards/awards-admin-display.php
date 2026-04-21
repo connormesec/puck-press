@@ -138,6 +138,7 @@ class Puck_Press_Awards_Admin_Display {
                             <div class="pp-card-footer" style="display:flex;align-items:center;gap:0.5rem;padding:0.75rem 1rem;border-top:1px solid #e0e0e0;flex-wrap:wrap;">
                                 <button type="button" class="button pp-add-award-player-btn" data-award-id="<?php echo esc_attr( $award['id'] ); ?>">+ Add Player</button>
                                 <button type="button" class="button pp-bulk-add-team-btn" data-award-id="<?php echo esc_attr( $award['id'] ); ?>">+ Add Team</button>
+                                <button type="button" class="button pp-bulk-add-external-btn" data-award-id="<?php echo esc_attr( $award['id'] ); ?>">+ Bulk External</button>
                                 <button type="button" class="button pp-edit-award-btn"
                                     data-award-id="<?php echo esc_attr( $award['id'] ); ?>"
                                     data-name="<?php echo esc_attr( $award['name'] ); ?>"
@@ -215,6 +216,7 @@ class Puck_Press_Awards_Admin_Display {
         include plugin_dir_path( __FILE__ ) . 'awards-edit-award-modal.php';
         include plugin_dir_path( __FILE__ ) . 'awards-add-player-modal.php';
         include plugin_dir_path( __FILE__ ) . 'awards-bulk-add-team-modal.php';
+        include plugin_dir_path( __FILE__ ) . 'awards-bulk-external-modal.php';
         include plugin_dir_path( __FILE__ ) . 'awards-color-palette-modal.php';
         ?>
         <?php

@@ -38,6 +38,9 @@ class ScorestripTemplate extends PuckPressTemplate {
 			'next_badge_text' => '#facc15',
 			'nav_bg'          => '#2d3548',
 			'nav_text'        => '#94a3b8',
+			'overlay_bg'      => '#1a1f2e',
+			'overlay_text'    => '#f1f5f9',
+			'recap_hint'      => '#64748b',
 		);
 	}
 
@@ -54,6 +57,9 @@ class ScorestripTemplate extends PuckPressTemplate {
 			'next_badge_text' => '"Next Game" Badge Text',
 			'nav_bg'          => 'Nav Arrow Background',
 			'nav_text'        => 'Nav Arrow Icon',
+			'overlay_bg'      => 'Recap Overlay Background',
+			'overlay_text'    => 'Recap Overlay Text',
+			'recap_hint'      => 'Recap Indicator Dots',
 		);
 	}
 
@@ -145,6 +151,20 @@ class ScorestripTemplate extends PuckPressTemplate {
 		$is_unscored = ( $ts === null || $ts === '' || $ts === '-' );
 		$has_score   = ! $is_future && ! $is_unscored;
 
+		$post_link  = ! $is_future ? ( $game['post_link'] ?? '' ) : '';
+		$has_recap  = ! empty( $post_link );
+
+		$post_title_truncated = '';
+		if ( $has_recap ) {
+			$post_id = url_to_postid( $post_link );
+			if ( $post_id ) {
+				$raw                  = get_the_title( $post_id );
+				$post_title_truncated = mb_strlen( $raw ) > 55
+					? mb_substr( $raw, 0, 52 ) . '…'
+					: $raw;
+			}
+		}
+
 		$default_logo  = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/TBD-W.svg/768px-TBD-W.svg.png?20200316192217';
 		$target_logo   = ! empty( $game['target_team_logo'] ) ? $game['target_team_logo'] : $default_logo;
 		$opponent_logo = ! empty( $game['opponent_team_logo'] ) ? $game['opponent_team_logo'] : $default_logo;
@@ -171,7 +191,7 @@ class ScorestripTemplate extends PuckPressTemplate {
 
 		ob_start();
 		?>
-		<div class="pp-ss-item">
+		<div class="pp-ss-item<?php echo $has_recap ? ' pp-ss-item--has-recap' : ''; ?>">
 			<span class="pp-ss-date"><?php echo esc_html( $date_label ); ?></span>
 			<div class="pp-ss-matchup">
 				<div class="pp-ss-row<?php echo $t_row_class; ?>">
@@ -190,6 +210,32 @@ class ScorestripTemplate extends PuckPressTemplate {
 				</div>
 			</div>
 			<span class="pp-ss-tag"><?php echo esc_html( $tag ); ?></span>
+			<?php if ( $has_recap ) : ?>
+			<div class="pp-ss-recap-overlay">
+				<div class="pp-ss-recap-meta">
+					<span class="pp-ss-recap-date"><?php echo esc_html( $date_label ); ?></span>
+					<?php if ( ! empty( $game['venue'] ) ) : ?>
+						<span class="pp-ss-recap-sep" aria-hidden="true">·</span>
+						<span class="pp-ss-recap-venue"><?php echo esc_html( $game['venue'] ); ?></span>
+					<?php endif; ?>
+				</div>
+				<?php if ( $post_title_truncated ) : ?>
+					<div class="pp-ss-recap-title"><?php echo esc_html( $post_title_truncated ); ?></div>
+				<?php endif; ?>
+				<a class="pp-ss-recap-link"
+				   href="<?php echo esc_url( $post_link ); ?>"
+				   target="_blank" rel="noopener noreferrer">
+					Read Recap →
+				</a>
+			</div>
+			<div class="pp-ss-recap-hint" aria-hidden="true">
+				<svg width="18" height="4" viewBox="0 0 18 4" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+					<circle cx="2"  cy="2" r="1.75"/>
+					<circle cx="9"  cy="2" r="1.75"/>
+					<circle cx="16" cy="2" r="1.75"/>
+				</svg>
+			</div>
+			<?php endif; ?>
 		</div>
 		<?php
 		return ob_get_clean();
