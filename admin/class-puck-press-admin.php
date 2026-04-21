@@ -2935,6 +2935,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_add_award_player', array( self::class, 'pp_ajax_add_award_player' ) );
 		add_action( 'wp_ajax_pp_remove_award_player', array( self::class, 'pp_ajax_remove_award_player' ) );
 		add_action( 'wp_ajax_pp_get_parent_names', array( self::class, 'pp_ajax_get_parent_names' ) );
+		add_action( 'wp_ajax_pp_get_award_name_templates', array( self::class, 'pp_ajax_get_award_name_templates' ) );
 		add_action( 'wp_ajax_pp_bulk_add_team_to_award', array( self::class, 'pp_ajax_bulk_add_team_to_award' ) );
 		add_action( 'wp_ajax_pp_bulk_add_external_players', array( self::class, 'pp_ajax_bulk_add_external_players' ) );
 		add_action( 'wp_ajax_pp_toggle_award_visibility', array( self::class, 'pp_ajax_toggle_award_visibility' ) );
@@ -3046,6 +3047,31 @@ class Puck_Press_Admin {
 		check_ajax_referer( 'pp_awards_nonce', 'nonce' );
 		$utils = new Puck_Press_Awards_Wpdb_Utils();
 		wp_send_json_success( array( 'parents' => $utils->get_distinct_parent_names() ) );
+	}
+
+	public static function pp_ajax_get_award_name_templates(): void {
+		$utils = self::pp_awards_check();
+
+		$all       = $utils->get_all_awards( null ); // sorted year DESC
+		$seen      = array();
+		$templates = array();
+
+		foreach ( $all as $award ) {
+			$key = ( $award['parent_name'] ?? '' ) . '||' . $award['name'];
+			if ( isset( $seen[ $key ] ) ) {
+				continue;
+			}
+			$seen[ $key ]  = true;
+			$templates[]   = array(
+				'name'        => $award['name'],
+				'parent_name' => $award['parent_name'] ?? '',
+				'icon_type'   => $award['icon_type'],
+				'icon_value'  => $award['icon_value'],
+				'sort_order'  => (int) $award['sort_order'],
+			);
+		}
+
+		wp_send_json_success( array( 'templates' => $templates ) );
 	}
 
 	public static function pp_ajax_bulk_add_team_to_award(): void {

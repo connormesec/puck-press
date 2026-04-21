@@ -76,8 +76,86 @@
     });
   }
 
+  // ── Add Award modal: mode toggle helpers ──────────────────────────────
+  function setAddAwardMode(mode) {
+    if (mode === 'copy') {
+      $('#pp-new-award-form-fields').hide();
+      $('#pp-new-award-copy-mode').show();
+      $('#pp-award-mode-new').css({ background: '#f6f7f7', color: '#444' });
+      $('#pp-award-mode-copy').css({ background: '#0073aa', color: '#fff' });
+    } else {
+      $('#pp-new-award-copy-mode').hide();
+      $('#pp-new-award-form-fields').show();
+      $('#pp-award-mode-new').css({ background: '#0073aa', color: '#fff' });
+      $('#pp-award-mode-copy').css({ background: '#f6f7f7', color: '#444' });
+    }
+    $('#pp-add-award-error').hide();
+  }
+
+  $('#pp-award-mode-new').on('click', function () { setAddAwardMode('new'); });
+  $('#pp-award-mode-copy').on('click', function () {
+    setAddAwardMode('copy');
+    loadCopyAwardSelect();
+  });
+
+  function loadCopyAwardSelect() {
+    $.ajax({
+      url: cfg.ajaxUrl,
+      data: { action: 'pp_get_award_name_templates', nonce: cfg.nonce },
+      success: function (res) {
+        var templates = (res.data && res.data.templates) || [];
+        var $sel = $('#pp-new-award-copy-select');
+        $sel.empty().append('<option value=""></option>');
+        templates.forEach(function (t) {
+          var label = t.parent_name ? t.name + ' (' + t.parent_name + ')' : t.name;
+          $sel.append('<option value="' + $('<span>').text(t.name + '||' + (t.parent_name || '') + '||' + t.icon_type + '||' + t.icon_value + '||' + t.sort_order).html() + '">' + $('<span>').text(label).html() + '</option>');
+        });
+        if ($sel.data('select2')) { $sel.select2('destroy'); }
+        $sel.select2({
+          placeholder: 'Select an award...',
+          allowClear: true,
+          width: '100%',
+          dropdownParent: $('#pp-add-award-modal')
+        });
+      }
+    });
+  }
+
+  $('#pp-new-award-copy-select').on('select2:select', function (e) {
+    var raw = e.params.data.id.split('||');
+    var name      = raw[0] || '';
+    var parent    = raw[1] || '';
+    var iconType  = raw[2] || 'emoji';
+    var iconValue = raw[3] || '🏅';
+    var sortOrder = raw[4] || '0';
+
+    $('#pp-copy-award-name').val(name);
+    $('#pp-copy-award-parent').val(parent);
+    $('#pp-copy-icon-type').val(iconType);
+    $('#pp-copy-icon-value').val(iconValue);
+    $('#pp-copy-sort-order').val(sortOrder);
+
+    // Preview
+    var $icon = $('#pp-copy-preview-icon');
+    if (iconType === 'image' && iconValue) {
+      $icon.html('<img src="' + $('<span>').text(iconValue).html() + '" style="width:1.5rem;height:1.5rem;object-fit:contain;vertical-align:middle;">');
+    } else {
+      $icon.text(iconValue || '🏅');
+    }
+    $('#pp-copy-preview-name').text(name);
+    $('#pp-copy-preview-parent').text(parent ? '(' + parent + ')' : '');
+    $('#pp-copy-award-preview').css('display', 'flex');
+  });
+
+  $('#pp-new-award-copy-select').on('select2:clear', function () {
+    $('#pp-copy-award-name, #pp-copy-award-parent, #pp-copy-icon-type, #pp-copy-icon-value, #pp-copy-sort-order').val('');
+    $('#pp-copy-award-preview').hide();
+  });
+
   // ── Open Add Award Modal ───────────────────────────────────────────────
   $('#pp-add-award-btn').on('click', function () {
+    // Reset to "New Award" mode
+    setAddAwardMode('new');
     $('#pp-new-award-year').val('');
     $('#pp-new-award-name').val('');
     $('#pp-new-award-shortcode-label').val('');
@@ -86,6 +164,13 @@
     $('#pp-new-award-icon-image-url').val('');
     $('#pp-new-award-icon-image-preview').hide();
     $('#pp-new-award-sort-order').val('0');
+    // Reset copy mode fields
+    $('#pp-copy-award-year').val('');
+    $('#pp-copy-award-name, #pp-copy-award-parent, #pp-copy-icon-type, #pp-copy-icon-value, #pp-copy-sort-order').val('');
+    $('#pp-copy-award-preview').hide();
+    if ($('#pp-new-award-copy-select').data('select2')) {
+      $('#pp-new-award-copy-select').val(null).trigger('change');
+    }
     $('#pp-add-award-error').hide();
     initParentSelect($('#pp-new-award-parent'));
     $('#pp-add-award-modal').css('display', 'flex');
@@ -97,19 +182,27 @@
 
   // ── Submit Add Award ───────────────────────────────────────────────────
   $('#pp-add-award-modal-confirm').on('click', function () {
-    var iconType = $('input[name="pp-new-award-icon-type"]:checked').val();
-    var iconValue = iconType === 'image' ? $('#pp-new-award-icon-image-url').val() : $('#pp-new-award-icon-emoji').val();
+    var isCopyMode = $('#pp-new-award-copy-mode').is(':visible');
+    var postData = { action: 'pp_create_award', nonce: cfg.nonce };
 
-    $.post(cfg.ajaxUrl, {
-      action: 'pp_create_award',
-      nonce: cfg.nonce,
-      name: $('#pp-new-award-name').val(),
-      year: $('#pp-new-award-year').val(),
-      parent_name: $('#pp-new-award-parent').val() || '',
-      icon_type: iconType,
-      icon_value: iconValue,
-      sort_order: $('#pp-new-award-sort-order').val()
-    }, function (res) {
+    if (isCopyMode) {
+      postData.name       = $('#pp-copy-award-name').val();
+      postData.year       = $('#pp-copy-award-year').val();
+      postData.parent_name = $('#pp-copy-award-parent').val() || '';
+      postData.icon_type  = $('#pp-copy-icon-type').val() || 'emoji';
+      postData.icon_value = $('#pp-copy-icon-value').val() || '🏅';
+      postData.sort_order = $('#pp-copy-sort-order').val() || '0';
+    } else {
+      var iconType = $('input[name="pp-new-award-icon-type"]:checked').val();
+      postData.name       = $('#pp-new-award-name').val();
+      postData.year       = $('#pp-new-award-year').val();
+      postData.parent_name = $('#pp-new-award-parent').val() || '';
+      postData.icon_type  = iconType;
+      postData.icon_value = iconType === 'image' ? $('#pp-new-award-icon-image-url').val() : $('#pp-new-award-icon-emoji').val();
+      postData.sort_order = $('#pp-new-award-sort-order').val();
+    }
+
+    $.post(cfg.ajaxUrl, postData, function (res) {
       if (res.success) {
         window.location.reload();
       } else {

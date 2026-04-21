@@ -450,22 +450,31 @@ class Puck_Press_Roster_Player_Detail {
 			return '<p class="pp-no-awards">No awards yet.</p>';
 		}
 
-		$badges = '';
+		// Group by parent_name + award_name so multiple years of the same award
+		// collapse into a single badge with all years listed.
+		$groups = array();
 		foreach ( $player_awards as $award ) {
-			$tooltip = esc_attr( $award['year'] . ' ' . $award['award_name'] );
-			$label   = esc_html( $award['award_name'] );
-			$year    = esc_html( $award['year'] );
+			$key            = ( $award['parent_name'] ?? '' ) . '||' . $award['award_name'];
+			$groups[ $key ][] = $award;
+		}
 
-			if ( $award['icon_type'] === 'image' && ! empty( $award['icon_value'] ) ) {
-				$icon = '<img src="' . esc_url( $award['icon_value'] ) . '" alt="' . $tooltip . '">';
+		$badges = '';
+		foreach ( $groups as $group ) {
+			$first   = $group[0]; // most recent year (query orders year DESC)
+			$years   = implode( ', ', array_column( $group, 'year' ) );
+			$label   = esc_html( $first['award_name'] );
+			$tooltip = esc_attr( $first['award_name'] . ' (' . $years . ')' );
+
+			if ( $first['icon_type'] === 'image' && ! empty( $first['icon_value'] ) ) {
+				$icon = '<img src="' . esc_url( $first['icon_value'] ) . '" alt="' . $tooltip . '">';
 			} else {
-				$icon = esc_html( $award['icon_value'] ?: '🏅' );
+				$icon = esc_html( $first['icon_value'] ?: '🏅' );
 			}
 
 			$badges .= '<div class="pp-award-badge" title="' . $tooltip . '">'
 				. '<span class="pp-award-badge-icon">' . $icon . '</span>'
 				. '<span class="pp-award-badge-label">' . $label . '</span>'
-				. '<span class="pp-award-badge-year">' . $year . '</span>'
+				. '<span class="pp-award-badge-year">' . esc_html( $years ) . '</span>'
 				. '</div>';
 		}
 
