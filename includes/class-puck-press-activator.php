@@ -252,6 +252,23 @@ class Puck_Press_Activator {
 		update_option( 'pp_db_version', '7.0' );
 	}
 
+	public static function maybe_run_division_standings_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '8.0', '>=' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'pp_team_standings_cache';
+
+		$col_exists = $wpdb->get_results( "SHOW COLUMNS FROM `$table` LIKE 'division_standings_data'" );
+		if ( empty( $col_exists ) ) {
+			$wpdb->query( "ALTER TABLE `$table` ADD COLUMN `division_standings_data` LONGTEXT NULL DEFAULT NULL AFTER `standings_data`" );
+		}
+
+		update_option( 'pp_db_version', '8.0' );
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );

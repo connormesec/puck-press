@@ -89,10 +89,16 @@ class Puck_Press_Standings_Refresher {
     }
 
     private function save_for_team( int $team_id, array $source, string $league_type, array $result ): void {
-        $api_team_id = $source['source_url_or_path'] ?? '';
-        $standings   = $result['standings'] ?? array();
+        $api_team_id        = $source['source_url_or_path'] ?? '';
+        $standings          = $result['standings'] ?? array();
+        $division_standings = $result['division_standings'] ?? array();
 
         foreach ( $standings as &$row ) {
+            $row['is_target'] = ( (string) $row['team_id'] === (string) $api_team_id );
+        }
+        unset( $row );
+
+        foreach ( $division_standings as &$row ) {
             $row['is_target'] = ( (string) $row['team_id'] === (string) $api_team_id );
         }
         unset( $row );
@@ -102,7 +108,8 @@ class Puck_Press_Standings_Refresher {
             (int) $source['id'],
             $league_type,
             $result['division_name'] ?? '',
-            $standings
+            $standings,
+            $division_standings
         );
     }
 }

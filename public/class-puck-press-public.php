@@ -160,6 +160,7 @@ class Puck_Press_Public {
 				'show_pct'       => 'true',
 				'show_streak'    => 'true',
 				'show_title'     => 'true',
+				'show_tabs'      => 'true',
 				'title'          => '',
 				'highlight'      => 'true',
 			),

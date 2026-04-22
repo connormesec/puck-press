@@ -68,17 +68,103 @@ class StandingsTemplate extends PuckPressTemplate {
         return is_array( $saved ) ? $saved : null;
     }
 
+    private static function shorten_team_name( string $name ): string {
+        $name = preg_replace( '/^University of\s+/i', '', $name );
+        $name = preg_replace( '/^College of\s+/i', '', $name );
+        $name = preg_replace( '/\s+University$/i', '', $name );
+        $name = preg_replace( '/\s+College$/i', '', $name );
+        $name = preg_replace( '/\s+Institute of Technology$/i', '', $name );
+        return $name;
+    }
+
     public function render_with_options( array $values, array $options ): string {
         $rows           = $values['rows'] ?? array();
+        $overall_rows   = $values['overall_rows'] ?? array();
         $compact        = isset( $values['compact'] ) && filter_var( $values['compact'], FILTER_VALIDATE_BOOLEAN );
         $show_home_away = ! $compact && ( ! isset( $values['show_home_away'] ) || filter_var( $values['show_home_away'], FILTER_VALIDATE_BOOLEAN ) );
         $show_goals     = ! $compact && ( ! isset( $values['show_goals'] )     || filter_var( $values['show_goals'],     FILTER_VALIDATE_BOOLEAN ) );
         $show_pct       = ! $compact && ( ! isset( $values['show_pct'] )       || filter_var( $values['show_pct'],       FILTER_VALIDATE_BOOLEAN ) );
         $show_streak    = ! $compact && ( ! isset( $values['show_streak'] )    || filter_var( $values['show_streak'],    FILTER_VALIDATE_BOOLEAN ) );
-        $show_title     = ! isset( $values['show_title'] )     || filter_var( $values['show_title'],     FILTER_VALIDATE_BOOLEAN );
-        $highlight      = ! isset( $values['highlight'] )      || filter_var( $values['highlight'],      FILTER_VALIDATE_BOOLEAN );
+        $show_title     = ! isset( $values['show_title'] )  || filter_var( $values['show_title'],  FILTER_VALIDATE_BOOLEAN );
+        $show_tabs      = ! isset( $values['show_tabs'] )   || filter_var( $values['show_tabs'],   FILTER_VALIDATE_BOOLEAN );
+        $highlight      = ! isset( $values['highlight'] )   || filter_var( $values['highlight'],   FILTER_VALIDATE_BOOLEAN );
         $title          = $values['title'] ?? '';
         $division_name  = $values['division_name'] ?? '';
+
+        $has_tabs = $show_tabs && ! empty( $overall_rows );
+
+        $key          = static::get_key();
+        $team_id      = isset( $options['team_id'] ) ? (int) $options['team_id'] : 0;
+        $container_id = $team_id > 0 ? 'pp-standings-' . $team_id : '';
+        $scope        = $container_id ? '#' . $container_id : ':root';
+        $colors       = $team_id > 0 ? self::get_standings_colors( $team_id ) : null;
+        $fonts        = $team_id > 0 ? self::get_standings_fonts( $team_id ) : null;
+        $inline_css   = self::get_inline_css( $scope, $colors, $fonts );
+        $css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+
+        $display_title = ! empty( $title ) ? $title : $division_name;
+
+        $table_opts = array(
+            'show_home_away' => $show_home_away,
+            'show_goals'     => $show_goals,
+            'show_pct'       => $show_pct,
+            'show_streak'    => $show_streak,
+            'highlight'      => $highlight,
+            'compact'        => $compact,
+        );
+
+        ob_start();
+        echo $css_block;
+        ?>
+        <div class="<?php echo esc_attr( $key ); ?>_container pp-standings-wrapper<?php echo $compact ? ' pp-standings-wrapper--compact' : ''; ?>"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
+            <?php if ( $show_title && ! empty( $display_title ) ) : ?>
+            <h3 class="pp-standings-title"><?php echo esc_html( $display_title ); ?></h3>
+            <?php endif; ?>
+
+            <?php if ( $has_tabs ) : ?>
+            <div class="pp-standings-tabs-bar">
+                <button class="pp-standings-tab pp-standings-tab--active" data-pp-standings-tab="division">Division</button>
+                <button class="pp-standings-tab" data-pp-standings-tab="overall">Overall</button>
+            </div>
+            <div class="pp-standings-tab-panel pp-standings-tab-panel--active" data-pp-standings-panel="division">
+                <?php echo $this->render_table( $rows, $table_opts ); ?>
+            </div>
+            <div class="pp-standings-tab-panel" data-pp-standings-panel="overall">
+                <?php echo $this->render_table( $overall_rows, $table_opts ); ?>
+            </div>
+            <script>
+            (function(){
+                var wrapper = document.<?php echo $container_id ? 'getElementById("' . esc_js( $container_id ) . '")' : 'querySelector(".pp-standings-wrapper")'; ?>;
+                if (!wrapper) return;
+                wrapper.addEventListener('click', function(e) {
+                    var tab = e.target.closest('[data-pp-standings-tab]');
+                    if (!tab) return;
+                    var id = tab.getAttribute('data-pp-standings-tab');
+                    var tabs = wrapper.querySelectorAll('[data-pp-standings-tab]');
+                    var panels = wrapper.querySelectorAll('[data-pp-standings-panel]');
+                    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('pp-standings-tab--active');
+                    for (var j = 0; j < panels.length; j++) panels[j].classList.remove('pp-standings-tab-panel--active');
+                    tab.classList.add('pp-standings-tab--active');
+                    var panel = wrapper.querySelector('[data-pp-standings-panel="' + id + '"]');
+                    if (panel) panel.classList.add('pp-standings-tab-panel--active');
+                });
+            })();
+            </script>
+            <?php else : ?>
+                <?php echo $this->render_table( $rows, $table_opts ); ?>
+            <?php endif; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    private function render_table( array $rows, array $opts ): string {
+        $show_home_away = $opts['show_home_away'];
+        $show_goals     = $opts['show_goals'];
+        $show_pct       = $opts['show_pct'];
+        $show_streak    = $opts['show_streak'];
+        $highlight      = $opts['highlight'];
+        $compact        = ! empty( $opts['compact'] );
 
         $any_ties = false;
         $any_sol  = false;
@@ -95,24 +181,8 @@ class StandingsTemplate extends PuckPressTemplate {
             $any_ties = false;
         }
 
-        $key          = static::get_key();
-        $team_id      = isset( $options['team_id'] ) ? (int) $options['team_id'] : 0;
-        $container_id = $team_id > 0 ? 'pp-standings-' . $team_id : '';
-        $scope        = $container_id ? '#' . $container_id : ':root';
-        $colors       = $team_id > 0 ? self::get_standings_colors( $team_id ) : null;
-        $fonts        = $team_id > 0 ? self::get_standings_fonts( $team_id ) : null;
-        $inline_css   = self::get_inline_css( $scope, $colors, $fonts );
-        $css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
-
-        $display_title = ! empty( $title ) ? $title : $division_name;
-
         ob_start();
-        echo $css_block;
         ?>
-        <div class="<?php echo esc_attr( $key ); ?>_container pp-standings-wrapper<?php echo $compact ? ' pp-standings-wrapper--compact' : ''; ?>"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
-            <?php if ( $show_title && ! empty( $display_title ) ) : ?>
-            <h3 class="pp-standings-title"><?php echo esc_html( $display_title ); ?></h3>
-            <?php endif; ?>
             <div class="pp-standings-scroll">
                 <table class="pp-standings-table">
                     <thead>
@@ -185,7 +255,8 @@ class StandingsTemplate extends PuckPressTemplate {
                             $home_record = "{$home_w}-{$home_l}-{$home_otl}";
                             $away_record = "{$away_w}-{$away_l}-{$away_otl}";
 
-                            $team_name = esc_html( $row['team_name'] ?? '' );
+                            $raw_name  = $row['team_name'] ?? '';
+                            $team_name = esc_html( $compact ? self::shorten_team_name( $raw_name ) : $raw_name );
                             $team_logo = esc_url( $row['team_logo'] ?? '' );
                             $streak    = esc_html( $row['streak'] ?? '' );
                             $last_10   = esc_html( $row['last_10'] ?? '' );
@@ -229,7 +300,6 @@ class StandingsTemplate extends PuckPressTemplate {
                     </tbody>
                 </table>
             </div>
-        </div>
         <?php
         return ob_get_clean();
     }

@@ -147,6 +147,7 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_cleanup_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_promo_columns_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_league_news_options_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_division_standings_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}

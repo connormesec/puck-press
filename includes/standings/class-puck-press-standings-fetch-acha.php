@@ -34,18 +34,210 @@ class Puck_Press_Standings_Fetch_Acha {
 		$home_map      = $this->build_split_map( 'home' );
 		$logos         = $this->fetch_logos();
 
-		$standings = array();
+		// Overall standings — all games.
+		$overall_standings = array();
 		foreach ( $section['data'] ?? array() as $entry ) {
 			$row = $this->normalize_row( $entry, $logos, $home_map );
 			if ( $row !== null ) {
-				$standings[] = $row;
+				$overall_standings[] = $row;
 			}
 		}
 
+		// Division standings — computed from game-level data, intradivisional games only.
+		$games              = $this->fetch_season_games();
+		$division_standings = $this->compute_division_standings( $section, $logos, $games );
+
 		return array(
-			'division_name' => $division_name,
-			'standings'     => $standings,
+			'division_name'      => $division_name,
+			'standings'          => $overall_standings,
+			'division_standings' => $division_standings,
 		);
+	}
+
+	private function fetch_season_games(): array {
+		$url = self::API_BASE_LEGACY
+			. '&view=schedule'
+			. '&team=-1'
+			. "&season={$this->season_id}"
+			. '&month=-1'
+			. '&location=homeaway'
+			. '&league_id=1'
+			. '&division_id=-1'
+			. '&lang=en';
+
+		$raw = $this->fetch_jsonp( $url );
+		if ( $raw === null ) {
+			return array();
+		}
+
+		$games = array();
+		foreach ( $raw[0]['sections'] ?? array() as $section ) {
+			foreach ( $section['data'] ?? array() as $entry ) {
+				$games[] = $entry;
+			}
+		}
+		return $games;
+	}
+
+	private function compute_division_standings( array $division_section, array $logos, array $games ): array {
+		if ( empty( $games ) ) {
+			return array();
+		}
+
+		// Build set of team IDs in this division.
+		$division_tids = array();
+		foreach ( $division_section['data'] ?? array() as $entry ) {
+			$tid = (string) ( $entry['prop']['name']['playerStatsLink'] ?? '' );
+			if ( $tid !== '' ) {
+				$division_tids[ $tid ] = true;
+			}
+		}
+
+		// Accumulate per-team stats from intradivisional games.
+		$stats = array();
+		foreach ( $games as $game ) {
+			$row      = $game['row'] ?? array();
+			$prop     = $game['prop'] ?? array();
+			$home_tid = (string) ( $prop['home_team_city']['teamLink'] ?? '' );
+			$away_tid = (string) ( $prop['visiting_team_city']['teamLink'] ?? '' );
+
+			// Skip if either team is outside this division.
+			if ( ! isset( $division_tids[ $home_tid ], $division_tids[ $away_tid ] ) ) {
+				continue;
+			}
+
+			$home_goals = $row['home_goal_count'] ?? '';
+			$away_goals = $row['visiting_goal_count'] ?? '';
+
+			// Skip unplayed games (empty scores).
+			if ( $home_goals === '' || $away_goals === '' ) {
+				continue;
+			}
+
+			$status = (string) ( $row['game_status'] ?? '' );
+
+			// Skip any game that is not a final result.
+			if ( stripos( $status, 'final' ) === false ) {
+				continue;
+			}
+
+			$home_goals = (int) $home_goals;
+			$away_goals = (int) $away_goals;
+			$is_ot      = stripos( $status, 'OT' ) !== false || stripos( $status, 'SO' ) !== false;
+
+			// Initialise stat buckets on first encounter.
+			foreach ( array( $home_tid, $away_tid ) as $tid ) {
+				if ( ! isset( $stats[ $tid ] ) ) {
+					$stats[ $tid ] = array(
+						'gp'       => 0, 'w' => 0, 'l' => 0, 'otl' => 0, 't' => 0,
+						'pts'      => 0, 'gf' => 0, 'ga' => 0,
+						'home_w'   => 0, 'home_l' => 0, 'home_otl' => 0,
+						'away_w'   => 0, 'away_l' => 0, 'away_otl' => 0,
+					);
+				}
+			}
+
+			$stats[ $home_tid ]['gp']++;
+			$stats[ $away_tid ]['gp']++;
+			$stats[ $home_tid ]['gf'] += $home_goals;
+			$stats[ $home_tid ]['ga'] += $away_goals;
+			$stats[ $away_tid ]['gf'] += $away_goals;
+			$stats[ $away_tid ]['ga'] += $home_goals;
+
+			if ( $home_goals === $away_goals ) {
+				// Tie — both earn 1 point.
+				$stats[ $home_tid ]['t']++;
+				$stats[ $away_tid ]['t']++;
+				$stats[ $home_tid ]['pts']++;
+				$stats[ $away_tid ]['pts']++;
+			} elseif ( $home_goals > $away_goals ) {
+				// Home team wins.
+				$stats[ $home_tid ]['w']++;
+				$stats[ $home_tid ]['pts'] += 2;
+				$stats[ $home_tid ]['home_w']++;
+				if ( $is_ot ) {
+					$stats[ $away_tid ]['otl']++;
+					$stats[ $away_tid ]['pts']++;
+					$stats[ $away_tid ]['away_otl']++;
+				} else {
+					$stats[ $away_tid ]['l']++;
+					$stats[ $away_tid ]['away_l']++;
+				}
+			} else {
+				// Away team wins.
+				$stats[ $away_tid ]['w']++;
+				$stats[ $away_tid ]['pts'] += 2;
+				$stats[ $away_tid ]['away_w']++;
+				if ( $is_ot ) {
+					$stats[ $home_tid ]['otl']++;
+					$stats[ $home_tid ]['pts']++;
+					$stats[ $home_tid ]['home_otl']++;
+				} else {
+					$stats[ $home_tid ]['l']++;
+					$stats[ $home_tid ]['home_l']++;
+				}
+			}
+		}
+
+		// Build standings rows using team info from the division section.
+		$standings = array();
+		foreach ( $division_section['data'] ?? array() as $entry ) {
+			$tid = (string) ( $entry['prop']['name']['playerStatsLink'] ?? '' );
+			if ( $tid === '' ) {
+				continue;
+			}
+
+			$s        = $stats[ $tid ] ?? array(
+				'gp' => 0, 'w' => 0, 'l' => 0, 'otl' => 0, 't' => 0,
+				'pts' => 0, 'gf' => 0, 'ga' => 0,
+				'home_w' => 0, 'home_l' => 0, 'home_otl' => 0,
+				'away_w' => 0, 'away_l' => 0, 'away_otl' => 0,
+			);
+			$raw_name = (string) ( $entry['row']['name'] ?? '' );
+
+			$standings[] = array(
+				'team_id'       => $tid,
+				'team_name'     => (string) preg_replace( '/^(?:MD[1-3]|WD[1-3]|M[1-3]|W[1-3])\s+/', '', $raw_name ),
+				'team_nickname' => $entry['row']['nickname'] ?? '',
+				'team_logo'     => $logos[ $tid ] ?? '',
+				'gp'            => $s['gp'],
+				'w'             => $s['w'],
+				'l'             => $s['l'],
+				'otl'           => $s['otl'],
+				'sol'           => 0,
+				't'             => $s['t'],
+				'pts'           => $s['pts'],
+				'gf'            => $s['gf'],
+				'ga'            => $s['ga'],
+				'diff'          => $s['gf'] - $s['ga'],
+				'home_w'        => $s['home_w'],
+				'home_l'        => $s['home_l'],
+				'home_otl'      => $s['home_otl'],
+				'away_w'        => $s['away_w'],
+				'away_l'        => $s['away_l'],
+				'away_otl'      => $s['away_otl'],
+				'home_gf'       => 0,
+				'home_ga'       => 0,
+				'away_gf'       => 0,
+				'away_ga'       => 0,
+				'streak'        => '',
+				'last_10'       => '',
+				'is_target'     => false,
+			);
+		}
+
+		// Sort: pts DESC → wins DESC → goal diff DESC.
+		usort( $standings, function ( $a, $b ) {
+			if ( $b['pts'] !== $a['pts'] ) {
+				return $b['pts'] - $a['pts'];
+			}
+			if ( $b['w'] !== $a['w'] ) {
+				return $b['w'] - $a['w'];
+			}
+			return ( $b['gf'] - $b['ga'] ) - ( $a['gf'] - $a['ga'] );
+		} );
+
+		return $standings;
 	}
 
 	private function fetch_standings_context( string $context ): ?array {

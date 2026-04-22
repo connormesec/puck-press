@@ -113,6 +113,11 @@ class Puck_Press_Teams_Admin_Standings_Card extends Puck_Press_Admin_Card_Abstra
                             <td style="padding: 6px 10px;">Show streak and last-10 columns</td>
                         </tr>
                         <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 6px 10px;"><code>show_tabs</code></td>
+                            <td style="padding: 6px 10px;"><code>true</code></td>
+                            <td style="padding: 6px 10px;">Show Division / Overall tab switcher when overall standings data is available</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
                             <td style="padding: 6px 10px;"><code>show_title</code></td>
                             <td style="padding: 6px 10px;"><code>true</code></td>
                             <td style="padding: 6px 10px;">Show division name as the table title</td>

@@ -17,10 +17,15 @@ class Puck_Press_Standings_Wpdb_Utils {
             return null;
         }
         $row['standings_data'] = json_decode( $row['standings_data'], true );
+        if ( ! empty( $row['division_standings_data'] ) ) {
+            $row['division_standings_data'] = json_decode( $row['division_standings_data'], true );
+        } else {
+            $row['division_standings_data'] = array();
+        }
         return $row;
     }
 
-    public function upsert_standings( int $team_id, int $source_id, string $league_type, string $division_name, array $standings ): bool {
+    public function upsert_standings( int $team_id, int $source_id, string $league_type, string $division_name, array $standings, array $division_standings = array() ): bool {
         global $wpdb;
         $table = $wpdb->prefix . 'pp_team_standings_cache';
 
@@ -29,12 +34,13 @@ class Puck_Press_Standings_Wpdb_Utils {
         );
 
         $data = array(
-            'team_id'        => $team_id,
-            'source_id'      => $source_id,
-            'league_type'    => $league_type,
-            'division_name'  => $division_name,
-            'standings_data' => wp_json_encode( $standings ),
-            'computed_at'    => current_time( 'mysql' ),
+            'team_id'                => $team_id,
+            'source_id'              => $source_id,
+            'league_type'            => $league_type,
+            'division_name'          => $division_name,
+            'standings_data'         => wp_json_encode( $standings ),
+            'division_standings_data' => ! empty( $division_standings ) ? wp_json_encode( $division_standings ) : null,
+            'computed_at'            => current_time( 'mysql' ),
         );
 
         if ( $existing ) {

@@ -59,14 +59,19 @@ class Puck_Press_Standings_Admin_Preview_Card extends Puck_Press_Admin_Preview_C
         $utils  = new Puck_Press_Standings_Wpdb_Utils();
         $cached = $utils->get_standings_for_team( $this->team_id );
 
+        $overall_rows  = ( $cached && ! empty( $cached['standings_data'] ) ) ? $cached['standings_data'] : array();
+        $division_rows = ( $cached && ! empty( $cached['division_standings_data'] ) ) ? $cached['division_standings_data'] : array();
+
         $this->data = array(
-            'rows'           => ( $cached && ! empty( $cached['standings_data'] ) ) ? $cached['standings_data'] : array(),
+            'rows'           => ! empty( $division_rows ) ? $division_rows : $overall_rows,
+            'overall_rows'   => ! empty( $division_rows ) ? $overall_rows : array(),
             'division_name'  => $cached['division_name'] ?? '',
             'show_home_away' => 'true',
             'show_goals'     => 'true',
             'show_pct'       => 'true',
             'show_streak'    => 'true',
             'show_title'     => 'true',
+            'show_tabs'      => 'true',
             'highlight'      => 'true',
             'title'          => '',
         );

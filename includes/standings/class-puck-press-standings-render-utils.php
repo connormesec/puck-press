@@ -34,8 +34,12 @@ class Puck_Press_Standings_Render_Utils {
             return '';
         }
 
+        $division_rows = $cached['division_standings_data'] ?? array();
+        $overall_rows  = $cached['standings_data'];
+
         $data = array(
-            'rows'           => $cached['standings_data'],
+            'rows'           => ! empty( $division_rows ) ? $division_rows : $overall_rows,
+            'overall_rows'   => ! empty( $division_rows ) ? $overall_rows : array(),
             'division_name'  => $cached['division_name'] ?? '',
             'compact'        => $atts['compact'] ?? 'false',
             'show_home_away' => $atts['show_home_away'] ?? 'true',
@@ -43,6 +47,7 @@ class Puck_Press_Standings_Render_Utils {
             'show_pct'       => $atts['show_pct'] ?? 'true',
             'show_streak'    => $atts['show_streak'] ?? 'true',
             'show_title'     => $atts['show_title'] ?? 'true',
+            'show_tabs'      => $atts['show_tabs'] ?? 'true',
             'highlight'      => $atts['highlight'] ?? 'true',
             'title'          => $atts['title'] ?? '',
         );

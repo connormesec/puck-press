@@ -143,6 +143,45 @@
     padding: 6px 8px;
 }
 
+/* ── Tabs ── */
+.pp-standings-tabs-bar {
+    display: flex;
+    gap: 2px;
+    padding: 0 4px;
+    border-bottom: 3px solid var(--pp-standings-header_bg, #1a1a2e);
+}
+
+.pp-standings-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--pp-standings-row_text, #111827);
+    background: none;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -3px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.pp-standings-tab--active {
+    color: var(--pp-standings-header_text, #ffffff);
+    background: var(--pp-standings-header_bg, #1a1a2e);
+}
+
+.pp-standings-tab-panel {
+    display: none;
+}
+
+.pp-standings-tab-panel--active {
+    display: block;
+}
+
 @container standings-scroll (max-width: 290px) {
     .pp-standings-team-name {
         display: none;
