@@ -32,6 +32,8 @@ VERSIONING
 ----------
 Current version: 1.0.22
 Tag format:      1.0.XX  (zero-padded patch, e.g. 1.0.23, 1.0.24)
+                 DO NOT prefix with "v" — tags must be bare version numbers
+                 (e.g. 1.0.26, not v1.0.26)
 Convention:      SemVer-inspired but currently all releases are 1.0.X
 
 Rules of thumb:
