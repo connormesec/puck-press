@@ -266,7 +266,11 @@ class Puck_Press_Activator {
 			$wpdb->query( "ALTER TABLE `$table` ADD COLUMN `division_standings_data` LONGTEXT NULL DEFAULT NULL AFTER `standings_data`" );
 		}
 
-		update_option( 'pp_db_version', '8.0' );
+		// Only bump the version once the column actually exists.
+		$col_exists = $wpdb->get_results( "SHOW COLUMNS FROM `$table` LIKE 'division_standings_data'" );
+		if ( ! empty( $col_exists ) ) {
+			update_option( 'pp_db_version', '8.0' );
+		}
 	}
 
 	public static function activate() {

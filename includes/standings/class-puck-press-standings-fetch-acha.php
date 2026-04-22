@@ -45,7 +45,7 @@ class Puck_Press_Standings_Fetch_Acha {
 
 		// Division standings — computed from game-level data, intradivisional games only.
 		$games              = $this->fetch_season_games();
-		$division_standings = $this->compute_division_standings( $section, $logos, $games );
+		$division_standings = $this->compute_division_standings( $section, $logos, $games, $overall_standings );
 
 		return array(
 			'division_name'      => $division_name,
@@ -79,7 +79,7 @@ class Puck_Press_Standings_Fetch_Acha {
 		return $games;
 	}
 
-	private function compute_division_standings( array $division_section, array $logos, array $games ): array {
+	private function compute_division_standings( array $division_section, array $logos, array $games, array $overall_standings = array() ): array {
 		if ( empty( $games ) ) {
 			return array();
 		}
@@ -179,6 +179,12 @@ class Puck_Press_Standings_Fetch_Acha {
 			}
 		}
 
+		// Build a streak/last_10 lookup from overall standings.
+		$overall_map = array();
+		foreach ( $overall_standings as $row ) {
+			$overall_map[ $row['team_id'] ] = $row;
+		}
+
 		// Build standings rows using team info from the division section.
 		$standings = array();
 		foreach ( $division_section['data'] ?? array() as $entry ) {
@@ -220,8 +226,8 @@ class Puck_Press_Standings_Fetch_Acha {
 				'home_ga'       => 0,
 				'away_gf'       => 0,
 				'away_ga'       => 0,
-				'streak'        => '',
-				'last_10'       => '',
+				'streak'        => $overall_map[ $tid ]['streak'] ?? '',
+				'last_10'       => $overall_map[ $tid ]['last_10'] ?? '',
 				'is_target'     => false,
 			);
 		}
