@@ -10,10 +10,18 @@
 
 function initCompactSlider() {
   const el = document.querySelector('.pp-cs-glider');
-  if (!el || !el.offsetWidth) return;
+  if (!el) return;
 
   // Reveal before init so Glider.js can read real dimensions.
-  el.closest('.pp-cs-container').classList.add('pp-cs-ready');
+  const container = el.closest('.pp-cs-container');
+  container.classList.add('pp-cs-ready');
+
+  if (!el.offsetWidth) {
+    // Still hidden after reveal — inside a closed tab/accordion. Pull back
+    // the reveal so we don't show an uninitialized slider, and bail out.
+    container.classList.remove('pp-cs-ready');
+    return;
+  }
 
   const glider = new Glider(el, {
     slidesToShow: 1,
@@ -52,7 +60,6 @@ function initCompactSlider() {
   glider.setOption({ duration: 0.25 });
 
   // Tap-to-open overlay (mobile). Guard prevents duplicate listeners on re-init.
-  const container = el.closest('.pp-cs-container');
   if (container && !container.dataset.tapInit) {
     container.dataset.tapInit = '1';
 
