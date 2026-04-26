@@ -126,6 +126,8 @@ class Puck_Press_Roster_Process_Acha_Stats {
 
 				$stats[] = array(
 					'player_id'              => $row['player_id'],
+					'name'                   => $row['name'] ?? null,
+					'position'               => $row['position'] ?? null,
 					'games_played'           => isset( $row['games_played'] ) ? intval( $row['games_played'] ) : null,
 					'goals'                  => isset( $row['goals'] ) ? intval( $row['goals'] ) : null,
 					'assists'                => isset( $row['assists'] ) ? intval( $row['assists'] ) : null,
@@ -166,6 +168,8 @@ class Puck_Press_Roster_Process_Acha_Stats {
 
 				$stats[] = array(
 					'player_id'             => $row['player_id'],
+					'name'                  => $row['name'] ?? null,
+					'position'              => $row['position'] ?? null,
 					'games_played'          => isset( $row['games_played'] ) ? intval( $row['games_played'] ) : null,
 					'wins'                  => isset( $row['wins'] ) ? intval( $row['wins'] ) : null,
 					'losses'                => isset( $row['losses'] ) ? intval( $row['losses'] ) : null,

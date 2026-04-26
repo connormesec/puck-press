@@ -340,7 +340,7 @@ class Puck_Press_Standings_Fetch_Acha {
 
 		$overall_w   = (int) ( $row['wins'] ?? 0 );
 		$overall_l   = (int) ( $row['losses'] ?? 0 );
-		$overall_otl = (int) ( $row['ot_losses'] ?? 0 );
+		$overall_otl = (int) ( $row['ot_losses'] ?? 0 ) + (int) ( $row['shootout_losses'] ?? 0 );
 		$overall_gf  = (int) ( $row['goals_for'] ?? 0 );
 		$overall_ga  = (int) ( $row['goals_against'] ?? 0 );
 
@@ -377,6 +377,7 @@ class Puck_Press_Standings_Fetch_Acha {
 			'away_ga'       => $overall_ga  - $home_ga,
 			'streak'        => $this->convert_streak( (string) ( $row['streak'] ?? '' ) ),
 			'last_10'       => $row['past_10'] ?? '',
+			'pct'           => $row['pct'] ?? '',
 			'is_target'     => false,
 		);
 	}

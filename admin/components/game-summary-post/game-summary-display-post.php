@@ -20,6 +20,18 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 			echo '<div class="updated"><p>Settings saved.</p></div>';
 		}
 
+		if ( isset( $_POST['pp_save_seo'] ) ) {
+			check_admin_referer( 'pp_save_game_summary_seo' );
+
+			update_option( 'pp_seo_enabled', isset( $_POST['pp_seo_enabled'] ) ? 1 : 0 );
+			update_option( 'pp_seo_primary_keyword', sanitize_text_field( $_POST['pp_seo_primary_keyword'] ?? '' ) );
+			update_option( 'pp_seo_team_short_name', sanitize_text_field( $_POST['pp_seo_team_short_name'] ?? '' ) );
+			update_option( 'pp_seo_city', sanitize_text_field( $_POST['pp_seo_city'] ?? '' ) );
+			update_option( 'pp_seo_state', sanitize_text_field( $_POST['pp_seo_state'] ?? '' ) );
+
+			echo '<div class="updated"><p>SEO settings saved.</p></div>';
+		}
+
 		$openai_key = esc_attr( get_option( 'pp_openai_api_key', '' ) );
 		$image_key  = esc_attr( get_option( 'pp_image_api_key', '' ) );
 		$enabled    = get_option( 'pp_enable_game_summary_post', 0 );
@@ -58,6 +70,7 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 						</td>
 					</tr>
 				</table>
+
 				<?php submit_button( 'Save Settings', 'primary', 'pp_save_keys' ); ?>
 			</form>
 
@@ -68,7 +81,169 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 			</p>
 
 			<?php $this->render_game_summary_test(); ?>
+
+			<?php $this->render_seo_section(); ?>
 		</div>
+		<?php
+	}
+
+	private function render_seo_section(): void {
+		require_once plugin_dir_path( __DIR__ ) . '../../includes/seo/class-puck-press-seo-detector.php';
+
+		$detected = Puck_Press_Seo_Detector::detect();
+		$seo_on   = (bool) get_option( 'pp_seo_enabled', 1 );
+		$kw       = (string) get_option( 'pp_seo_primary_keyword', '' );
+		$short    = (string) get_option( 'pp_seo_team_short_name', '' );
+		$city     = (string) get_option( 'pp_seo_city', '' );
+		$state    = (string) get_option( 'pp_seo_state', '' );
+
+		require_once plugin_dir_path( __DIR__ ) . '../../includes/seo/class-puck-press-seo-avatar.php';
+
+		global $wpdb;
+
+		$yoast_active   = is_plugin_active( 'wordpress-seo/wp-seo.php' );
+		$author_user    = get_user_by( 'login', 'puck-press' );
+		$author_bio     = $author_user ? (string) get_user_meta( $author_user->ID, 'description', true ) : '';
+		$author_fb      = $author_user ? (string) get_user_meta( $author_user->ID, 'facebook', true ) : '';
+		$author_ig      = $author_user ? (string) get_user_meta( $author_user->ID, 'instagram', true ) : '';
+		$user_edit_url  = $author_user ? admin_url( 'user-edit.php?user_id=' . (int) $author_user->ID ) : admin_url( 'user-new.php' );
+		$avatar_url     = Puck_Press_Seo_Avatar::resolved_url();
+
+		// Reassign-status auto-detection
+		$total_recaps   = (int) $wpdb->get_var(
+			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'pp_game_summary'"
+		);
+		$mismatched     = $author_user ? (int) $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'pp_game_summary' AND post_author != %d",
+			$author_user->ID
+		) ) : $total_recaps;
+		$reassign_done  = ( $total_recaps === 0 ) || ( $mismatched === 0 );
+		?>
+		<h2>SEO</h2>
+		<p class="description">
+			Auto-applies Yoast metadata to new game recap posts and emits Schema.org <code>SportsEvent</code> + <code>NewsArticle</code> JSON-LD on recap and schedule pages.
+			Most fields auto-derive from your game data — overrides below are optional.
+			<?php if ( ! $yoast_active ) : ?>
+				<br /><strong>Yoast SEO is not active.</strong> SEO features are inactive until Yoast is installed and activated.
+			<?php endif; ?>
+		</p>
+
+		<h3 style="margin-top:1.5em;">One-time setup checklist</h3>
+		<p class="description">Complete these once per site. The plugin will then auto-tag every new game recap with full SEO metadata, structured data, and a proper author byline.</p>
+		<ul style="list-style:none;padding-left:0;margin:0 0 1em 0;">
+			<li><?php echo $yoast_active ? '✅' : '⬜'; ?> <strong>Yoast SEO plugin installed and active</strong>
+				<?php if ( ! $yoast_active ) : ?>
+					&nbsp;<a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=yoast+seo&tab=search&type=term' ) ); ?>">Install Yoast</a>
+				<?php endif; ?>
+			</li>
+			<li><?php echo $author_user ? '✅' : '⬜'; ?> <strong>Author user created</strong>
+				<?php if ( ! $author_user ) : ?>
+					&nbsp;<a href="<?php echo esc_url( admin_url( 'user-new.php' ) ); ?>">Add user</a> with Username <code>puck-press</code>, Role <em>Author</em>, and a team-branded Display Name (e.g. "MSU Bobcats Hockey").
+				<?php else : ?>
+					(<code>puck-press</code> · displays as "<?php echo esc_html( $author_user->display_name ); ?>")
+				<?php endif; ?>
+			</li>
+			<li><?php echo ( $author_user && $author_bio !== '' ) ? '✅' : '⬜'; ?> <strong>Author bio filled in</strong>
+				<?php if ( $author_user && $author_bio === '' ) : ?>
+					&nbsp;<a href="<?php echo esc_url( $user_edit_url ); ?>">Edit user</a> → Biographical Info. Be transparent: e.g. "Game recaps from the [Team] program. Stats sourced from [League]; summaries are auto-generated and reviewed by team staff."
+				<?php endif; ?>
+			</li>
+			<li><?php echo ( $author_user && ( $author_fb !== '' || $author_ig !== '' ) ) ? '✅' : '⬜'; ?> <strong>Author social URLs filled in (Yoast section of user profile)</strong>
+				<?php if ( $author_user && $author_fb === '' && $author_ig === '' ) : ?>
+					&nbsp;<a href="<?php echo esc_url( $user_edit_url ); ?>">Edit user</a> → scroll to Yoast SEO section → paste your team's Facebook + Instagram URLs.
+				<?php endif; ?>
+			</li>
+			<li><?php echo $avatar_url ? '✅' : '⬜'; ?> <strong>Author profile photo</strong>
+				<?php if ( $avatar_url ) : ?>
+					— Puck Press is auto-serving the team logo for the <code>puck-press</code> author byline (source: <code><?php echo esc_html( basename( $avatar_url ) ); ?></code>). Renders in Google's author chips.
+				<?php else : ?>
+					— Set the Yoast organization logo (Yoast → Search Appearance → Knowledge Graph → Organization Logo) and Puck Press will auto-serve it as the team byline avatar. Or upload one via Gravatar / a local-avatar plugin.
+				<?php endif; ?>
+			</li>
+			<li><?php echo $reassign_done ? '✅' : '⬜'; ?> <strong>Reassign existing recaps to the author</strong>
+				<?php if ( $total_recaps === 0 ) : ?>
+					&nbsp;<em>(no game recaps yet — nothing to reassign)</em>
+				<?php elseif ( $reassign_done ) : ?>
+					&nbsp;(<?php echo (int) $total_recaps; ?>/<?php echo (int) $total_recaps; ?> recaps authored by <code>puck-press</code>)
+				<?php else : ?>
+					&nbsp;<?php echo (int) $mismatched; ?> of <?php echo (int) $total_recaps; ?> recaps still attributed to a different user. One-time DB update — run this SQL: <code style="display:block;margin-top:4px;padding:6px;background:#f0f0f1;">UPDATE wp_posts SET post_author = (SELECT ID FROM wp_users WHERE user_login = 'puck-press') WHERE post_type = 'pp_game_summary';</code>
+				<?php endif; ?>
+			</li>
+		</ul>
+
+		<p class="description" style="margin-top:1em;">
+			<strong>After setup:</strong> paste a recap URL into <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Google's Rich Results Test</a> to confirm the schema is readable. Look for "Sports event" and "Article" both detected as valid.
+		</p>
+
+		<form method="post">
+			<?php wp_nonce_field( 'pp_save_game_summary_seo' ); ?>
+			<table class="form-table">
+			<tr>
+				<th scope="row">Detected from your schedule</th>
+				<td>
+					<?php if ( $detected['school_name'] === '' ) : ?>
+						<em>No game data yet — values will populate after the first schedule import.</em>
+					<?php else : ?>
+						<table style="border-collapse:collapse;">
+							<tr><td style="padding:2px 12px 2px 0;color:#646970;">Team:</td>
+								<td><?php echo esc_html( trim( $detected['school_name'] . ' · ' . $detected['team_nickname'], ' ·' ) ); ?></td></tr>
+							<tr><td style="padding:2px 12px 2px 0;color:#646970;">Short name:</td>
+								<td><?php echo esc_html( $detected['team_short_name'] ?: '—' ); ?></td></tr>
+							<tr><td style="padding:2px 12px 2px 0;color:#646970;">League:</td>
+								<td><?php echo esc_html( $detected['league'] ?: '—' ); ?>
+								<?php echo $detected['division'] !== '' ? ' ' . esc_html( $detected['division'] ) : ''; ?></td></tr>
+							<tr><td style="padding:2px 12px 2px 0;color:#646970;">Primary keyword:</td>
+								<td><?php echo esc_html( $detected['primary_keyword'] ?: '—' ); ?></td></tr>
+						</table>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pp_seo_primary_keyword">Primary keyword (override)</label></th>
+				<td>
+					<input type="text" name="pp_seo_primary_keyword" id="pp_seo_primary_keyword"
+						value="<?php echo esc_attr( $kw ); ?>" class="regular-text"
+						placeholder="<?php echo esc_attr( $detected['primary_keyword'] ); ?>" />
+					<p class="description">Used in recap titles &amp; descriptions. Leave blank to use the detected value above.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pp_seo_team_short_name">Team short name (override)</label></th>
+				<td>
+					<input type="text" name="pp_seo_team_short_name" id="pp_seo_team_short_name"
+						value="<?php echo esc_attr( $short ); ?>" class="regular-text"
+						placeholder="<?php echo esc_attr( $detected['team_short_name'] ); ?>" />
+					<p class="description">For compact titles like "MSU Bobcats vs Idaho." Leave blank to use the detected value.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pp_seo_city">City</label></th>
+				<td>
+					<input type="text" name="pp_seo_city" id="pp_seo_city"
+						value="<?php echo esc_attr( $city ); ?>" class="regular-text" placeholder="Bozeman" />
+					<p class="description">Used in JSON-LD location data. Optional.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pp_seo_state">State</label></th>
+				<td>
+					<input type="text" name="pp_seo_state" id="pp_seo_state"
+						value="<?php echo esc_attr( $state ); ?>" class="regular-text" placeholder="MT" maxlength="2" />
+					<p class="description">Two-letter state code. Optional.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">Enable SEO features</th>
+				<td>
+					<label>
+						<input type="checkbox" name="pp_seo_enabled" value="1" <?php checked( $seo_on, true ); ?> />
+						Auto-apply Yoast metadata &amp; emit SportsEvent schema
+					</label>
+				</td>
+			</tr>
+		</table>
+		<?php submit_button( 'Save SEO Settings', 'primary', 'pp_save_seo' ); ?>
+		</form>
 		<?php
 	}
 

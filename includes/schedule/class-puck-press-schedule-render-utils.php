@@ -14,7 +14,18 @@ class Puck_Press_Schedule_Render_Utils extends Puck_Press_Render_Utils_Abstract 
 		if ( $archive_key !== '' ) {
 			$team_ids        = $schedules_utils->get_schedule_team_ids( $schedule_id );
 			$archive_manager = new Puck_Press_Archive_Manager();
-			$this->games     = $archive_manager->get_archive_games( $archive_key, $team_ids );
+			$team_names      = array();
+			if ( ! empty( $team_ids ) ) {
+				require_once plugin_dir_path( __FILE__ ) . '../teams/class-puck-press-teams-wpdb-utils.php';
+				$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+				foreach ( $team_ids as $tid ) {
+					$team = $teams_utils->get_team_by_id( (int) $tid );
+					if ( $team && ! empty( $team['name'] ) ) {
+						$team_names[] = $team['name'];
+					}
+				}
+			}
+			$this->games = $archive_manager->get_archive_games( $archive_key, $team_names );
 		} else {
 			$this->games = $schedules_utils->get_schedule_games_display( $schedule_id );
 		}
@@ -32,6 +43,14 @@ class Puck_Press_Schedule_Render_Utils extends Puck_Press_Render_Utils_Abstract 
 	}
 
 	protected function build_schema(): string {
+		// When the Puck Press SEO integration is active, the schedule schema
+		// is emitted as a Yoast graph piece (Puck_Press_Schema_Sports_Event_List)
+		// — a single ItemList of upcoming games with proper status, scores,
+		// and team logos. Skip the legacy emission to avoid duplicate entities.
+		if ( class_exists( 'Puck_Press_Seo_Yoast' ) && Puck_Press_Seo_Yoast::is_active() ) {
+			return '';
+		}
+
 		if ( empty( $this->games ) ) {
 			return '';
 		}

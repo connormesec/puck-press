@@ -252,8 +252,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
 		if ( ! empty( $teams ) ) {
-			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
-			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
+			$team_names = $this->resolve_team_ids_to_names( $teams );
+			if ( ! empty( $team_names ) ) {
+				$placeholders  = implode( ', ', array_fill( 0, count( $team_names ), '%s' ) );
+				$where_parts[] = $wpdb->prepare( "s.team_name IN ($placeholders)", ...$team_names );
+			}
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
@@ -289,8 +292,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
 		if ( ! empty( $teams ) ) {
-			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
-			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
+			$team_names = $this->resolve_team_ids_to_names( $teams );
+			if ( ! empty( $team_names ) ) {
+				$placeholders  = implode( ', ', array_fill( 0, count( $team_names ), '%s' ) );
+				$where_parts[] = $wpdb->prepare( "s.team_name IN ($placeholders)", ...$team_names );
+			}
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
@@ -326,8 +332,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
 		if ( ! empty( $teams ) ) {
-			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
-			$where_parts[] = $wpdb->prepare( "g.team_id IN ($placeholders)", ...$teams );
+			$team_names = $this->resolve_team_ids_to_names( $teams );
+			if ( ! empty( $team_names ) ) {
+				$placeholders  = implode( ', ', array_fill( 0, count( $team_names ), '%s' ) );
+				$where_parts[] = $wpdb->prepare( "g.team_name IN ($placeholders)", ...$team_names );
+			}
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
@@ -364,8 +373,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$where_parts = array( $wpdb->prepare( 'g.season_key = %s', $archive_key ) );
 		if ( ! empty( $teams ) ) {
-			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
-			$where_parts[] = $wpdb->prepare( "g.team_id IN ($placeholders)", ...$teams );
+			$team_names = $this->resolve_team_ids_to_names( $teams );
+			if ( ! empty( $team_names ) ) {
+				$placeholders  = implode( ', ', array_fill( 0, count( $team_names ), '%s' ) );
+				$where_parts[] = $wpdb->prepare( "g.team_name IN ($placeholders)", ...$team_names );
+			}
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
@@ -402,8 +414,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 
 		$where_parts = array( $wpdb->prepare( 's.season_key = %s', $archive_key ) );
 		if ( ! empty( $teams ) ) {
-			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
-			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
+			$team_names = $this->resolve_team_ids_to_names( $teams );
+			if ( ! empty( $team_names ) ) {
+				$placeholders  = implode( ', ', array_fill( 0, count( $team_names ), '%s' ) );
+				$where_parts[] = $wpdb->prepare( "s.team_name IN ($placeholders)", ...$team_names );
+			}
 		}
 		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
@@ -478,5 +493,19 @@ class Puck_Press_Stats_Wpdb_Utils {
 			'current_season_label' => get_option( 'puck_press_current_season_label', '' ),
 			'teams'                => $teams,
 		);
+	}
+
+	private function resolve_team_ids_to_names( array $team_ids ): array {
+		global $wpdb;
+		if ( empty( $team_ids ) ) {
+			return array();
+		}
+		$placeholders = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+		return $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT name FROM {$wpdb->prefix}pp_teams WHERE id IN ($placeholders)",
+				...$team_ids
+			)
+		) ?: array();
 	}
 }

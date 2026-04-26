@@ -273,6 +273,51 @@ class Puck_Press_Activator {
 		}
 	}
 
+	public static function maybe_run_archive_roster_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '9.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'archive/class-puck-press-archive-manager.php';
+		$archive_manager = new Puck_Press_Archive_Manager();
+		$archive_manager->maybe_create_or_update_tables();
+
+		global $wpdb;
+
+		// Backfill pp_team_players_archive from existing stat archive rows.
+		$roster_table = $wpdb->prefix . 'pp_team_players_archive';
+		$has_rows     = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$roster_table}" );
+		if ( $has_rows === 0 ) {
+			$wpdb->query(
+				"INSERT INTO {$roster_table}
+					(archive_id, season_key, team_name, player_id, name, pos, headshot_link, api_team_id, api_team_name, source)
+				SELECT s.archive_id, s.season_key, s.team_name, s.player_id,
+					   MAX(s.name), MAX(s.pos), MAX(s.headshot_link),
+					   MAX(s.api_team_id), MAX(s.api_team_name), MAX(s.source)
+				FROM (
+					SELECT archive_id, season_key, team_name, player_id, name, pos, headshot_link, api_team_id, api_team_name, source
+					FROM {$wpdb->prefix}pp_team_player_stats_archive
+					UNION ALL
+					SELECT archive_id, season_key, team_name, player_id, name, pos, headshot_link, api_team_id, api_team_name, source
+					FROM {$wpdb->prefix}pp_team_player_goalie_stats_archive
+				) s
+				GROUP BY s.archive_id, s.season_key, s.player_id, s.team_name"
+			);
+		}
+
+		// Drop legacy schedule archive tables if they exist.
+		foreach ( array( 'pp_schedule_archive_sources', 'pp_schedule_archive_games', 'pp_schedule_archives' ) as $legacy ) {
+			$full = $wpdb->prefix . $legacy;
+			$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full ) );
+			if ( $exists ) {
+				$wpdb->query( "DROP TABLE IF EXISTS `{$full}`" );
+			}
+		}
+
+		update_option( 'pp_db_version', '9.0' );
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );

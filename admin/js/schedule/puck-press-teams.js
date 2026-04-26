@@ -407,12 +407,11 @@
               window.location.reload();
               return;
             }
-            if (d.archives_html) {
-              $('#pp-team-archives-list').replaceWith(d.archives_html);
-            }
             $('#pp-team-archive-season option[value="' + seasonKey + '"]')
               .prop('disabled', true).text(seasonKey + ' (archived)');
             $archiveModal.css('display', 'none');
+            $btn.prop('disabled', false).text('Archive Season');
+            alert(d.message || 'Season archived successfully. View details on the Archives tab.');
           } else {
             const msg = response.data && response.data.message ? response.data.message : 'Archive failed.';
             alert(msg);

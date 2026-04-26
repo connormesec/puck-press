@@ -39,11 +39,7 @@ class Puck_Press_Awards_Render_Utils {
         $link       = ( 'false' !== strtolower( $atts['link_players'] ) );
         $show_title = ( 'false' !== strtolower( $atts['show_title'] ) );
 
-        if ( empty( $award_str ) && empty( $year ) && empty( $parent ) ) {
-            return '<!-- [pp-awards] requires at least one of: award, year, parent -->';
-        }
-
-        $year_filter_mode = empty( $year ) && ! empty( $parent ) && empty( $award_str );
+        $year_filter_mode = empty( $year ) && empty( $award_str );
 
         if ( $year_filter_mode ) {
             $available_years = ! empty( $parent )
@@ -86,7 +82,7 @@ class Puck_Press_Awards_Render_Utils {
         if ( $year_filter_mode && count( $available_years ) > 1 ) {
             $html .= '<div class="pp-awards-year-filter">';
             $html .= '<label for="pp-awards-year-select">Year:</label>';
-            $html .= '<select class="pp-awards-year-select">';
+            $html .= '<select id="pp-awards-year-select" class="pp-awards-year-select">';
             foreach ( $available_years as $y ) {
                 $selected = ( $y === $year ) ? ' selected' : '';
                 $html    .= '<option value="' . esc_attr( $y ) . '"' . $selected . '>' . esc_html( $y ) . '</option>';

@@ -16,7 +16,13 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <label class="pp-form-label">Select Team</label>
                 <select id="pp-bulk-team-select" style="width:100%;"></select>
             </div>
-            <p style="color:#666;font-size:0.85rem;margin-top:0.5rem;">All players from the selected team will be added to this award. Players already on the award will be skipped.</p>
+            <div class="pp-form-group" style="margin-top:12px;">
+                <label class="pp-form-label">Season</label>
+                <select id="pp-bulk-team-season" style="width:100%;">
+                    <option value="">Current Season</option>
+                </select>
+            </div>
+            <p style="color:#666;font-size:0.85rem;margin-top:0.5rem;">All players from the selected team and season will be added to this award. Players already on the award will be skipped.</p>
             <div id="pp-bulk-add-team-error" style="color:#a00;margin-top:8px;display:none;"></div>
             <div id="pp-bulk-add-team-result" style="color:#080;margin-top:8px;display:none;"></div>
         </div>

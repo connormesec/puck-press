@@ -200,6 +200,11 @@ class Puck_Press_Game_Post_Creator {
 		$id = $wpdb->get_var(
 			"SELECT id FROM {$wpdb->prefix}pp_schedules WHERE is_main = 1 LIMIT 1"
 		);
+		if ( ! $id ) {
+			$id = $wpdb->get_var(
+				"SELECT id FROM {$wpdb->prefix}pp_schedules ORDER BY id ASC LIMIT 1"
+			);
+		}
 		return $id ? (int) $id : null;
 	}
 
@@ -450,12 +455,23 @@ class Puck_Press_Game_Post_Creator {
 		);
 		$over  = count( $posts ) - $max;
 		for ( $i = 0; $i < $over; $i++ ) {
-			$pid      = $posts[ $i ];
-			$thumb_id = get_post_thumbnail_id( $pid );
+			$pid       = $posts[ $i ];
+			$permalink = get_permalink( $pid );
+			$thumb_id  = get_post_thumbnail_id( $pid );
 			if ( $thumb_id ) {
 				wp_delete_attachment( $thumb_id, true );
 			}
 			wp_delete_post( $pid, true );
+
+			if ( $permalink ) {
+				global $wpdb;
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->prefix}pp_team_games_archive SET post_link = NULL WHERE post_link = %s",
+						$permalink
+					)
+				);
+			}
 		}
 	}
 
@@ -516,6 +532,8 @@ class Puck_Press_Game_Post_Creator {
 		}
 
 		$this->set_team_ids_on_post( $post_id, $this->get_team_ids_for_game( $game_id, $team_id ) );
+
+		Puck_Press_Seo_Yoast::write_game_meta( $post_id, (string) $game_id );
 
 		return get_permalink( $post_id );
 	}

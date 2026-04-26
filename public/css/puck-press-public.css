@@ -586,7 +586,7 @@
 
 /* ── Awards shortcode ─────────────────────────────────────────────────── */
 .pp-awards-wrap {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 2rem 1rem;
   background: var(--pp-awards-page_bg, #FFFFFF);

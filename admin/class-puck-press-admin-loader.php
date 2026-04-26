@@ -24,7 +24,6 @@ class Puck_Press_Admin_Loader {
 
 		// Utilities
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-wpdb-utils-base-abstract.php';
-			require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedule-archive-wpdb-utils.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/roster/class-puck-press-roster-wpdb-utils.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
 		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-schedules-wpdb-utils.php';

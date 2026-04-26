@@ -431,22 +431,51 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
 
     public function search_players( string $query, int $limit = 20 ): array {
         global $wpdb;
-        $d = $wpdb->prefix . 'pp_team_players_display';
-        $t = $wpdb->prefix . 'pp_teams';
+        $like = '%' . $wpdb->esc_like( $query ) . '%';
 
-        return $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT d.player_id, d.team_id, d.name, d.pos, d.headshot_link, t.name AS team_name
-                FROM $d d
-                JOIN $t t ON t.id = d.team_id
-                WHERE d.name LIKE %s
-                ORDER BY d.name ASC
-                LIMIT %d",
-                '%' . $wpdb->esc_like( $query ) . '%',
-                $limit
-            ),
-            ARRAY_A
-        ) ?? array();
+        $live = $wpdb->get_results( $wpdb->prepare(
+            "SELECT d.player_id, d.team_id, d.name, d.pos, d.headshot_link,
+                    t.name AS team_name, 'Current' AS season_label
+             FROM {$wpdb->prefix}pp_team_players_display d
+             JOIN {$wpdb->prefix}pp_teams t ON t.id = d.team_id
+             WHERE d.name LIKE %s
+             ORDER BY d.name ASC
+             LIMIT %d",
+            $like, $limit
+        ), ARRAY_A ) ?: array();
+
+        // TECH DEBT: LIKE scan without index on name. If archive grows to thousands
+        // of players, consider adding a FULLTEXT index on pp_team_players_archive.name.
+        $archive = $wpdb->get_results( $wpdb->prepare(
+            "SELECT a.player_id, t.id AS team_id, a.name, a.pos, a.headshot_link,
+                    a.team_name, COALESCE(s.label, a.season_key) AS season_label
+             FROM {$wpdb->prefix}pp_team_players_archive a
+             LEFT JOIN {$wpdb->prefix}pp_teams t ON t.name = a.team_name
+             LEFT JOIN {$wpdb->prefix}pp_archive_seasons s ON s.season_key = a.season_key
+             WHERE a.name LIKE %s AND t.id IS NOT NULL
+             ORDER BY a.season_key DESC, a.name ASC
+             LIMIT 100",
+            $like
+        ), ARRAY_A ) ?: array();
+
+        $seen    = array();
+        $results = array();
+        foreach ( $live as $row ) {
+            $key = $row['player_id'] . ':' . $row['team_id'];
+            if ( ! isset( $seen[ $key ] ) ) {
+                $results[] = $row;
+                $seen[ $key ] = true;
+            }
+        }
+        foreach ( $archive as $row ) {
+            $key = $row['player_id'] . ':' . $row['team_id'];
+            if ( ! isset( $seen[ $key ] ) ) {
+                $results[] = $row;
+                $seen[ $key ] = true;
+            }
+        }
+
+        return array_slice( $results, 0, $limit );
     }
 
     public function get_next_player_sort_order( int $award_id ): int {
@@ -512,5 +541,53 @@ class Puck_Press_Awards_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
             'skipped' => $skipped,
             'total'   => count( $players ),
         );
+    }
+
+    public function bulk_add_archived_team_players( int $award_id, int $team_id, string $season_key ): array {
+        global $wpdb;
+
+        $team_name = (string) $wpdb->get_var(
+            $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}pp_teams WHERE id = %d", $team_id )
+        );
+        if ( $team_name === '' ) {
+            return array( 'added' => 0, 'skipped' => 0, 'total' => 0 );
+        }
+
+        $players = $wpdb->get_results( $wpdb->prepare(
+            "SELECT player_id, name, pos, headshot_link
+             FROM {$wpdb->prefix}pp_team_players_archive
+             WHERE team_name = %s AND season_key = %s
+             ORDER BY name ASC",
+            $team_name, $season_key
+        ), ARRAY_A ) ?: array();
+
+        $logo_url = $this->resolve_team_logo( $team_id );
+        $sort     = $this->get_next_player_sort_order( $award_id );
+        $added    = 0;
+        $skipped  = 0;
+
+        foreach ( $players as $p ) {
+            $result = $this->add_player( array(
+                'award_id'      => $award_id,
+                'player_id'     => $p['player_id'],
+                'team_id'       => $team_id,
+                'player_name'   => $p['name'],
+                'team_name'     => $team_name,
+                'position'      => $p['pos'],
+                'headshot_url'  => $p['headshot_link'] ?? '',
+                'team_logo_url' => $logo_url ?? '',
+                'is_external'   => 0,
+                'sort_order'    => $sort,
+            ) );
+
+            if ( is_wp_error( $result ) ) {
+                ++$skipped;
+            } else {
+                ++$added;
+                ++$sort;
+            }
+        }
+
+        return array( 'added' => $added, 'skipped' => $skipped, 'total' => count( $players ) );
     }
 }

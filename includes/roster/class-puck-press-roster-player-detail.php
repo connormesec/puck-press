@@ -53,6 +53,23 @@ class Puck_Press_Roster_Player_Detail {
 			}
 		}
 
+		// Fallback: search archive (most recent season first)
+		// TECH DEBT: Loads all archive rows and loops — O(n) scan, same pattern as the
+		// live query above. For large archives, add a slug column with an index instead.
+		$archive_rows = $wpdb->get_results(
+			"SELECT a.*, t.id AS team_id
+			 FROM {$wpdb->prefix}pp_team_players_archive a
+			 LEFT JOIN {$wpdb->prefix}pp_teams t ON t.name = a.team_name
+			 ORDER BY a.season_key DESC",
+			ARRAY_A
+		);
+		foreach ( $archive_rows as $row ) {
+			if ( sanitize_title( $row['name'] ) === $slug ) {
+				$cache[ $slug ] = $row;
+				return $row;
+			}
+		}
+
 		$cache[ $slug ] = null;
 		return null;
 	}

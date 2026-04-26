@@ -687,7 +687,7 @@ class Puck_Press_Admin {
 		wp_enqueue_script( 'select2-js', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', array( 'jquery' ), '4.1.0', true );
 
 		// Get the current tab (sanitize as needed)
-		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : null;
+		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'teams';
 		// Tab-specific scripts
 		switch ( $current_tab ) {
 			case 'teams':
@@ -823,7 +823,6 @@ class Puck_Press_Admin {
 				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-roster-color-picker', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-color-picker.js', array( 'jquery', 'select2-js', 'puck-press-color-picker-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-roster-preview', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-preview.js', array( 'jquery' ), $this->version, false );
-				wp_enqueue_script( 'puck-press-roster-archive', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-archive.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-roster', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-bulk-edit-roster.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 			wp_enqueue_script( 'puck-press-roster-teams', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-roster-teams.js', array( 'jquery' ), $this->version, false );
 				break;
@@ -856,13 +855,19 @@ class Puck_Press_Admin {
 				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-awards-color-picker', plugin_dir_url( __FILE__ ) . 'js/awards/puck-press-awards-color-picker.js', array( 'jquery', 'select2-js', 'puck-press-color-picker-shared' ), $this->version, false );
 				break;
-			default: // Schedule tab (null or unspecified)
+			case 'archives':
+				wp_enqueue_script( 'puck-press-archives', plugin_dir_url( __FILE__ ) . 'js/archives/puck-press-archives.js', array( 'jquery' ), $this->version, false );
+				wp_localize_script( 'puck-press-archives', 'ppArchives', array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'pp_archives_nonce' ),
+				) );
+				break;
+			default: // Schedule tab
 				wp_enqueue_script( 'puck-press-add-game', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-add-game.js', array( 'jquery', 'puck-press-admin-shared', 'select2-js' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-color-picker-shared', plugin_dir_url( __FILE__ ) . 'js/puck-press-color-picker-shared.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-color-picker', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-color-picker.js', array( 'jquery', 'puck-press-color-picker-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-slider-color-picker', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array( 'jquery', 'puck-press-color-picker-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-schedule-preview', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-preview.js', array( 'jquery' ), $this->version, false );
-				wp_enqueue_script( 'puck-press-schedule-archive', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-archive.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-schedule', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-bulk-edit-schedule.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery' ), $this->version, false );
 				break;
@@ -1827,6 +1832,7 @@ class Puck_Press_Admin {
 						<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Season</th>
 						<th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Archived</th>
 						<th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Games</th>
+						<th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Roster</th>
 						<th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Skaters</th>
 						<th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Goalies</th>
 						<th style="padding:8px 12px;border:1px solid #e0e0e0;"></th>
@@ -1835,9 +1841,18 @@ class Puck_Press_Admin {
 				<tbody>
 				<?php foreach ( $archives as $archive ) : ?>
 					<tr>
-						<td style="padding:8px 12px;border:1px solid #e0e0e0;"><?php echo esc_html( $archive['label'] ); ?></td>
+						<td style="padding:8px 12px;border:1px solid #e0e0e0;">
+							<span class="pp-archive-label" data-season-key="<?php echo esc_attr( $archive['season_key'] ); ?>"><?php echo esc_html( $archive['label'] ); ?></span>
+							<button class="pp-archive-rename-btn" data-season-key="<?php echo esc_attr( $archive['season_key'] ); ?>" title="Rename" style="background:none;border:none;cursor:pointer;padding:2px 4px;font-size:0.8rem;">&#9998;</button>
+							<?php if ( ! empty( $archive['api_label'] ) ) : ?>
+								<br><small style="color:#888;">Original: <?php echo esc_html( $archive['api_label'] ); ?>
+								<button class="pp-archive-reset-label-btn" data-season-key="<?php echo esc_attr( $archive['season_key'] ); ?>" data-api-label="<?php echo esc_attr( $archive['api_label'] ); ?>" title="Reset to original" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:0.75rem;color:#1a73e8;">reset</button>
+								</small>
+							<?php endif; ?>
+						</td>
 						<td style="padding:8px 12px;border:1px solid #e0e0e0;"><?php echo esc_html( date_i18n( 'M j, Y', strtotime( $archive['archived_at'] ) ) ); ?></td>
 						<td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['game_count']; ?></td>
+						<td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) ( $archive['roster_count'] ?? 0 ); ?></td>
 						<td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['skater_count']; ?></td>
 						<td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['goalie_count']; ?></td>
 						<td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:right;">
@@ -1854,6 +1869,213 @@ class Puck_Press_Admin {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	public static function pp_ajax_delete_archive_for_team(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		$season_key = sanitize_text_field( wp_unslash( $_POST['season_key'] ?? '' ) );
+		$team_name  = sanitize_text_field( wp_unslash( $_POST['team_name'] ?? '' ) );
+
+		if ( ! $season_key || ! $team_name ) {
+			wp_send_json_error( array( 'message' => 'season_key and team_name are required.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		( new Puck_Press_Archive_Manager() )->delete_archive_for_team( $season_key, $team_name );
+
+		wp_send_json_success( array( 'archives_html' => self::build_all_archives_html() ) );
+	}
+
+	public static function pp_ajax_rename_archive(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		$season_key = sanitize_text_field( wp_unslash( $_POST['season_key'] ?? '' ) );
+		$new_label  = sanitize_text_field( wp_unslash( $_POST['label'] ?? '' ) );
+
+		if ( ! $season_key || ! $new_label ) {
+			wp_send_json_error( array( 'message' => 'season_key and label are required.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$updated = ( new Puck_Press_Archive_Manager() )->rename_archive( $season_key, $new_label );
+
+		if ( ! $updated ) {
+			global $wpdb;
+			wp_send_json_error( array( 'message' => 'Rename failed. No rows updated. DB error: ' . ( $wpdb->last_error ?: 'none' ) . ' | season_key: ' . $season_key ) );
+		}
+
+		wp_send_json_success( array( 'archives_html' => self::build_all_archives_html() ) );
+	}
+
+	public static function pp_ajax_get_acha_seasons(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-acha-season-discoverer.php';
+		$bootstrap = Puck_Press_Acha_Season_Discoverer::get_bootstrap();
+
+		if ( empty( $bootstrap ) ) {
+			wp_send_json_error( array( 'message' => 'Failed to fetch ACHA bootstrap data.' ) );
+		}
+
+		$regular  = $bootstrap['regularSeasons'] ?? array();
+		$playoff  = $bootstrap['playoffSeasons'] ?? array();
+
+		$seasons = array();
+		foreach ( $regular as $s ) {
+			$seasons[] = array(
+				'id'         => $s['id'],
+				'name'       => wp_unslash( $s['name'] ?? '' ),
+				'start_date' => $s['start_date'] ?? '',
+				'type'       => 'regular',
+				'season_key' => ! empty( $s['start_date'] )
+					? Puck_Press_Acha_Season_Discoverer::derive_season_year( $s['start_date'] )
+					: '',
+			);
+		}
+		foreach ( $playoff as $s ) {
+			$seasons[] = array(
+				'id'         => $s['id'],
+				'name'       => wp_unslash( $s['name'] ?? '' ),
+				'start_date' => $s['start_date'] ?? '',
+				'type'       => 'playoff',
+				'season_key' => ! empty( $s['start_date'] )
+					? Puck_Press_Acha_Season_Discoverer::derive_season_year( $s['start_date'] )
+					: '',
+			);
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$archives          = ( new Puck_Press_Archive_Manager() )->get_all_archives();
+		$archived_keys     = array_column( $archives, 'season_key' );
+
+		wp_send_json_success( array(
+			'seasons'       => $seasons,
+			'archived_keys' => $archived_keys,
+		) );
+	}
+
+	public static function pp_ajax_get_acha_teams_for_season(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		$season_id = sanitize_text_field( $_POST['season_id'] ?? '' );
+		if ( ! $season_id ) {
+			wp_send_json_error( array( 'message' => 'season_id is required.' ) );
+		}
+
+		$url = 'https://lscluster.hockeytech.com/feed/index.php'
+			. '?feed=statviewfeed&view=teamsForSeason'
+			. '&season=' . urlencode( $season_id )
+			. '&division=-1'
+			. '&key=e6867b36742a0c9d&client_code=acha&site_id=2&lang=en';
+
+		$raw = @file_get_contents( $url );
+		if ( $raw === false ) {
+			wp_send_json_error( array( 'message' => 'Failed to fetch team data from ACHA API.' ) );
+		}
+
+		$decoded = json_decode( substr( (string) $raw, 1, -1 ), true );
+		if ( ! is_array( $decoded ) ) {
+			wp_send_json_error( array( 'message' => 'Failed to parse ACHA API response.' ) );
+		}
+
+		$teams = array();
+		foreach ( $decoded['teams'] ?? array() as $team ) {
+			if ( ! empty( $team['id'] ) ) {
+				$teams[] = array(
+					'id'          => $team['id'],
+					'name'        => $team['name'] ?? '',
+					'nickname'    => $team['nickname'] ?? '',
+					'division_id' => $team['division_id'] ?? '',
+				);
+			}
+		}
+
+		wp_send_json_success( array( 'teams' => $teams ) );
+	}
+
+	public static function pp_ajax_import_acha_archive(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$archive_manager = new Puck_Press_Archive_Manager();
+
+		$result = $archive_manager->import_from_acha_api( array(
+			'team_id'         => (int) ( $_POST['team_id'] ?? 0 ),
+			'api_team_id'     => sanitize_text_field( $_POST['api_team_id'] ?? '' ),
+			'season_id'       => sanitize_text_field( $_POST['season_id'] ?? '' ),
+			'division_id'     => sanitize_text_field( $_POST['division_id'] ?? '-1' ),
+			'season_key'      => sanitize_text_field( $_POST['season_key'] ?? '' ),
+			'label'           => sanitize_text_field( $_POST['label'] ?? '' ),
+			'api_label'       => sanitize_text_field( $_POST['api_label'] ?? '' ),
+			'schedule'        => ! empty( $_POST['schedule'] ),
+			'roster_and_stats' => ! empty( $_POST['roster_and_stats'] ),
+			'append'          => ! empty( $_POST['append'] ),
+		) );
+
+		if ( ! $result['success'] ) {
+			wp_send_json_error( $result );
+		}
+
+		$result['archives_html'] = self::build_all_archives_html();
+		wp_send_json_success( $result );
+	}
+
+	public static function pp_ajax_import_usphl_archive(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$archive_manager = new Puck_Press_Archive_Manager();
+
+		$result = $archive_manager->import_from_usphl_api( array(
+			'team_id'         => (int) ( $_POST['team_id'] ?? 0 ),
+			'api_team_id'     => sanitize_text_field( $_POST['api_team_id'] ?? '' ),
+			'season_id'       => sanitize_text_field( $_POST['season_id'] ?? '' ),
+			'season_key'      => sanitize_text_field( $_POST['season_key'] ?? '' ),
+			'label'           => sanitize_text_field( $_POST['label'] ?? '' ),
+			'api_label'       => 'USPHL Season ' . sanitize_text_field( $_POST['season_id'] ?? '' ),
+			'schedule'        => ! empty( $_POST['schedule'] ),
+			'roster_and_stats' => ! empty( $_POST['roster_and_stats'] ),
+			'append'          => ! empty( $_POST['append'] ),
+		) );
+
+		if ( ! $result['success'] ) {
+			wp_send_json_error( $result );
+		}
+
+		$result['archives_html'] = self::build_all_archives_html();
+		wp_send_json_success( $result );
+	}
+
+	public static function pp_ajax_refresh_all_archives(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+		check_ajax_referer( 'pp_archives_nonce', 'nonce' );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$result = ( new Puck_Press_Archive_Manager() )->refresh_all_archives();
+
+		$result['archives_html'] = self::build_all_archives_html();
+		wp_send_json_success( $result );
 	}
 
 	public static function pp_ajax_wipe_all_teams_season_data(): void {
@@ -2866,6 +3088,13 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_archive_all_teams_season', array( self::class, 'pp_ajax_archive_all_teams_season' ) );
 		add_action( 'wp_ajax_pp_wipe_all_teams_season_data', array( self::class, 'pp_ajax_wipe_all_teams_season_data' ) );
 		add_action( 'wp_ajax_pp_delete_team_archive', array( self::class, 'pp_ajax_delete_team_archive' ) );
+		add_action( 'wp_ajax_pp_delete_archive_for_team', array( self::class, 'pp_ajax_delete_archive_for_team' ) );
+		add_action( 'wp_ajax_pp_rename_archive', array( self::class, 'pp_ajax_rename_archive' ) );
+		add_action( 'wp_ajax_pp_get_acha_seasons', array( self::class, 'pp_ajax_get_acha_seasons' ) );
+		add_action( 'wp_ajax_pp_get_acha_teams_for_season', array( self::class, 'pp_ajax_get_acha_teams_for_season' ) );
+		add_action( 'wp_ajax_pp_import_acha_archive', array( self::class, 'pp_ajax_import_acha_archive' ) );
+		add_action( 'wp_ajax_pp_import_usphl_archive', array( self::class, 'pp_ajax_import_usphl_archive' ) );
+		add_action( 'wp_ajax_pp_refresh_all_archives', array( self::class, 'pp_ajax_refresh_all_archives' ) );
 
 		// Game edits
 		add_action( 'wp_ajax_pp_get_game_data', array( self::class, 'pp_ajax_get_game_data' ) );
@@ -3004,11 +3233,14 @@ class Puck_Press_Admin {
 		$results = array();
 
 		foreach ( $players as $p ) {
-			$team_id  = (int) $p['team_id'];
-			$logo_url = $utils->resolve_team_logo( $team_id );
+			$team_id      = (int) $p['team_id'];
+			$logo_url     = $utils->resolve_team_logo( $team_id );
+			$season_label = $p['season_label'] ?? 'Current';
+			$text         = $p['name'] . ' — ' . $p['team_name'] . ' (' . $p['pos'] . ')'
+			              . ( $season_label !== 'Current' ? ' — ' . $season_label : '' );
 			$results[] = array(
 				'id'            => $p['player_id'] . '|' . $team_id,
-				'text'          => $p['name'] . ' — ' . $p['team_name'] . ' (' . $p['pos'] . ')',
+				'text'          => $text,
 				'player_id'     => $p['player_id'],
 				'team_id'       => $team_id,
 				'name'          => $p['name'],
@@ -3075,15 +3307,21 @@ class Puck_Press_Admin {
 	}
 
 	public static function pp_ajax_bulk_add_team_to_award(): void {
-		$utils    = self::pp_awards_check();
-		$award_id = absint( $_POST['award_id'] ?? 0 );
-		$team_id  = absint( $_POST['team_id'] ?? 0 );
+		$utils      = self::pp_awards_check();
+		$award_id   = absint( $_POST['award_id'] ?? 0 );
+		$team_id    = absint( $_POST['team_id'] ?? 0 );
+		$season_key = sanitize_text_field( $_POST['season_key'] ?? '' );
 
 		if ( ! $award_id || ! $team_id ) {
 			wp_send_json_error( array( 'message' => 'Award ID and Team ID are required.' ) );
 		}
 
-		$result = $utils->bulk_add_team_players( $award_id, $team_id );
+		if ( $season_key !== '' ) {
+			$result = $utils->bulk_add_archived_team_players( $award_id, $team_id, $season_key );
+		} else {
+			$result = $utils->bulk_add_team_players( $award_id, $team_id );
+		}
+
 		wp_send_json_success( $result );
 	}
 
@@ -3172,7 +3410,18 @@ class Puck_Press_Admin {
 				'text' => $t['name'],
 			);
 		}
-		wp_send_json_success( array( 'teams' => $results ) );
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/archive/class-puck-press-archive-manager.php';
+		$archives = ( new Puck_Press_Archive_Manager() )->get_all_archives();
+		$seasons  = array();
+		foreach ( $archives as $a ) {
+			$seasons[] = array(
+				'key'   => $a['season_key'],
+				'label' => $a['label'],
+			);
+		}
+
+		wp_send_json_success( array( 'teams' => $results, 'archived_seasons' => $seasons ) );
 	}
 
 	public static function pp_ajax_get_awards_html(): void {

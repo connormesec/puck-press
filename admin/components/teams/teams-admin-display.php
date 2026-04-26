@@ -186,58 +186,7 @@ class Puck_Press_Teams_Admin_Display {
         <h3 class="pp-section-header" style="margin: 24px 0 12px;">Division Standings</h3>
         <?php echo $this->standings_card->render(); ?>
 
-        <!-- Season archives card -->
-        <div class="pp-card" style="margin-bottom:16px;">
-            <div class="pp-card-header">
-                <div>
-                    <h2 class="pp-card-title">Season Archives</h2>
-                    <p class="pp-card-subtitle">Archived seasons for all teams</p>
-                </div>
-            </div>
-            <div class="pp-card-content" style="padding:0 24px 16px;">
-                <?php
-                $archive_manager   = new Puck_Press_Archive_Manager();
-                $existing_archives = $archive_manager->get_all_archives();
-                if ( empty( $existing_archives ) ) :
-                ?>
-                <div id="pp-team-archives-list">
-                    <p style="color:#5f6368;font-size:0.875rem;margin:12px 0 0;">No archives yet.</p>
-                </div>
-                <?php else : ?>
-                <div id="pp-team-archives-list">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.875rem;margin-top:12px;">
-                        <thead>
-                            <tr style="background:#f5f5f5;">
-                                <th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Season</th>
-                                <th style="text-align:left;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Archived</th>
-                                <th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Games</th>
-                                <th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Skaters</th>
-                                <th style="text-align:center;padding:8px 12px;border:1px solid #e0e0e0;font-weight:600;">Goalies</th>
-                                <th style="padding:8px 12px;border:1px solid #e0e0e0;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ( $existing_archives as $archive ) : ?>
-                            <tr>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;"><?php echo esc_html( $archive['label'] ); ?></td>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;"><?php echo esc_html( date_i18n( 'M j, Y', strtotime( $archive['archived_at'] ) ) ); ?></td>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['game_count']; ?></td>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['skater_count']; ?></td>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:center;"><?php echo (int) $archive['goalie_count']; ?></td>
-                                <td style="padding:8px 12px;border:1px solid #e0e0e0;text-align:right;">
-                                    <button class="pp-button pp-button-danger pp-delete-archive-btn"
-                                        data-season-key="<?php echo esc_attr( $archive['season_key'] ); ?>">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
+        <!-- Season archives moved to the Archives tab -->
         <?php endif; ?>
 
         <?php if ( ! empty( $teams ) ) : ?>

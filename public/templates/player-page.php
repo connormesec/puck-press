@@ -86,7 +86,7 @@ foreach ( $current_stats_rows as $row ) {
 	$all_stats_rows[] = $row;
 }
 foreach ( $archived_stats as $archived_row ) {
-	$archived_row['season'] = trim( ( $archived_row['season_key'] ?? 'Archived' ) . ' ' . ( $archived_row['source'] ?? '' ) );
+	$archived_row['season'] = $archived_row['season_label'] ?? $archived_row['season_key'] ?? 'Archived';
 	$all_stats_rows[]       = $archived_row;
 }
 

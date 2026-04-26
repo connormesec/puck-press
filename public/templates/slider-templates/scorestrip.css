@@ -61,6 +61,7 @@
   overflow: hidden;
   -webkit-overflow-scrolling: touch;
   -ms-overflow-style: none;
+  margin-left: 0 !important; /* Cancel gameslider.css's unscoped -10px bleed */
 }
 
 .pp-ss-container .glider-track {
@@ -74,6 +75,7 @@
 .pp-ss-container .glider-slide {
   height: var(--ss-h) !important;
   min-width: 0;
+  margin-left: 0; /* Cancel gameslider.css's unscoped 10px bleed */
 }
 
 /* ── Score item (completed game) ── */

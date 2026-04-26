@@ -69,6 +69,7 @@ class StandingsTemplate extends PuckPressTemplate {
     }
 
     private static function shorten_team_name( string $name ): string {
+        $name = trim( $name );
         $name = preg_replace( '/^University of\s+/i', '', $name );
         $name = preg_replace( '/^College of\s+/i', '', $name );
         $name = preg_replace( '/\s+University$/i', '', $name );
@@ -236,7 +237,14 @@ class StandingsTemplate extends PuckPressTemplate {
                             $gf  = (int) ( $row['gf'] ?? 0 );
                             $ga  = (int) ( $row['ga'] ?? 0 );
 
-                            $pct = $gp > 0 ? number_format( $pts / ( $gp * 2 ), 3 ) : '—';
+                            $pct_raw = $row['pct'] ?? '';
+                            if ( $pct_raw !== '' ) {
+                                $pct = number_format( (float) $pct_raw, 3 );
+                            } elseif ( $gp > 0 ) {
+                                $pct = number_format( $pts / ( $gp * 2 ), 3 );
+                            } else {
+                                $pct = '—';
+                            }
                             if ( $pct !== '—' ) {
                                 $pct = ltrim( $pct, '0' ) ?: '.000';
                             }

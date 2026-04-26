@@ -778,4 +778,5 @@ class Puck_Press_Public {
 			true
 		);
 	}
+
 }

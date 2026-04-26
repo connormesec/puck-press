@@ -416,6 +416,13 @@ $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
           width: '100%',
           dropdownParent: $('#pp-bulk-add-team-modal')
         });
+
+        var seasons = (res.data && res.data.archived_seasons) || [];
+        var $seasonSel = $('#pp-bulk-team-season');
+        $seasonSel.find('option:not(:first)').remove();
+        seasons.forEach(function (s) {
+          $seasonSel.append('<option value="' + $('<span>').text(s.key).html() + '">' + $('<span>').text(s.label).html() + '</option>');
+        });
       }
     });
 
@@ -445,7 +452,8 @@ $('#pp-edit-award-sort-order').val($btn.data('sort-order'));
       action: 'pp_bulk_add_team_to_award',
       nonce: cfg.nonce,
       award_id: awardId,
-      team_id: teamId
+      team_id: teamId,
+      season_key: $('#pp-bulk-team-season').val()
     }, function (res) {
       if (res.success) {
         var d = res.data;

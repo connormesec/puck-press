@@ -37,6 +37,18 @@ class Puck_Press_Standings_Render_Utils {
         $division_rows = $cached['division_standings_data'] ?? array();
         $overall_rows  = $cached['standings_data'];
 
+        if ( ! empty( $division_rows ) && ! empty( $overall_rows ) ) {
+            $overall_by_id = array_column( $overall_rows, null, 'team_id' );
+            foreach ( $division_rows as &$div_row ) {
+                $tid = $div_row['team_id'] ?? '';
+                if ( isset( $overall_by_id[ $tid ] ) ) {
+                    $div_row['streak']  = $overall_by_id[ $tid ]['streak'] ?? '';
+                    $div_row['last_10'] = $overall_by_id[ $tid ]['last_10'] ?? '';
+                }
+            }
+            unset( $div_row );
+        }
+
         $data = array(
             'rows'           => ! empty( $division_rows ) ? $division_rows : $overall_rows,
             'overall_rows'   => ! empty( $division_rows ) ? $overall_rows : array(),

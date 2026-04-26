@@ -139,6 +139,13 @@ class Puck_Press {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-yoast-sitemap.php';
 		Puck_Press_Yoast_Sitemap::init();
 
+		require_once plugin_dir_path( __DIR__ ) . 'includes/seo/class-puck-press-seo-detector.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/seo/class-puck-press-seo-templates.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/seo/class-puck-press-seo-yoast.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/seo/class-puck-press-seo-avatar.php';
+		Puck_Press_Seo_Yoast::init();
+		Puck_Press_Seo_Avatar::init();
+
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-activator.php';
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_migrations' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_group_migration' ) );
@@ -148,6 +155,7 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_promo_columns_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_league_news_options_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_division_standings_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_archive_roster_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}
@@ -223,7 +231,7 @@ class Puck_Press {
 					'slug'       => 'game-recap',
 					'with_front' => false,
 				),
-				'supports'     => array( 'title', 'editor', 'thumbnail', 'custom-fields' ),
+				'supports'     => array( 'title', 'editor', 'thumbnail', 'custom-fields', 'author' ),
 				'show_in_menu' => false,
 				'show_in_rest' => true,
 			)
