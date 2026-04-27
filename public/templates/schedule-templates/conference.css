@@ -197,10 +197,16 @@
 
 /* ── Winner arrow ─────────────────────────────────────── */
 .csb-winner-arrow {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
   color: var(--pp-conference-accent);
   flex-shrink: 0;
   margin-left: 2px;
+}
+
+.csb-winner-arrow svg {
+  width: 10px;
+  height: 10px;
 }
 
 /* ── Game time ────────────────────────────────────────── */

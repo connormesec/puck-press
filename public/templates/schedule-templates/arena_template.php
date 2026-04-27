@@ -305,7 +305,7 @@ class ArenaTemplate extends PuckPressTemplate {
 				$html .= '<div class="arena-result ' . esc_attr( $result['cls'] ) . '">' . esc_html( $result['display'] ) . '</div>';
 			}
 			if ( ! empty( $game['post_link'] ) ) {
-				$html .= '<a class="arena-row__link" href="' . esc_url( $game['post_link'] ) . '" target="_blank" rel="noopener">&#9658;&nbsp;Recap</a>';
+				$html .= '<a class="arena-row__link" href="' . esc_url( $game['post_link'] ) . '" target="_blank" rel="noopener"><svg class="arena-row__link-icon" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 1 L9 5 L2 9 Z" fill="currentColor"/></svg>Recap</a>';
 			}
 		} elseif ( ! empty( $game['promo_ticket_link'] ) ) {
 				$html .= '<a class="arena-ticket-btn" href="' . esc_url( $game['promo_ticket_link'] ) . '" target="_blank" rel="noopener">Tickets</a>';

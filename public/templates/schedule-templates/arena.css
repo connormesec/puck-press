@@ -335,6 +335,13 @@
   font-weight: 600;
 }
 
+.arena-row__link-icon {
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
 .arena-row__link:hover {
   text-decoration: underline;
 }

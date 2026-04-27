@@ -185,7 +185,7 @@ class ConferenceTemplate extends PuckPressTemplate {
 		$html .= '</div>';
 		$html .= '<span class="csb-score">' . esc_html( (string) $score ) . '</span>';
 		if ( $winner ) {
-			$html .= '<span class="csb-winner-arrow" aria-hidden="true">&#9664;</span>';
+			$html .= '<span class="csb-winner-arrow" aria-hidden="true"><svg viewBox="0 0 10 10" focusable="false"><path d="M8 1 L1 5 L8 9 Z" fill="currentColor"/></svg></span>';
 		}
 		$html .= '</div>';
 		return $html;
