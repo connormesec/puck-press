@@ -51,6 +51,9 @@ class Puck_Press_Schedule_Add_Game_Modal extends Puck_Press_Admin_Modal_Abstract
 				continue;
 			}
 
+			// ACHA feed prefixes names with division codes (M1-3, W1-2, MD1-3, WD1-2, AM, AW, WUG). Strip them.
+			$team['name'] = preg_replace( '/^(?:M[123]|W[12]|MD[123]|WD[12]|AM|AW|WUG)\s+/', '', $team['name'] );
+
 			$value = esc_attr( $team['id'] );
 			$label = esc_html( $team['name'] );
 
