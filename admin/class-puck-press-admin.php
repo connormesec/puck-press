@@ -2363,16 +2363,23 @@ class Puck_Press_Admin {
 		// "manual_" prefix is the convention edit/delete handlers detect to take the manual code paths.
 		$game_id = 'manual_' . wp_generate_uuid4();
 
+		// Strip ACHA division prefixes (M1-3, W1-2, MD1-3, WD1-2, AM, AW, WUG) from the
+		// posted team names so saved games store the clean name. The dropdown still shows
+		// the prefix to help disambiguate divisions when picking.
+		$division_prefix_regex = '/^(?:M[123]|W[12]|MD[123]|WD[12]|AM|AW|WUG)\s+/';
+		$target_team_name      = preg_replace( $division_prefix_regex, '', sanitize_text_field( $_POST['target_team_name'] ?? '' ) );
+		$opponent_team_name    = preg_replace( $division_prefix_regex, '', sanitize_text_field( $_POST['opponent_team_name'] ?? '' ) );
+
 		$edit_data = array(
 			'source'                 => 'manual',
 			'source_type'            => 'manual',
 			'game_id'                => $game_id,
 			'target_team_id'         => sanitize_text_field( $_POST['target_team_id'] ?? '' ),
-			'target_team_name'       => sanitize_text_field( $_POST['target_team_name'] ?? '' ),
+			'target_team_name'       => $target_team_name,
 			'target_team_nickname'   => sanitize_text_field( $_POST['target_team_nickname'] ?? '' ),
 			'target_team_logo'       => esc_url_raw( $_POST['target_team_logo'] ?? '' ),
 			'opponent_team_id'       => sanitize_text_field( $_POST['opponent_team_id'] ?? '' ),
-			'opponent_team_name'     => sanitize_text_field( $_POST['opponent_team_name'] ?? '' ),
+			'opponent_team_name'     => $opponent_team_name,
 			'opponent_team_nickname' => sanitize_text_field( $_POST['opponent_team_nickname'] ?? '' ),
 			'opponent_team_logo'     => esc_url_raw( $_POST['opponent_team_logo'] ?? '' ),
 			'target_score'           => $target_score   === '' ? null : (int) $target_score,
