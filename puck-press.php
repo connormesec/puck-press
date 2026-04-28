@@ -15,7 +15,7 @@
  * Plugin Name:       Puck Press
  * Plugin URI:        https://www.google.com
  * Description:       This plugin hosts a number of tools for creating the best ice hockey website
- * Version:           1.0.30
+ * Version:           1.0.31
  * Author:            Connor Mesec
  * Author URI:        https://https://github.com/connormesec//
  * License:           GPL-2.0+
@@ -34,7 +34,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'PUCK_PRESS_VERSION', '1.0.30' );
+define( 'PUCK_PRESS_VERSION', '1.0.31' );
 define( 'PLUGIN_DIR_PATH', plugin_dir_path( __FILE__ ) );
 
 // Optional dev constant — define in wp-config.php to override "now" for testing.
