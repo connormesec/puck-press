@@ -66,7 +66,7 @@
 
 			const formData = new FormData();
 			formData.append('action', 'pp_add_manual_game');
-			formData.append('schedule_id', (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1);
+			formData.append('team_id', parseInt($('#pp-active-team-id').val(), 10) || 0);
 			formData.append('game_date', $('#pp-game-date', $modal).val());
 			formData.append('game_time', $('#pp-game-time', $modal).val());
 			formData.append('target_team_id', target.id || '0');
@@ -94,11 +94,9 @@
 				success: function (response) {
 					if (response.success) {
 						$('#pp-games-table').replaceWith(response.data.games_table_html);
-						$('#pp-schedule-edits-table').replaceWith(response.data.edits_table_html);
-						refreshGamesTable().then(() => {
-							restoreStyles();
-							countGameRows();
-						});
+						if (typeof window.applyGameEditHighlights === 'function') window.applyGameEditHighlights();
+						if (typeof countGameRows === 'function') countGameRows();
+						restoreStyles();
 						closeModal();
 					} else {
 						alert('Failed to add game: ' + (response.data?.message || 'Unknown error'));

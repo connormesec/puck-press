@@ -2322,6 +2322,82 @@ class Puck_Press_Admin {
 		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
 	}
 
+	public static function pp_ajax_add_manual_game(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+		}
+
+		$team_id = (int) ( $_POST['team_id'] ?? 0 );
+		if ( ! $team_id ) {
+			wp_send_json_error( array( 'message' => 'team_id is required.' ) );
+		}
+
+		$game_date = sanitize_text_field( $_POST['game_date'] ?? '' );
+		$game_time = sanitize_text_field( $_POST['game_time'] ?? '' );
+		if ( ! $game_date ) {
+			wp_send_json_error( array( 'message' => 'game_date is required.' ) );
+		}
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/schedule/class-puck-press-team-source-importer.php';
+
+		$time_for_ts    = $game_time !== '' ? $game_time : '00:00';
+		$game_timestamp = $game_date . ' ' . $time_for_ts . ':00';
+		$game_date_day  = Puck_Press_Team_Source_Importer::format_game_date_day(
+			$game_date,
+			$game_time !== '' ? $game_time : null
+		);
+		$time_display   = $game_time !== '' ? date( 'g:i A', strtotime( $game_time ) ) : null;
+
+		$status_map     = array( 'final' => 'FINAL', 'final-ot' => 'FINAL OT', 'final-so' => 'FINAL SO', 'none' => null );
+		$submitted_stat = sanitize_text_field( $_POST['game_status'] ?? '' );
+		$game_status    = array_key_exists( $submitted_stat, $status_map ) ? $status_map[ $submitted_stat ] : null;
+
+		$home_or_away = sanitize_text_field( $_POST['home_or_away'] ?? 'home' );
+		if ( ! in_array( $home_or_away, array( 'home', 'away' ), true ) ) {
+			$home_or_away = 'home';
+		}
+
+		$target_score   = $_POST['target_score']   ?? '';
+		$opponent_score = $_POST['opponent_score'] ?? '';
+
+		// "manual_" prefix is the convention edit/delete handlers detect to take the manual code paths.
+		$game_id = 'manual_' . wp_generate_uuid4();
+
+		$edit_data = array(
+			'source'                 => 'manual',
+			'source_type'            => 'manual',
+			'game_id'                => $game_id,
+			'target_team_id'         => sanitize_text_field( $_POST['target_team_id'] ?? '' ),
+			'target_team_name'       => sanitize_text_field( $_POST['target_team_name'] ?? '' ),
+			'target_team_nickname'   => sanitize_text_field( $_POST['target_team_nickname'] ?? '' ),
+			'target_team_logo'       => esc_url_raw( $_POST['target_team_logo'] ?? '' ),
+			'opponent_team_id'       => sanitize_text_field( $_POST['opponent_team_id'] ?? '' ),
+			'opponent_team_name'     => sanitize_text_field( $_POST['opponent_team_name'] ?? '' ),
+			'opponent_team_nickname' => sanitize_text_field( $_POST['opponent_team_nickname'] ?? '' ),
+			'opponent_team_logo'     => esc_url_raw( $_POST['opponent_team_logo'] ?? '' ),
+			'target_score'           => $target_score   === '' ? null : (int) $target_score,
+			'opponent_score'         => $opponent_score === '' ? null : (int) $opponent_score,
+			'game_status'            => $game_status,
+			'game_date_day'          => $game_date_day,
+			'game_time'              => $time_display,
+			'game_timestamp'         => $game_timestamp,
+			'home_or_away'           => $home_or_away,
+			'venue'                  => sanitize_text_field( $_POST['venue'] ?? '' ),
+		);
+
+		require_once plugin_dir_path( __DIR__ ) . 'includes/teams/class-puck-press-teams-wpdb-utils.php';
+		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+		$teams_utils->upsert_team_game_mod( $team_id, $game_id, 'insert', $edit_data );
+
+		$importer = new Puck_Press_Team_Source_Importer( $team_id );
+		$importer->rebuild_display_and_cascade();
+
+		require_once plugin_dir_path( __DIR__ ) . 'admin/components/teams/class-puck-press-teams-admin-games-table-card.php';
+		$games_card = new Puck_Press_Teams_Admin_Games_Table_Card( array(), $team_id );
+
+		wp_send_json_success( array( 'games_table_html' => $games_card->render_team_games_admin_preview() ) );
+	}
+
 	public static function pp_ajax_delete_game(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
@@ -3099,6 +3175,7 @@ class Puck_Press_Admin {
 		// Game edits
 		add_action( 'wp_ajax_pp_get_game_data', array( self::class, 'pp_ajax_get_game_data' ) );
 		add_action( 'wp_ajax_pp_save_game_edit', array( self::class, 'pp_ajax_save_game_edit' ) );
+		add_action( 'wp_ajax_pp_add_manual_game', array( self::class, 'pp_ajax_add_manual_game' ) );
 		add_action( 'wp_ajax_pp_delete_game', array( self::class, 'pp_ajax_delete_game' ) );
 		add_action( 'wp_ajax_pp_restore_game', array( self::class, 'pp_ajax_restore_game' ) );
 		add_action( 'wp_ajax_pp_revert_game_field', array( self::class, 'pp_ajax_revert_game_field' ) );
