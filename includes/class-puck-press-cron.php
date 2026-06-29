@@ -299,10 +299,25 @@ class Puck_Press_Cron {
 			$this->log_error( 'Puck Press Cron: Stack trace — ' . $e->getTraceAsString() );
 		}
 
+		// Site Pulse monthly digest (gated internally to once per month).
+		try {
+			require_once plugin_dir_path( __DIR__ ) . 'includes/site-pulse/class-puck-press-site-pulse.php';
+			$site_pulse  = new Puck_Press_Site_Pulse();
+			$pulse_log   = $site_pulse->maybe_run_monthly();
+			foreach ( $pulse_log as $msg ) {
+				$this->log_message( 'Puck Press Cron: Site Pulse — ' . $msg );
+			}
+			$failure_counts['site_pulse'] = 0;
+		} catch ( \Throwable $e ) {
+			$failure_counts['site_pulse'] = ( $failure_counts['site_pulse'] ?? 0 ) + 1;
+			$this->log_error( 'Puck Press Cron: Error during Site Pulse run — ' . $e->getMessage() );
+			$this->log_error( 'Puck Press Cron: Stack trace — ' . $e->getTraceAsString() );
+		}
+
 		// Strip any orphaned team_* keys left over from a previous version of the importer.
 		$failure_counts = array_intersect_key(
 			$failure_counts,
-			array_flip( array( 'schedule', 'roster', 'standings', 'game_posts', 'instagram' ) )
+			array_flip( array( 'schedule', 'roster', 'standings', 'game_posts', 'instagram', 'site_pulse' ) )
 		);
 
 		update_option( self::OPTION_FAILURE_COUNTS, $failure_counts );

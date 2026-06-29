@@ -24,7 +24,8 @@ class Puck_Press_Standings_Refresher {
             $source    = Puck_Press_Standings_Source_Resolver::get_regular_season_source( $team_id );
 
             if ( ! $source ) {
-                $log[] = "Team '{$team_name}': no regular-season source found, skipped.";
+                $this->wpdb_utils->delete_standings_for_team( $team_id );
+                $log[] = "Team '{$team_name}': no regular-season source found, cleared cached standings.";
                 continue;
             }
 
@@ -58,7 +59,8 @@ class Puck_Press_Standings_Refresher {
     public function refresh_team( int $wp_team_id ): array {
         $source = Puck_Press_Standings_Source_Resolver::get_regular_season_source( $wp_team_id );
         if ( ! $source ) {
-            return array( 'No regular-season source found for this team.' );
+            $this->wpdb_utils->delete_standings_for_team( $wp_team_id );
+            return array( 'No regular-season source found for this team. Cleared cached standings.' );
         }
 
         $league_type = $source['type'] === 'usphlGameScheduleUrl' ? 'usphl' : 'acha';

@@ -92,6 +92,9 @@ class Puck_Press_Admin_Loader {
 		// Insta Post Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/insta-post-importer/instagram-post-admin-display.php';
 
+		// Site Pulse Module
+		require_once plugin_dir_path( __FILE__ ) . 'components/site-pulse/site-pulse-admin-display.php';
+
 		// Post Slider Module
 		require_once plugin_dir_path( __DIR__ ) . 'includes/post-slider/class-puck-press-post-slider-admin-preview-card.php';
 

@@ -58,4 +58,13 @@ class Puck_Press_Standings_Wpdb_Utils {
             array( '%d' )
         );
     }
+
+    public function delete_standings_for_source( int $source_id ): bool {
+        global $wpdb;
+        return false !== $wpdb->delete(
+            $wpdb->prefix . 'pp_team_standings_cache',
+            array( 'source_id' => $source_id ),
+            array( '%d' )
+        );
+    }
 }

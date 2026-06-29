@@ -18,6 +18,39 @@
   font-family: inherit;
 }
 
+/* ---- Empty state ---- */
+.photogrid_empty_state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 4rem 1.5rem;
+  background-color: var(--pp-photogrid-card_bg);
+  border-radius: 8px;
+  color: var(--pp-photogrid-player_name_color);
+}
+.photogrid_empty_icon {
+  color: var(--pp-photogrid-accent_color);
+  opacity: 0.85;
+  margin-bottom: 0.5rem;
+}
+.photogrid_empty_title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pp-photogrid-accent_color);
+}
+.photogrid_empty_sub {
+  font-size: 1rem;
+  opacity: 0.85;
+  max-width: 32rem;
+  line-height: 1.4;
+  color: var(--pp-photogrid-player_name_color);
+}
+
 /* ---- Section (Forwards / Defensemen / Goalies) ---- */
 .photogrid_section {
   margin-bottom: 48px;

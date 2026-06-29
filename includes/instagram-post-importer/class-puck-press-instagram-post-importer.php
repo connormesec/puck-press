@@ -105,7 +105,9 @@ class Puck_Press_Instagram_Post_Importer {
 			return $messages;
 		}
 
-		foreach ( $fetch_result['data'] as $post_data ) {
+		// API returns newest-first; reverse so oldest is inserted first and
+		// WP post_date order matches Instagram chronological order.
+		foreach ( array_reverse( $fetch_result['data'] ) as $post_data ) {
 			$title      = isset( $post_data['post_title'] ) ? $post_data['post_title'] : 'Instagram Post';
 			$content    = isset( $post_data['post_body'] ) ? $post_data['post_body'] : '';
 			$b64_image  = isset( $post_data['image_buffer'] ) ? $post_data['image_buffer'] : '';

@@ -1,0 +1,250 @@
+/* =============================================================
+   Leaderboard Stat Leaders Template
+   CSS variables declared on :root by render_with_options() so that
+   the admin live-preview JS (document.documentElement.style.setProperty)
+   can update them in real time.
+   All selectors scoped to .pp-stat-leaders-leaderboard-container.
+   ============================================================= */
+
+.pp-stat-leaders-leaderboard-container {
+  background: var(--pp-leaderboard-bg, #F6F3EF);
+  font-family: var(--pp-leaderboard-leaderboard_font, inherit);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 4px;
+}
+
+.pp-stat-leaders-leaderboard-container * {
+  box-sizing: border-box;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-title {
+  color: var(--pp-leaderboard-header_text, #1A2E5A);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-more-link {
+  color: var(--pp-leaderboard-more_link_color, #2563EB);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-more-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-tabs {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--pp-leaderboard-row_divider, #E8E4DF);
+  margin-bottom: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;  /* IE/old Edge */
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-tabs::-webkit-scrollbar {
+  display: none;             /* Chrome/Safari */
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 10px 16px;
+  cursor: pointer;
+  color: var(--pp-leaderboard-tab_text, #9B9B9B);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, border-bottom-color 0.15s;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-tab:hover {
+  color: var(--pp-leaderboard-tab_active_text, #1A2E5A);
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-tab--active {
+  color: var(--pp-leaderboard-tab_active_text, #1A2E5A);
+  border-bottom-color: var(--pp-leaderboard-tab_underline, #2563EB);
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-tab-divider {
+  width: 1px;
+  background: var(--pp-leaderboard-tab_divider, #E0DDD8);
+  margin: 8px 0;
+  flex-shrink: 0;
+}
+
+/* ── Panels ──────────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-panel {
+  display: none;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-panel--active {
+  display: block;
+}
+
+/* ── Table / rows ────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-table {
+  width: 100%;
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--pp-leaderboard-row_divider, #E8E4DF);
+}
+
+.pp-stat-leaders-leaderboard-container .pp-lb-row:last-child {
+  border-bottom: none;
+}
+
+/* ── Rank ────────────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-rank {
+  color: var(--pp-leaderboard-rank_text, #B0AAA2);
+  font-size: 0.72rem;
+  font-weight: 500;
+  min-width: 22px;
+  flex-shrink: 0;
+}
+
+/* ── Jersey number ───────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-number {
+  color: var(--pp-leaderboard-number_text, #1A2E5A);
+  font-size: 0.95rem;
+  font-weight: 700;
+  min-width: 38px;
+  flex-shrink: 0;
+}
+
+/* ── Player name ─────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-name {
+  color: var(--pp-leaderboard-name_text, #1A2E5A);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Spacer — pushes position + value to the right ──────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-spacer {
+  flex: 1;
+}
+
+/* ── Position badge ──────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-position {
+  color: var(--pp-leaderboard-position_text, #6B7280);
+  border: 1px solid var(--pp-leaderboard-position_border, #D1CECC);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Stat value ──────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-value {
+  color: var(--pp-leaderboard-stat_value, #2563EB);
+  font-size: 1.6rem;
+  font-weight: 800;
+  min-width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.pp-stat-leaders-leaderboard-container .pp-lb-empty {
+  color: var(--pp-leaderboard-rank_text, #B0AAA2);
+  font-size: 0.875rem;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* ── Mobile / small containers (≤ 600px) ─────────────────── */
+@media (max-width: 600px) {
+  .pp-stat-leaders-leaderboard-container .pp-lb-header {
+    padding: 10px 0 8px;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-title {
+    font-size: 0.95rem;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-more-link {
+    font-size: 0.75rem;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-tab {
+    padding: 9px 10px;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-row {
+    gap: 8px;
+    padding: 11px 0;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-rank {
+    font-size: 0.65rem;
+    min-width: 18px;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-number {
+    font-size: 0.85rem;
+    min-width: 32px;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-name {
+    font-size: 0.85rem;
+    min-width: 0; /* allow ellipsis when squeezed */
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-position {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-value {
+    font-size: 1.2rem;
+    min-width: 36px;
+  }
+}
+
+/* ── Very narrow containers (≤ 380px) — drop position badge ── */
+@media (max-width: 380px) {
+  .pp-stat-leaders-leaderboard-container .pp-lb-position {
+    display: none;
+  }
+
+  .pp-stat-leaders-leaderboard-container .pp-lb-tab {
+    padding: 8px 8px;
+  }
+}

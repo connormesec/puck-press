@@ -104,8 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			urlInput.select();
 			urlInput.setSelectionRange(0, 99999); // For mobile devices
 
-			// Copy the text inside the text field
-			navigator.clipboard.writeText(urlInput.value).then(() => {
+			const showTooltip = () => {
 				// Show tooltip feedback
 				tooltip.classList.add('show');
 
@@ -113,7 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
 				setTimeout(() => {
 					tooltip.classList.remove('show');
 				}, 2000);
-			});
+			};
+
+			// navigator.clipboard is only available in secure contexts (HTTPS / localhost).
+			// Local sites run over plain HTTP, so fall back to execCommand there.
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				navigator.clipboard.writeText(urlInput.value).then(showTooltip);
+			} else {
+				document.execCommand('copy');
+				showTooltip();
+			}
 		});
 	});
 });

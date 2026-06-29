@@ -9,6 +9,7 @@ class Puck_Press_Data_Shortcodes {
     private static $last_game_cache  = array();
     private static $next_game_cache  = array();
     private static $top_scorer_cache = array();
+    private static $top_points_cache = array();
     private static $record_cache     = array();
     private static $completed_cache  = array();
     private static $upcoming_cache   = array();
@@ -71,8 +72,49 @@ class Puck_Press_Data_Shortcodes {
         require_once plugin_dir_path( __DIR__ ) . 'stats/class-puck-press-stats-wpdb-utils.php';
         $utils   = new Puck_Press_Stats_Wpdb_Utils();
         $skaters = $utils->get_skater_stats( $team_ids );
-        $leader  = $skaters[0] ?? null;
+
+        // Don't trust the SQL ordering, which is dominated by source-provided
+        // stat_rank and can promote a non-goals-leader to position 0.
+        usort(
+            $skaters,
+            function ( $a, $b ) {
+                $cmp = (int) ( $b['goals'] ?? 0 ) <=> (int) ( $a['goals'] ?? 0 );
+                if ( $cmp !== 0 ) {
+                    return $cmp;
+                }
+                return (int) ( $b['points'] ?? 0 ) <=> (int) ( $a['points'] ?? 0 );
+            }
+        );
+
+        $leader = $skaters[0] ?? null;
         self::$top_scorer_cache[ $cache_key ] = $leader;
+        return $leader;
+    }
+
+    public function get_top_points_player( array $team_ids = array() ): ?array {
+        $cache_key = implode( ',', $team_ids ) ?: '__all__';
+        if ( array_key_exists( $cache_key, self::$top_points_cache ) ) {
+            return self::$top_points_cache[ $cache_key ];
+        }
+        require_once plugin_dir_path( __DIR__ ) . 'stats/class-puck-press-stats-wpdb-utils.php';
+        $utils   = new Puck_Press_Stats_Wpdb_Utils();
+        $skaters = $utils->get_skater_stats( $team_ids );
+
+        // Don't trust the SQL ordering, which is dominated by source-provided
+        // stat_rank and can promote a non-points-leader to position 0.
+        usort(
+            $skaters,
+            function ( $a, $b ) {
+                $cmp = (int) ( $b['points'] ?? 0 ) <=> (int) ( $a['points'] ?? 0 );
+                if ( $cmp !== 0 ) {
+                    return $cmp;
+                }
+                return (int) ( $b['goals'] ?? 0 ) <=> (int) ( $a['goals'] ?? 0 );
+            }
+        );
+
+        $leader = $skaters[0] ?? null;
+        self::$top_points_cache[ $cache_key ] = $leader;
         return $leader;
     }
 
@@ -137,6 +179,17 @@ class Puck_Press_Data_Shortcodes {
             ),
             ARRAY_A
         ) ?? array();
+        // Exclude scheduled/custom games whose status isn't a true final result.
+        require_once plugin_dir_path( __DIR__ ) . 'record/class-puck-press-record-wpdb-utils.php';
+        $rows = array_values(
+            array_filter(
+                $rows,
+                function ( $row ) {
+                    $status = strtoupper( trim( $row['game_status'] ?? '' ) );
+                    return Puck_Press_Record_Wpdb_Utils::is_played_status( $status );
+                }
+            )
+        );
         self::$completed_cache[ $schedule_id ] = $rows;
         return $rows;
     }

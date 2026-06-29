@@ -23,7 +23,8 @@
 }(jQuery));
 function refreshGamesTable(successCallback, errorCallback) {
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
+    // The Teams landing page has no `tab` param; PHP defaults it to 'teams', so match that here.
+    const tab = params.get('tab') || 'teams';
     if (tab === 'teams') {
         const teamId = parseInt((jQuery)('#pp-active-team-id').val(), 10) || 0;
         const requestData = { action: 'pp_refresh_team', team_id: teamId };

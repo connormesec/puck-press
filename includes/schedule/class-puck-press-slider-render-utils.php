@@ -53,8 +53,8 @@ class Puck_Press_Slider_Render_Utils {
 	}
 
 	// 🧾 Return HTML string for a specific template
-	public function get_template_html( $template_name ) {
-		$options = array( 'schedule_id' => $this->schedule_id );
+	public function get_template_html( $template_name, array $extra = array() ) {
+		$options = array_merge( array( 'schedule_id' => $this->schedule_id ), $extra );
 
 		foreach ( $this->templates as $template ) {
 			if ( $template->get_key() === $template_name ) {
@@ -69,7 +69,7 @@ class Puck_Press_Slider_Render_Utils {
 		return $this->render_template( $this->selected_template_key );
 	}
 
-	public function get_current_template_html() {
-		return $this->get_template_html( $this->selected_template_key );
+	public function get_current_template_html( array $extra = array() ) {
+		return $this->get_template_html( $this->selected_template_key, $extra );
 	}
 }

@@ -89,6 +89,11 @@ class CardStackTemplate extends PuckPressTemplate {
 	}
 
 	public function buildCardStack( array $players, int $roster_id = 1 ) {
+		if ( empty( $players ) ) {
+			return '<div class="cardstack_roster_container clearfix">'
+				. $this->renderEmptyState()
+				. '</div>';
+		}
 		global $wpdb;
 		$team_ids = array_values( array_unique( array_filter( array_column( $players, 'team_id' ), 'is_numeric' ) ) );
 		if ( ! empty( $team_ids ) ) {
@@ -109,8 +114,8 @@ class CardStackTemplate extends PuckPressTemplate {
 		$content = '<div class="cardstack_roster_container clearfix">';
 
 		// forwards
-		$content .= '<div class="player_group">';
-		$content .= '<div class="player_position_title"><h2>Forwards</h2></div>';
+		$content .= '<div class="player_group clearfix">';
+		$content .= '<div class="player_position_title" id="pp-forwards"><h2>Forwards</h2></div>';
 		$forwards = $this->getPlayersByPositions( $players, array( 'F', 'C', 'LW', 'RW' ) );
 		foreach ( $forwards as $player ) {
 			$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
@@ -118,8 +123,8 @@ class CardStackTemplate extends PuckPressTemplate {
 		}
 		$content .= '</div>';
 
-		$content .= '<div class="player_group">';
-		$content .= '<div class="player_position_title"><h2>Defense</h2></div>';
+		$content .= '<div class="player_group clearfix">';
+		$content .= '<div class="player_position_title" id="pp-defense"><h2>Defense</h2></div>';
 		$defense  = $this->getPlayersByPositions( $players, array( 'D', 'LD', 'RD' ) );
 		foreach ( $defense as $player ) {
 			$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
@@ -127,8 +132,8 @@ class CardStackTemplate extends PuckPressTemplate {
 		}
 		$content .= '</div>';
 
-		$content .= '<div class="player_group">';
-		$content .= '<div class="player_position_title"><h2>Goalies</h2></div>';
+		$content .= '<div class="player_group clearfix">';
+		$content .= '<div class="player_position_title" id="pp-goalies"><h2>Goalies</h2></div>';
 		$goalies  = $this->getPlayersByPositions( $players, array( 'G' ) );
 		foreach ( $goalies as $player ) {
 			$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
@@ -139,8 +144,8 @@ class CardStackTemplate extends PuckPressTemplate {
 		// Skaters (players without assigned positions) - shown last
 		$skaters = $this->getPlayersWithoutPositions( $players );
 		if ( ! empty( $skaters ) ) {
-			$content .= '<div class="player_group">';
-			$content .= '<div class="player_position_title"><h2>Skaters</h2></div>';
+			$content .= '<div class="player_group clearfix">';
+			$content .= '<div class="player_position_title" id="pp-skaters"><h2>Skaters</h2></div>';
 			foreach ( $skaters as $player ) {
 				$has_stats = isset( $players_with_stats[ $player['player_id'] ?? '' ] );
 				$content  .= $this->createPlayerCard( $player['id'], $player['player_id'], $player['headshot_link'], $player['number'], $player['name'], $player['pos'], $player['hometown'], $player['ht'], $player['wt'], $player['shoots'], $player['year_in_school'] ?? null, $player['last_team'] ?? null, $player['major'] ?? null, $has_stats );
@@ -233,6 +238,23 @@ class CardStackTemplate extends PuckPressTemplate {
 		return $card;
 	}
 
+
+	private function renderEmptyState(): string {
+		ob_start();
+		?>
+		<div class="cardstack_empty_state">
+			<svg class="cardstack_empty_icon" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+				<circle cx="9" cy="8" r="3.25" stroke="currentColor" stroke-width="1.75"/>
+				<circle cx="17" cy="9" r="2.5" stroke="currentColor" stroke-width="1.75"/>
+				<path d="M3 19C3 16.2386 5.68629 14 9 14C12.3137 14 15 16.2386 15 19" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+				<path d="M15 14C17.7614 14 20 15.7909 20 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+			</svg>
+			<div class="cardstack_empty_title">Roster not yet available</div>
+			<div class="cardstack_empty_sub">Check back soon to meet the team</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
 
 	private function getPlayersByPositions( array $players, array $positions ): array {
 		// Normalize positions to uppercase for consistent comparison

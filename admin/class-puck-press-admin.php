@@ -690,6 +690,17 @@ class Puck_Press_Admin {
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'teams';
 		// Tab-specific scripts
 		switch ( $current_tab ) {
+			case 'site-pulse':
+				wp_enqueue_script( 'puck-press-site-pulse-admin', plugin_dir_url( __FILE__ ) . 'js/site-pulse/puck-press-site-pulse-admin.js', array( 'jquery' ), $this->version, false );
+				wp_localize_script(
+					'puck-press-site-pulse-admin',
+					'ppSitePulse',
+					array(
+						'ajax_url' => admin_url( 'admin-ajax.php' ),
+						'nonce'    => wp_create_nonce( 'pp_site_pulse_nonce' ),
+					)
+				);
+				break;
 			case 'teams':
 				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-add-game', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-add-game.js', array( 'jquery', 'puck-press-admin-shared', 'select2-js' ), $this->version, false );
@@ -1571,6 +1582,9 @@ class Puck_Press_Admin {
 		$deleted = $utils->delete_team_source( $source_id );
 
 		if ( $deleted ) {
+			require_once plugin_dir_path( __DIR__ ) . 'includes/standings/class-puck-press-standings-wpdb-utils.php';
+			( new Puck_Press_Standings_Wpdb_Utils() )->delete_standings_for_source( $source_id );
+
 			wp_send_json_success( array( 'message' => 'Source deleted.' ) );
 		} else {
 			wp_send_json_error( array( 'message' => 'Failed to delete source.' ) );
@@ -3139,6 +3153,10 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_save_team_handle', array( $insta_post_display, 'ajax_save_team_handle' ) );
 		add_action( 'wp_ajax_pp_get_team_example_posts', array( $insta_post_display, 'ajax_get_team_example_posts' ) );
 		add_action( 'wp_ajax_pp_create_team_insta_post', array( $insta_post_display, 'ajax_create_team_insta_post' ) );
+
+		$site_pulse_display = new Puck_Press_Site_Pulse_Admin_Display();
+		add_action( 'wp_ajax_pp_site_pulse_preview', array( $site_pulse_display, 'ajax_preview' ) );
+		add_action( 'wp_ajax_pp_site_pulse_send_test', array( $site_pulse_display, 'ajax_send_test' ) );
 		// Registered in register_insta_loopback_hooks() on 'init' instead.
 
 		// Register the AJAX action for refreshing all sources

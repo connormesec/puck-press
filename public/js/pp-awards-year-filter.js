@@ -8,17 +8,22 @@
             var $content = $wrap.find('.pp-awards-content');
             var year = $select.val();
 
+            var attr = function (name, fallback) {
+                var v = $wrap.attr('data-' + name);
+                return (v === undefined || v === '') ? fallback : v;
+            };
+
             $content.addClass('pp-loading');
 
             $.post(cfg.ajaxUrl, {
                 action: 'pp_get_awards_html',
                 year: year,
-                parent: $wrap.data('parent') || '',
-                award: $wrap.data('award') || '',
-                columns: $wrap.data('columns') || 6,
-                show_headshots: $wrap.data('show-headshots') || 'true',
-                link_players: $wrap.data('link-players') || 'true',
-                show_title: $wrap.attr('data-show-title') || 'true'
+                parent: attr('parent', ''),
+                award: attr('award', ''),
+                columns: attr('columns', '6'),
+                show_headshots: attr('show-headshots', 'true'),
+                link_players: attr('link-players', 'true'),
+                show_title: attr('show-title', 'true')
             }, function (res) {
                 if (res.success && res.data.html) {
                     $content.html(res.data.html);

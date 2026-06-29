@@ -141,6 +141,11 @@ class Puck_Press_Activator {
 		$awards_utils->maybe_create_or_update_tables();
 		$log[] = 'Created: pp_awards, pp_award_players';
 
+		require_once plugin_dir_path( __FILE__ ) . 'site-pulse/class-puck-press-site-pulse-views-wpdb-utils.php';
+		$site_pulse_views = new Puck_Press_Site_Pulse_Views_Wpdb_Utils();
+		$site_pulse_views->maybe_create_or_update_table( 'pp_site_views' );
+		$log[] = 'Created: pp_site_views';
+
 		$schedules_utils->seed_main_schedule( 'default', 'Main Schedule' );
 		$log[] = 'Seeded default Main Schedule';
 
@@ -318,10 +323,39 @@ class Puck_Press_Activator {
 		update_option( 'pp_db_version', '9.0' );
 	}
 
+	public static function maybe_run_site_pulse_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '10.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'site-pulse/class-puck-press-site-pulse-views-wpdb-utils.php';
+
+		$views_utils = new Puck_Press_Site_Pulse_Views_Wpdb_Utils();
+		$views_utils->maybe_create_or_update_table( 'pp_site_views' );
+
+		// Only bump the version once the table actually exists.
+		global $wpdb;
+		$table  = $wpdb->prefix . 'pp_site_views';
+		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		if ( $exists === $table ) {
+			update_option( 'pp_db_version', '10.0' );
+		}
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );
 		}
+
+		if ( ! get_option( 'pp_site_pulse_secret' ) ) {
+			update_option( 'pp_site_pulse_secret', wp_generate_password( 32, false ) );
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'site-pulse/class-puck-press-site-pulse-views-wpdb-utils.php';
+		( new Puck_Press_Site_Pulse_Views_Wpdb_Utils() )->maybe_create_or_update_table( 'pp_site_views' );
 
 		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-cron.php';
 		$cron = new Puck_Press_Cron();

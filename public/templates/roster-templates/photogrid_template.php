@@ -96,6 +96,12 @@ class PhotoGridTemplate extends PuckPressTemplate {
 
 		$output = $css_block . '<div class="photogrid_roster_container">';
 
+		if ( empty( $players ) ) {
+			$output .= $this->renderEmptyState();
+			$output .= '</div>';
+			return $output;
+		}
+
 		$forwards = $this->getPlayersByPositions( $players, array( 'F', 'C', 'LW', 'RW' ) );
 		if ( ! empty( $forwards ) ) {
 			$output .= $this->buildSection( 'Forwards', $forwards );
@@ -176,6 +182,23 @@ class PhotoGridTemplate extends PuckPressTemplate {
     </div>
 </div>{$link_close}
 HTML;
+	}
+
+	private function renderEmptyState(): string {
+		ob_start();
+		?>
+		<div class="photogrid_empty_state">
+			<svg class="photogrid_empty_icon" width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+				<circle cx="9" cy="8" r="3.25" stroke="currentColor" stroke-width="1.75"/>
+				<circle cx="17" cy="9" r="2.5" stroke="currentColor" stroke-width="1.75"/>
+				<path d="M3 19C3 16.2386 5.68629 14 9 14C12.3137 14 15 16.2386 15 19" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+				<path d="M15 14C17.7614 14 20 15.7909 20 18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+			</svg>
+			<div class="photogrid_empty_title">Roster not yet available</div>
+			<div class="photogrid_empty_sub">Check back soon to meet the team</div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	private function getPlayersByPositions( array $players, array $positions ): array {

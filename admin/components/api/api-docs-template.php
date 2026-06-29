@@ -280,7 +280,17 @@
                 </table>
 
                 <h4 style="margin:1em 0 0.5em;"><code>[pp-top-scorer]</code></h4>
-                <p class="pp-api-desc">Single value for the current points leader.</p>
+                <p class="pp-api-desc">Single value for the current goals leader (top scorer). Use <code>[pp-top-points]</code> for the points leader.</p>
+                <table class="widefat striped" style="max-width:600px;">
+                    <thead><tr><th>Attribute</th><th>Default</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>teams</code></td><td>(all)</td><td>Comma-separated team IDs</td></tr>
+                        <tr><td><code>field</code></td><td>name</td><td><code>name</code>, <code>goals</code>, <code>assists</code>, <code>points</code>, <code>games_played</code>, <code>team</code>, <code>headshot</code>, <code>pos</code></td></tr>
+                    </tbody>
+                </table>
+
+                <h4 style="margin:1em 0 0.5em;"><code>[pp-top-points]</code></h4>
+                <p class="pp-api-desc">Single value for the current points leader (goals + assists).</p>
                 <table class="widefat striped" style="max-width:600px;">
                     <thead><tr><th>Attribute</th><th>Default</th><th>Description</th></tr></thead>
                     <tbody>
@@ -358,7 +368,8 @@ Win pct: [pp-record-text field="win_pct"] | Games left: [pp-games-remaining]
 
 Next home game: [pp-next-home-game field="date"] vs [pp-next-home-game field="opponent"]
 
-Points leader: [pp-top-scorer field="name"] ([pp-top-scorer field="points"] pts)
+Top scorer: [pp-top-scorer field="name"] ([pp-top-scorer field="goals"] G)
+Points leader: [pp-top-points field="name"] ([pp-top-points field="points"] pts)
 Starting goalie: [pp-top-goalie field="name" sort="wins"] ([pp-top-goalie field="wins" sort="wins"]W)
 
 #[pp-player lookup="97" field="number"] [pp-player lookup="97" field="name"]

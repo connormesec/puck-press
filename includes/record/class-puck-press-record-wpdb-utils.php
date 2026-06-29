@@ -68,8 +68,8 @@ class Puck_Press_Record_Wpdb_Utils {
 			$os      = (int) $game['opponent_score'];
 			$is_home = ( $game['home_or_away'] === 'home' );
 			$status  = strtoupper( trim( $game['game_status'] ?? '' ) );
-			if ( empty( $status ) || $status === 'NULL' ) {
-				continue; // skip unplayed games that slipped through
+			if ( ! self::is_played_status( $status ) ) {
+				continue; // skip unplayed, scheduled, or custom-not-yet-final games
 			}
 			// Split status on whitespace, slashes, hyphens, and underscores,
 			// then check for an exact "OT" or "SO" token.
@@ -175,7 +175,7 @@ class Puck_Press_Record_Wpdb_Utils {
 			$is_home = ( $game['home_or_away'] === 'home' );
 			$status  = strtoupper( trim( $game['game_status'] ?? '' ) );
 
-			if ( empty( $status ) || $status === 'NULL' ) {
+			if ( ! self::is_played_status( $status ) ) {
 				continue;
 			}
 
@@ -363,7 +363,7 @@ class Puck_Press_Record_Wpdb_Utils {
 			$is_home = ( $game['home_or_away'] === 'home' );
 			$status  = strtoupper( trim( $game['game_status'] ?? '' ) );
 
-			if ( empty( $status ) || $status === 'NULL' ) {
+			if ( ! self::is_played_status( $status ) ) {
 				continue;
 			}
 
@@ -516,6 +516,25 @@ class Puck_Press_Record_Wpdb_Utils {
 			'overall_otl'    => 0,
 			'overall_ties'   => 0,
 		);
+	}
+
+	/**
+	 * Whether a game_status string represents a completed/played game whose
+	 * scores should count toward records. Accepts "FINAL"-prefixed values
+	 * ("FINAL", "FINAL OT", "FINAL SO", "FINAL/OT", "FINAL/SO") and USPHL-style
+	 * "W ..."/"L ..." prefixes. Unplayed/custom statuses like "SCHEDULED",
+	 * "POSTPONED", or a time string ("7:30 PM") are rejected.
+	 *
+	 * @param string $status Already uppercased + trimmed game_status.
+	 */
+	public static function is_played_status( string $status ): bool {
+		if ( $status === '' || $status === 'NULL' ) {
+			return false;
+		}
+		if ( strpos( $status, 'FINAL' ) === 0 ) {
+			return true;
+		}
+		return (bool) preg_match( '/^[WL]\b/', $status );
 	}
 
 	private function empty_stats(): array {

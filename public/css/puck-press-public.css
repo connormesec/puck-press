@@ -681,6 +681,10 @@
   border-radius: 0.5rem;
   background: var(--pp-awards-card_bg, #FFFFFF);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 240px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pp-award-player-card a {
@@ -733,26 +737,3 @@
   color: var(--pp-awards-secondary_text, #666666);
 }
 
-@media (max-width: 1024px) {
-  .pp-awards-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .pp-awards-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
-}
-
-@media (max-width: 580px) {
-  .pp-awards-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-
-@media (max-width: 380px) {
-  .pp-awards-grid {
-    grid-template-columns: 1fr !important;
-  }
-}

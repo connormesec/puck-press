@@ -82,6 +82,7 @@ class CarouselTemplate extends PuckPressTemplate {
                         <?php if ( $more_text ) : ?>
                             <a href="#" class="pp-cr-btn"><?php echo $more_text; ?></a>
                         <?php endif; ?>
+                    </div>
                     <button class="pp-cr-nav pp-cr-nav--next" aria-label="Next">
                         <span class="pp-cr-nav-line"></span>
                         <span class="pp-cr-nav-label">NEXT</span>

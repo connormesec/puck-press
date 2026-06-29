@@ -31,41 +31,38 @@ class Puck_Press_Stat_Leaders_Admin_Preview_Card extends Puck_Press_Admin_Previe
 		$more_link   = get_option( 'pp_stat_leaders_more_link', '' );
 		$show_team   = (bool) get_option( 'pp_stat_leaders_show_team', 1 );
 
+		$this->templates             = $this->template_manager->get_all_templates();
+		$this->selected_template_key = $this->template_manager->get_current_template_key();
+
+		// Fetch enough rows to satisfy the template with the largest top_n;
+		// each template's render slice happens later in render_template_preview().
+		$max_n = 3;
+		foreach ( $this->templates as $tpl ) {
+			$tpl_class = get_class( $tpl );
+			$n         = $tpl_class::get_top_n();
+			if ( $n > $max_n ) {
+				$max_n = $n;
+			}
+		}
+
 		$this->data = array(
 			'skater_rows'       => $this->wpdb_utils->get_skater_leaders(),
 			'goalie_rows'       => $this->wpdb_utils->get_goalie_leaders(),
-			'skater_categories' => $this->wpdb_utils->get_skater_categories(),
-			'goalie_categories' => $this->wpdb_utils->get_goalie_categories(),
+			'skater_categories' => $this->wpdb_utils->get_skater_categories( array(), $max_n ),
+			'goalie_categories' => $this->wpdb_utils->get_goalie_categories( array(), $max_n ),
 			'show_team'         => $show_team,
 			'more_link'         => is_string( $more_link ) ? $more_link : '',
 			'team_colors'       => is_array( $team_colors ) ? $team_colors : array(),
 		);
 
-		$this->templates             = $this->template_manager->get_all_templates();
-		$this->selected_template_key = $this->template_manager->get_current_template_key();
 		$this->template_manager->enqueue_all_template_assets();
 	}
 
 	public function get_all_templates_html(): string {
 		$output = '';
 		foreach ( $this->templates as $template ) {
-			$skater_data = array(
-				'rows'        => $this->data['skater_rows'],
-				'categories'  => $this->data['skater_categories'],
-				'show_team'   => $this->data['show_team'],
-				'more_link'   => $this->data['more_link'],
-				'team_colors' => $this->data['team_colors'],
-			);
-			$goalie_data = array(
-				'rows'        => $this->data['goalie_rows'],
-				'categories'  => $this->data['goalie_categories'],
-				'show_team'   => $this->data['show_team'],
-				'more_link'   => $this->data['more_link'],
-				'team_colors' => $this->data['team_colors'],
-			);
 			$output .= '<div class="pp-stat-leaders-preview-stack">';
-			$output .= $template->render( $skater_data );
-			$output .= $template->render( $goalie_data );
+			$output .= $this->render_template_preview( $template );
 			$output .= '</div>';
 		}
 		return $output;
@@ -83,25 +80,56 @@ class Puck_Press_Stat_Leaders_Admin_Preview_Card extends Puck_Press_Admin_Previe
 		if ( ! $template ) {
 			return '';
 		}
+		$output  = '<div class="pp-stat-leaders-preview-stack">';
+		$output .= $this->render_template_preview( $template );
+		$output .= '</div>';
+		return $output;
+	}
+
+	private function render_template_preview( $template ): string {
+		$template_class = get_class( $template );
+		$n              = $template_class::get_top_n();
+
+		$skater_categories = $this->slice_categories( $this->data['skater_categories'], $n );
+		$goalie_categories = $this->slice_categories( $this->data['goalie_categories'], $n );
+
+		if ( $template_class::wants_combined_categories() ) {
+			$combined_data = array(
+				'rows'        => $this->data['skater_rows'],
+				'categories'  => array_merge( $skater_categories, $goalie_categories ),
+				'show_team'   => $this->data['show_team'],
+				'more_link'   => $this->data['more_link'],
+				'team_colors' => $this->data['team_colors'],
+			);
+			return $template->render( $combined_data );
+		}
+
 		$skater_data = array(
 			'rows'        => $this->data['skater_rows'],
-			'categories'  => $this->data['skater_categories'],
+			'categories'  => $skater_categories,
 			'show_team'   => $this->data['show_team'],
 			'more_link'   => $this->data['more_link'],
 			'team_colors' => $this->data['team_colors'],
 		);
 		$goalie_data = array(
 			'rows'        => $this->data['goalie_rows'],
-			'categories'  => $this->data['goalie_categories'],
+			'categories'  => $goalie_categories,
 			'show_team'   => $this->data['show_team'],
 			'more_link'   => $this->data['more_link'],
 			'team_colors' => $this->data['team_colors'],
 		);
-		$output  = '<div class="pp-stat-leaders-preview-stack">';
-		$output .= $template->render( $skater_data );
-		$output .= $template->render( $goalie_data );
-		$output .= '</div>';
-		return $output;
+		return $template->render( $skater_data ) . $template->render( $goalie_data );
+	}
+
+	private function slice_categories( array $categories, int $n ): array {
+		$out = array();
+		foreach ( $categories as $cat ) {
+			if ( isset( $cat['players'] ) && is_array( $cat['players'] ) ) {
+				$cat['players'] = array_slice( $cat['players'], 0, $n );
+			}
+			$out[] = $cat;
+		}
+		return $out;
 	}
 
 	public function render_content() {

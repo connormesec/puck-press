@@ -141,7 +141,10 @@ class Puck_Press_Schedule_Process_Csv_Data {
 			'game_time'              => $data['game_time'] ?: null,
 			'game_timestamp'         => $date_time,
 
-			'home_or_away'           => $data['home_or_away'] ?? '',
+			// Lowercase so values like "Home"/"Away" (as exported from league sites and
+			// spreadsheets) pass the strict home_or_away validation in the importer, which
+			// only accepts the canonical lowercase "home"/"away".
+			'home_or_away'           => isset( $data['home_or_away'] ) ? strtolower( trim( $data['home_or_away'] ) ) : '',
 			'venue'                  => $data['venue'] ?? null,
 		);
 	}

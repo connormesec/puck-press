@@ -300,6 +300,14 @@ abstract class PuckPressTemplate {
 		return array();
 	}
 
+	public static function get_top_n(): int {
+		return 3;
+	}
+
+	public static function wants_combined_categories(): bool {
+		return false;
+	}
+
 	/**
 	 * Human-readable labels for each font key, shown in the admin Typography section.
 	 *

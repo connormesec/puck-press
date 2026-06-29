@@ -78,17 +78,6 @@ class ScorestripTemplate extends PuckPressTemplate {
 	// -------------------------------------------------------------------------
 
 	public function render_with_options( array $games, array $options ): string {
-		$split        = $this->split_games_by_time( $games );
-		$next_index   = count( $split['past_games'] );
-		$sorted       = $this->sort_games_by_chronological_order( $games );
-		$total        = count( $sorted );
-		if ( $next_index >= $total ) {
-			// No future games — scroll to show the last 4 past games
-			$scroll_to = max( 0, $total - 4 );
-		} else {
-			// Position next game as the rightmost of 4 visible items
-			$scroll_to = max( 0, $next_index - 3 );
-		}
 		$schedule_id  = isset( $options['schedule_id'] ) ? (int) $options['schedule_id'] : 0;
 		$container_id = $schedule_id > 0 ? 'pp-slider-' . $schedule_id : '';
 		$scope        = $container_id ? '#' . $container_id : ':root';
@@ -96,6 +85,22 @@ class ScorestripTemplate extends PuckPressTemplate {
 		$fonts        = $schedule_id > 0 ? self::get_slider_fonts( $schedule_id ) : null;
 		$inline_css   = self::get_inline_css( $scope, $colors, $fonts );
 		$css_block    = $inline_css ? '<style>' . $inline_css . '</style>' : '';
+
+		if ( empty( $games ) ) {
+			return $css_block . $this->render_empty_state( $container_id );
+		}
+
+		$split  = $this->split_games_by_time( $games );
+		$next_index = count( $split['past_games'] );
+		$sorted = $this->sort_games_by_chronological_order( $games );
+		$total  = count( $sorted );
+		if ( $next_index >= $total ) {
+			// No future games — scroll to show the last 4 past games
+			$scroll_to = max( 0, $total - 4 );
+		} else {
+			// Position next game as the rightmost of 4 visible items
+			$scroll_to = max( 0, $next_index - 3 );
+		}
 
 		ob_start();
 		echo $css_block;
@@ -236,6 +241,27 @@ class ScorestripTemplate extends PuckPressTemplate {
 				</svg>
 			</div>
 			<?php endif; ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	private function render_empty_state( string $container_id ): string {
+		ob_start();
+		?>
+		<div class="scorestrip_slider_container pp-ss-container pp-ss-empty"<?php echo $container_id ? ' id="' . esc_attr( $container_id ) . '"' : ''; ?>>
+			<div class="pp-ss-empty-inner">
+				<svg class="pp-ss-empty-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+					<rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.75"/>
+					<path d="M3 10H21" stroke="currentColor" stroke-width="1.75"/>
+					<path d="M8 3V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+					<path d="M16 3V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+				</svg>
+				<div class="pp-ss-empty-text">
+					<div class="pp-ss-empty-title">No games scheduled</div>
+					<div class="pp-ss-empty-sub">Check back soon for upcoming matchups</div>
+				</div>
+			</div>
 		</div>
 		<?php
 		return ob_get_clean();

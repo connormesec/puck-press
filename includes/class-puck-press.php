@@ -59,6 +59,13 @@ class Puck_Press {
 	protected $version;
 
 	/**
+	 * Site Pulse instance, held so its registered hook callbacks stay in scope.
+	 *
+	 * @var Puck_Press_Site_Pulse
+	 */
+	protected $site_pulse;
+
+	/**
 	 * Define the core functionality of the plugin.
 	 *
 	 * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -82,6 +89,7 @@ class Puck_Press {
 		}
 		$this->define_public_hooks();
 		add_action( 'init', array( $this, 'define_cron_hooks' ) );
+		add_action( 'init', array( $this, 'define_site_pulse_hooks' ) );
 		add_action( 'init', array( $this, 'register_post_types' ) );
 	}
 
@@ -133,6 +141,8 @@ class Puck_Press {
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-cron.php';
 
+		require_once plugin_dir_path( __DIR__ ) . 'includes/site-pulse/class-puck-press-site-pulse.php';
+
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-rewrite-manager.php';
 		Puck_Press_Rewrite_Manager::init();
 
@@ -156,6 +166,7 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_league_news_options_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_division_standings_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_archive_roster_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_site_pulse_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}
@@ -246,6 +257,19 @@ class Puck_Press {
 	}
 
 	/**
+	 * Register Site Pulse front-end + endpoint hooks.
+	 *
+	 * Runs on `init` (so the public beacon endpoint is reachable for logged-out
+	 * admin-ajax requests) and registers with raw add_action — the deferred loader
+	 * has already run by the time `init` fires, so loader->add_action() here would
+	 * be a no-op.
+	 */
+	public function define_site_pulse_hooks() {
+		$this->site_pulse = new Puck_Press_Site_Pulse();
+		$this->site_pulse->register_hooks();
+	}
+
+	/**
 	 * Register all of the hooks related to the public-facing functionality
 	 * of the plugin.
 	 *
@@ -286,6 +310,7 @@ class Puck_Press {
 		$this->loader->add_shortcode( 'pp-last-game', $plugin_public, 'last_game_shortcode' );
 		$this->loader->add_shortcode( 'pp-next-game', $plugin_public, 'next_game_shortcode' );
 		$this->loader->add_shortcode( 'pp-top-scorer', $plugin_public, 'top_scorer_shortcode' );
+		$this->loader->add_shortcode( 'pp-top-points', $plugin_public, 'top_points_shortcode' );
 		$this->loader->add_shortcode( 'pp-record-text', $plugin_public, 'record_shortcode' );
 		$this->loader->add_shortcode( 'pp-streak', $plugin_public, 'streak_shortcode' );
 		$this->loader->add_shortcode( 'pp-top-goalie', $plugin_public, 'top_goalie_shortcode' );

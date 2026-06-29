@@ -68,6 +68,10 @@ class PillTemplate extends PuckPressTemplate {
 	}
 
 	public function buildPillSchedule( array $games, bool $is_archive = false ) {
+		if ( empty( $games ) ) {
+			return $this->renderEmptyState( 'No games scheduled', 'Check back soon for the schedule' );
+		}
+
 		if ( $is_archive ) {
 			$all_grouped = self::group_games_by_month( $games, false );
 			$content     = '';
@@ -99,19 +103,44 @@ class PillTemplate extends PuckPressTemplate {
 		$content .= '<div class="schedule_container css-transitions-only-after-page-load">';
 
 		$content .= '<div id="past_games" class="past_games" style="display: none;">';
-		foreach ( array_reverse( $months ) as $month ) {
-			$content .= $this->buildScheduleByMonth( $past_future_games->past_games, $month, true );
+		if ( empty( $past_future_games->past_games ) ) {
+			$content .= $this->renderEmptyState( 'No past games yet', 'Results will appear here once the season is underway' );
+		} else {
+			foreach ( array_reverse( $months ) as $month ) {
+				$content .= $this->buildScheduleByMonth( $past_future_games->past_games, $month, true );
+			}
 		}
 		$content .= '</div>';
 
 		$content .= '<div id="future_games" class="future_games">';
-		foreach ( $months as $month ) {
-			$content .= $this->buildScheduleByMonth( $past_future_games->future_games, $month, false );
+		if ( empty( $past_future_games->future_games ) ) {
+			$content .= $this->renderEmptyState( 'No upcoming games', 'Check back soon for the next matchup' );
+		} else {
+			foreach ( $months as $month ) {
+				$content .= $this->buildScheduleByMonth( $past_future_games->future_games, $month, false );
+			}
 		}
 		$content .= '</div>';
 
 		$content .= '</div>';
 		return $content;
+	}
+
+	private function renderEmptyState( string $title, string $sub ): string {
+		ob_start();
+		?>
+		<div class="pill_empty_state">
+			<svg class="pill_empty_icon" width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+				<rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.75"/>
+				<path d="M3 10H21" stroke="currentColor" stroke-width="1.75"/>
+				<path d="M8 3V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+				<path d="M16 3V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+			</svg>
+			<div class="pill_empty_title"><?php echo esc_html( $title ); ?></div>
+			<div class="pill_empty_sub"><?php echo esc_html( $sub ); ?></div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	private function buildScheduleByMonth( array $month_games, string $month, bool $is_past ) {

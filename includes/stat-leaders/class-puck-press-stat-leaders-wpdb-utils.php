@@ -106,6 +106,13 @@ class Puck_Press_Stat_Leaders_Wpdb_Utils {
 				'players'  => $this->find_top_n( $skaters, 'points', $n ),
 			);
 		}
+		if ( ! empty( $settings['show_pim'] ) ) {
+			$categories[] = array(
+				'label'    => 'PIM',
+				'stat_key' => 'penalty_minutes',
+				'players'  => $this->find_top_n( $skaters, 'penalty_minutes', $n ),
+			);
+		}
 		return $categories;
 	}
 
@@ -122,7 +129,7 @@ class Puck_Press_Stat_Leaders_Wpdb_Utils {
 		$categories = array();
 		if ( ! empty( $settings['show_gaa'] ) ) {
 			$categories[] = array(
-				'label'    => 'Goals Against Avg.',
+				'label'    => 'GAA',
 				'stat_key' => 'goals_against_average',
 				'players'  => $this->find_top_n( $active_goalies, 'goals_against_average', $n, 'asc', 2 ),
 			);

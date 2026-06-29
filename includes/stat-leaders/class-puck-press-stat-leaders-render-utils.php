@@ -32,13 +32,31 @@ class Puck_Press_Stat_Leaders_Render_Utils {
 			return '';
 		}
 
+		$template_class = get_class( $template );
+		$n              = $template_class::get_top_n();
+		$combined       = $template_class::wants_combined_categories();
+
+		// Combined templates render once via the skaters shortcode and merge both
+		// skater and goalie categories. The goalies shortcode is suppressed to
+		// avoid a duplicate widget on pages that include both shortcodes.
+		if ( $combined && $this->type === 'goalies' ) {
+			return '';
+		}
+
 		$rows = $this->type === 'goalies'
 			? $this->wpdb_utils->get_goalie_leaders( $this->teams )
 			: $this->wpdb_utils->get_skater_leaders( $this->teams );
 
-		$categories = $this->type === 'goalies'
-			? $this->wpdb_utils->get_goalie_categories( $this->teams )
-			: $this->wpdb_utils->get_skater_categories( $this->teams );
+		if ( $combined ) {
+			$categories = array_merge(
+				$this->wpdb_utils->get_skater_categories( $this->teams, $n ),
+				$this->wpdb_utils->get_goalie_categories( $this->teams, $n )
+			);
+		} else {
+			$categories = $this->type === 'goalies'
+				? $this->wpdb_utils->get_goalie_categories( $this->teams, $n )
+				: $this->wpdb_utils->get_skater_categories( $this->teams, $n );
+		}
 
 		$team_colors = get_option( 'pp_stat_leaders_team_colors', array() );
 		$more_link   = get_option( 'pp_stat_leaders_more_link', '' );

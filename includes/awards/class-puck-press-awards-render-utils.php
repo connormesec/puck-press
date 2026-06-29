@@ -160,7 +160,8 @@ class Puck_Press_Awards_Render_Utils {
         $icon_html = $this->render_award_icon( $award );
         $html  = '<div class="pp-awards-section">';
         $html .= '<h3 class="pp-awards-section-title">' . $icon_html . ' ' . esc_html( $award['year'] . ' ' . $award['name'] ) . '</h3>';
-        $html .= '<div class="pp-awards-grid" style="grid-template-columns:repeat(' . $columns . ',1fr);">';
+        $min_col = max( 140, min( 240, (int) floor( 1080 / max( 1, $columns ) ) - 30 ) );
+        $html   .= '<div class="pp-awards-grid" style="grid-template-columns:repeat(auto-fill,minmax(' . $min_col . 'px,1fr));">';
 
         foreach ( $award['players'] as $p ) {
             $html .= $this->render_player_card( $p, $fallback, $show_heads, $link );

@@ -195,6 +195,40 @@
   color: var(--pp-pill-text);
 }
 
+.pill_empty_state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.4rem;
+  padding: 2.5rem 1.5rem;
+  margin-top: 1rem;
+  border-radius: 0.25rem;
+  background-color: var(--pp-pill-container_bg);
+  color: var(--pp-pill-text);
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 10%),
+    0 1px 2px 0 rgb(0 0 0 / 6%);
+}
+.pill_empty_icon {
+  color: var(--pp-pill-text);
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+}
+.pill_empty_title {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pill_empty_sub {
+  font-size: 14px;
+  opacity: 0.85;
+  max-width: 28rem;
+  line-height: 1.4;
+}
+
 .pill_right_actions {
   display: flex;
   align-items: center;

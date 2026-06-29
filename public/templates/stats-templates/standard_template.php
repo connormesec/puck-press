@@ -157,7 +157,7 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<h2 class="pp-stats-section-title" id="pp-stats-section-title-skaters">Skaters</h2>';
 
 		if ( empty( $skaters ) ) {
-			$html .= '<p class="pp-stats-empty">No skater stats available. Refresh your roster sources to populate data.</p>';
+			$html .= '<p class="pp-stats-empty">No skater stats available.</p>';
 			$html .= '</section>';
 			return $html;
 		}
@@ -300,7 +300,7 @@ class StandardTemplate extends PuckPressTemplate {
 		$html .= '<h2 class="pp-stats-section-title"  id="pp-stats-section-title-goalies">Goalies</h2>';
 
 		if ( empty( $goalies ) ) {
-			$html .= '<p class="pp-stats-empty">No goalie stats available. Refresh your roster sources to populate data.</p>';
+			$html .= '<p class="pp-stats-empty">No goalie stats available.</p>';
 			$html .= '</section>';
 			return $html;
 		}

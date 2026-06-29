@@ -77,15 +77,22 @@ class Puck_Press_Public {
 	}
 
 	public function slider_builder_shortcode( $atts = array() ) {
-		$atts = shortcode_atts( array( 'schedule' => '' ), $atts );
-		$slug = sanitize_title( $atts['schedule'] );
+		$atts = shortcode_atts(
+			array(
+				'schedule'    => '',
+				'details_url' => '',
+			),
+			$atts
+		);
+		$slug        = sanitize_title( $atts['schedule'] );
+		$details_url = esc_url_raw( trim( $atts['details_url'] ) );
 
 		require_once plugin_dir_path( __FILE__ ) . '../includes/class-puck-press-group-resolver.php';
 		require_once plugin_dir_path( __FILE__ ) . '../includes/schedule/class-puck-press-slider-render-utils.php';
 
 		$schedule_id     = Puck_Press_Group_Resolver::resolve( $slug, 'pp_schedules' );
 		$render_schedule = new Puck_Press_Slider_Render_Utils( $schedule_id );
-		return $render_schedule->get_current_template_html();
+		return $render_schedule->get_current_template_html( array( 'details_url' => $details_url ) );
 	}
 
 	public function roster_builder_shortcode( $atts = array() ) {
@@ -494,12 +501,33 @@ class Puck_Press_Public {
 		$sc     = new Puck_Press_Data_Shortcodes();
 		$player = $sc->get_top_scorer( $team_ids );
 
+		return $this->render_skater_field( $player, sanitize_key( $atts['field'] ) );
+	}
+
+	public function top_points_shortcode( $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'teams' => '',
+				'field' => 'name',
+			),
+			$atts
+		);
+
+		$team_ids = array_filter( array_map( 'absint', explode( ',', $atts['teams'] ) ) );
+
+		require_once plugin_dir_path( __FILE__ ) . '../includes/shortcodes/class-puck-press-data-shortcodes.php';
+		$sc     = new Puck_Press_Data_Shortcodes();
+		$player = $sc->get_top_points_player( $team_ids );
+
+		return $this->render_skater_field( $player, sanitize_key( $atts['field'] ) );
+	}
+
+	private function render_skater_field( ?array $player, string $field ): string {
 		if ( ! $player ) {
 			return '';
 		}
 
-		$field = sanitize_key( $atts['field'] );
-		$map   = array(
+		$map = array(
 			'name'         => 'name',
 			'goals'        => 'goals',
 			'assists'      => 'assists',

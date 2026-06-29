@@ -1,0 +1,295 @@
+/**
+ * Game Cards slider template
+ *
+ * Ported from the Montana Tech theme's .mt-game-grid look, now self-contained
+ * under the pp- prefix. Every color/font reads from its admin picker variable
+ * (--pp-gamecards-*) with the theme design token and a hardcoded value as
+ * nested fallbacks, so it looks right with or without theme tokens present.
+ *
+ * The wrapping grid is rendered as a horizontal scroll-snap track so it doubles
+ * as a carousel; prev/next arrows are revealed by gamecards.js when the track
+ * overflows.
+ */
+
+/* ── Carousel shell ──────────────────────────────────────────────────────── */
+
+.pp-gamecards {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	position: relative;
+}
+
+.pp-game-grid {
+	display: flex;
+	gap: 16px;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scroll-behavior: smooth;
+	/* Vertical room so the card hover-lift + shadow are not clipped. */
+	padding: 14px 2px 20px;
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.pp-game-grid::-webkit-scrollbar {
+	display: none;
+}
+
+/* ── Nav arrows (hidden until JS detects overflow) ───────────────────────── */
+
+.pp-gamecards-nav {
+	flex: 0 0 auto;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 999px;
+	border: 1px solid var(--pp-gamecards-card_border, var(--line, #e6e3da));
+	background: var(--pp-gamecards-card_bg, var(--paper, #fff));
+	color: var(--pp-gamecards-ink, var(--ink, #14231b));
+	cursor: pointer;
+	box-shadow: 0 6px 16px -10px rgba(16, 48, 28, 0.5);
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.pp-gamecards-nav:hover {
+	background: var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+	color: #fff;
+	border-color: var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+}
+
+.pp-gamecards-nav[disabled] {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.pp-gamecards--overflow .pp-gamecards-nav {
+	display: inline-flex;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
+.pp-game-card {
+	scroll-snap-align: start;
+	flex: 0 0 calc((100% - 48px) / 4);
+	box-sizing: border-box;
+	background: var(--pp-gamecards-card_bg, var(--paper, #fff));
+	border: 1px solid var(--pp-gamecards-card_border, var(--line, #e6e3da));
+	border-top: 3px solid var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+	border-radius: 12px;
+	padding: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pp-game-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 18px 36px -22px rgba(16, 48, 28, 0.4);
+}
+
+.pp-game-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.pp-game-ha {
+	font-family: var(--pp-gamecards-mono_font, var(--font-mono, monospace));
+	font-size: 9.5px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	padding: 3px 8px;
+	border-radius: 4px;
+	white-space: nowrap;
+}
+
+.pp-game-ha--home {
+	background: var(--pp-gamecards-home_badge_bg, var(--primary, #215530));
+	color: var(--pp-gamecards-home_badge_text, #fff);
+}
+
+.pp-game-ha--away {
+	background: var(--pp-gamecards-away_badge_bg, var(--soft, #f1efe8));
+	color: var(--pp-gamecards-soft_text, var(--ink-soft, #4a4a44));
+}
+
+.pp-game-date {
+	font-family: var(--pp-gamecards-mono_font, var(--font-mono, monospace));
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	color: var(--pp-gamecards-muted, var(--muted-ink, #8a8a80));
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.pp-game-match {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.pp-game-logo {
+	width: 34px;
+	height: 34px;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
+.pp-game-vs {
+	font-family: var(--pp-gamecards-mono_font, var(--font-mono, monospace));
+	font-size: 12px;
+	color: var(--pp-gamecards-muted, var(--muted-ink, #8a8a80));
+	text-transform: uppercase;
+}
+
+.pp-game-opp {
+	font-family: var(--pp-gamecards-display_font, var(--font-display, sans-serif));
+	font-size: 22px;
+	line-height: 1.02;
+	color: var(--pp-gamecards-ink, var(--ink, #14231b));
+	letter-spacing: 0.01em;
+	text-transform: uppercase;
+}
+
+.pp-game-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-top: auto;
+}
+
+.pp-game-time {
+	font-family: var(--pp-gamecards-body_font, var(--font-sans, inherit));
+	font-weight: 700;
+	color: var(--pp-gamecards-ink, var(--ink, #14231b));
+	font-size: 14px;
+}
+
+.pp-game-venue {
+	font-family: var(--pp-gamecards-body_font, var(--font-sans, inherit));
+	font-size: 12px;
+	color: var(--pp-gamecards-soft_text, var(--ink-soft, #4a4a44));
+}
+
+.pp-game-btn {
+	margin-top: 4px;
+	text-align: center;
+	font-family: var(--pp-gamecards-body_font, var(--font-sans, sans-serif));
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--pp-gamecards-button_text, var(--primary, #215530));
+	background: var(--pp-gamecards-button_bg, var(--bone, #f7f5ef));
+	border: 1px solid var(--line-strong, #d8d4c8);
+	border-radius: 999px;
+	padding: 9px 14px;
+	text-decoration: none;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pp-game-btn:hover {
+	background: var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+	color: #fff;
+	border-color: var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+}
+
+/* ── Final (completed game) variant ──────────────────────────────────────── */
+
+.pp-game-card--final .pp-game-date {
+	color: var(--pp-gamecards-accent, var(--secondary-dark, #9a5f27));
+}
+
+.pp-game-result {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin-top: auto;
+}
+
+.pp-game-resbadge {
+	font-family: var(--pp-gamecards-display_font, var(--font-display, sans-serif));
+	font-size: 22px;
+	line-height: 1;
+	font-weight: 700;
+}
+
+.pp-result-w {
+	color: var(--pp-gamecards-win, #2f8f4e);
+}
+
+.pp-result-l {
+	color: var(--pp-gamecards-loss, #c0492f);
+}
+
+.pp-result-otl {
+	color: var(--pp-gamecards-accent, var(--secondary-dark, #9a5f27));
+}
+
+.pp-result-t {
+	color: var(--pp-gamecards-muted, var(--muted-ink, #8a8a80));
+}
+
+.pp-game-score {
+	font-family: var(--pp-gamecards-display_font, var(--font-display, sans-serif));
+	font-size: 26px;
+	line-height: 1;
+	color: var(--pp-gamecards-ink, var(--ink, #14231b));
+}
+
+/* ── Responsive (match theme breakpoints) ────────────────────────────────── */
+
+@media (max-width: 980px) {
+	.pp-game-card {
+		flex-basis: calc((100% - 16px) / 2);
+	}
+}
+
+@media (max-width: 600px) {
+	.pp-game-card {
+		flex-basis: 100%;
+	}
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+
+.pp-gamecards--empty {
+	display: block;
+}
+
+.pp-gamecards-empty-inner {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 28px 22px;
+	background: var(--pp-gamecards-card_bg, var(--paper, #fff));
+	border: 1px solid var(--pp-gamecards-card_border, var(--line, #e6e3da));
+	border-top: 3px solid var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+	border-radius: 12px;
+	color: var(--pp-gamecards-muted, var(--muted-ink, #8a8a80));
+}
+
+.pp-gamecards-empty-icon {
+	color: var(--pp-gamecards-accent, var(--secondary, #c47e3c));
+	flex-shrink: 0;
+}
+
+.pp-gamecards-empty-title {
+	font-family: var(--pp-gamecards-display_font, var(--font-display, sans-serif));
+	font-size: 18px;
+	color: var(--pp-gamecards-ink, var(--ink, #14231b));
+	text-transform: uppercase;
+}
+
+.pp-gamecards-empty-sub {
+	font-size: 13px;
+}
