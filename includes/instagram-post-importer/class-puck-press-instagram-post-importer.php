@@ -197,13 +197,25 @@ class Puck_Press_Instagram_Post_Importer {
 				if ( empty( $post['postTitle'] ) || empty( $post['imgSrc'] ) || empty( $post['featuredImageBuffer'] ) ) {
 					continue;
 				}
-				$full_text         = $post['postText'] ?? $post['postTitle'];
-				$split             = $this->split_caption( $full_text );
+				$full_text = $post['postText'] ?? $post['postTitle'];
+
+				if ( $this->is_placeholder_caption( $full_text ) ) {
+					$title = 'See latest post';
+					// Keep the "Click here…" anchor as the body (decoded so it renders as a link).
+					$body = html_entity_decode( $full_text, ENT_QUOTES, 'UTF-8' );
+					$slug = $this->image_url_to_slug( $post['imgSrc'], $title );
+				} else {
+					$split = $this->split_caption( $full_text );
+					$title = $split['title'];
+					$body  = $split['body'];
+					$slug  = $this->title_to_slug( $title );
+				}
+
 				$formatted_posts[] = array(
 					'insta_id'     => ! empty( $post['post_id'] ) ? $post['post_id'] : ( $post['postSlug'] ?? '' ),
-					'slug'         => $this->title_to_slug( $split['title'] ),
-					'post_title'   => $split['title'],
-					'post_body'    => $split['body'],
+					'slug'         => $slug,
+					'post_title'   => $title,
+					'post_body'    => $body,
 					'image_url'    => $post['imgSrc'],
 					'image_buffer' => $post['featuredImageBuffer'],
 				);
@@ -395,6 +407,39 @@ class Puck_Press_Instagram_Post_Importer {
 		$meta_ids  = $meta_ids ?: array();
 		$old_slugs = $this->get_instagram_post_slugs( -1 );
 		return array_values( array_unique( array_merge( $meta_ids, $old_slugs ) ) );
+	}
+
+	/**
+	 * Detects captions that carry no real text — the scraper API returns an
+	 * "…Click here to see full post on Instagram" anchor for caption-less posts.
+	 */
+	private function is_placeholder_caption( string $text ): bool {
+		$decoded  = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+		$stripped = trim( wp_strip_all_tags( $decoded ) );
+
+		if ( $stripped === '' ) {
+			return true;
+		}
+		// Whole caption is nothing but a single anchor tag — no real caption text.
+		if ( preg_match( '#^\s*<a\b[^>]*>.*</a>\s*$#is', trim( $decoded ) ) ) {
+			return true;
+		}
+		// Last-resort match on the known placeholder phrase.
+		return stripos( $stripped, 'Click here to see full post' ) !== false;
+	}
+
+	/**
+	 * Builds a unique slug for caption-less posts from the post's image, so that
+	 * identical generic titles don't collapse to one slug.
+	 */
+	private function image_url_to_slug( string $image_url, string $title ): string {
+		// Hash only the path basename — Instagram CDN query params are volatile.
+		$path = wp_parse_url( $image_url, PHP_URL_PATH );
+		$key  = $path ? basename( $path ) : $image_url;
+		$hash = substr( md5( $key ), 0, 12 );
+
+		// Cap the base title first, THEN append the hash so it is never truncated.
+		return $this->title_to_slug( $title ) . '-' . $hash;
 	}
 
 	private function title_to_slug( string $title ): string {
