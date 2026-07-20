@@ -414,18 +414,15 @@ class Puck_Press_Instagram_Post_Importer {
 	 * "…Click here to see full post on Instagram" anchor for caption-less posts.
 	 */
 	private function is_placeholder_caption( string $text ): bool {
-		$decoded  = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
-		$stripped = trim( wp_strip_all_tags( $decoded ) );
+		$decoded = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
 
-		if ( $stripped === '' ) {
-			return true;
-		}
-		// Whole caption is nothing but a single anchor tag — no real caption text.
-		if ( preg_match( '#^\s*<a\b[^>]*>.*</a>\s*$#is', trim( $decoded ) ) ) {
-			return true;
-		}
-		// Last-resort match on the known placeholder phrase.
-		return stripos( $stripped, 'Click here to see full post' ) !== false;
+		// The API appends a "Click here to see full post on Instagram" link to
+		// EVERY caption, so its presence says nothing about whether the post has
+		// real text. Strip that link/phrase out and see if anything is left.
+		$without_link = preg_replace( '#<a\b[^>]*>.*?</a>#is', '', $decoded );
+		$without_link = preg_replace( '/Click here to see full post on Instagram\.?/i', '', $without_link );
+
+		return trim( wp_strip_all_tags( $without_link ) ) === '';
 	}
 
 	/**
