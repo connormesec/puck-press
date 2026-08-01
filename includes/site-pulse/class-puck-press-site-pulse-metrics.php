@@ -25,7 +25,7 @@ class Puck_Press_Site_Pulse_Metrics {
 	 */
 	public function collect( int $year, int $month ): array {
 		return array(
-			'site_name'   => get_bloginfo( 'name' ),
+			'site_name'   => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 			'month_label' => date_i18n( 'F Y', mktime( 0, 0, 0, $month, 1, $year ) ),
 			'generated'   => date_i18n( 'M j, Y' ),
 			'traffic'     => $this->collect_traffic( $year, $month ),

@@ -474,7 +474,7 @@ class Puck_Press_Site_Pulse {
 		$from_email = 'site-pulse@' . ( $host ?: 'localhost' );
 		$from_name  = (string) get_option( self::OPTION_FROM_NAME, '' );
 		if ( $from_name === '' ) {
-			$from_name = get_bloginfo( 'name' );
+			$from_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		}
 
 		$headers = array(
@@ -542,7 +542,7 @@ class Puck_Press_Site_Pulse {
 	private function render_confirm_form( string $month, string $token ): void {
 		$action = esc_url( add_query_arg( array( self::CONFIRM_VAR => '1' ), home_url( '/' ) ) );
 		$client = $this->client_email();
-		$site   = get_bloginfo( 'name' );
+		$site   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		$label  = $this->month_key_label( $month );
 
 		$body  = '<h2 style="margin:10px 0 4px;">Send the ' . esc_html( $label ) . ' Site Pulse to your client?</h2>';
@@ -575,7 +575,7 @@ class Puck_Press_Site_Pulse {
 	private function render_page( string $title, string $body_html ): void {
 		status_header( 200 );
 		nocache_headers();
-		$site = get_bloginfo( 'name' );
+		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
 		echo '<meta name="robots" content="noindex,nofollow">';
 		echo '<title>' . esc_html( $title ) . ' — ' . esc_html( $site ) . '</title></head>';

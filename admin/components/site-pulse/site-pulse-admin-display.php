@@ -32,7 +32,7 @@ class Puck_Press_Site_Pulse_Admin_Display {
 		$enabled      = (int) get_option( Puck_Press_Site_Pulse::OPTION_ENABLED, 0 );
 		$review_email = (string) get_option( Puck_Press_Site_Pulse::OPTION_REVIEW_EMAIL, Puck_Press_Site_Pulse::DEFAULT_REVIEW_EMAIL );
 		$client_email = (string) get_option( Puck_Press_Site_Pulse::OPTION_CLIENT_EMAIL, '' );
-		$from_name    = (string) get_option( Puck_Press_Site_Pulse::OPTION_FROM_NAME, get_bloginfo( 'name' ) );
+		$from_name    = (string) get_option( Puck_Press_Site_Pulse::OPTION_FROM_NAME, wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) );
 		$count_emails = (int) get_option( Puck_Press_Site_Pulse::OPTION_COUNT_EMAILS, 0 );
 		$form_email   = (string) get_option( Puck_Press_Site_Pulse::OPTION_FORM_EMAIL, get_option( 'admin_email', '' ) );
 		$metrics = get_option( Puck_Press_Site_Pulse::OPTION_METRICS, array() );

@@ -373,7 +373,7 @@ class Puck_Press_Cron {
 		}
 
 		$admin_email = get_option( 'admin_email' );
-		$site_name   = get_bloginfo( 'name' );
+		$site_name   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		$admin_url   = admin_url( 'admin.php?page=puck-press-settings' );
 
 		$subject = sprintf( '[%s] Puck Press cron failures detected', $site_name );
