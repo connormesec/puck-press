@@ -482,6 +482,22 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
                 continue;
             }
 
+            // Diff against source: a value equal to raw (or empty, for fields
+            // raw can't supply) is not an override — remove the key instead of
+            // storing it, so highlights stay truthful. hero_image_url has no
+            // raw column, so its source baseline is always ''.
+            $is_override = ( '' !== $value );
+            if ( $is_override && 'headshot_link' === $field ) {
+                $raw_value = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT headshot_link FROM {$wpdb->prefix}pp_team_players_raw WHERE player_id = %s AND team_id = %d LIMIT 1",
+                        $player_id,
+                        $team_id
+                    )
+                );
+                $is_override = ( $value !== (string) $raw_value );
+            }
+
             $existing_mod = $wpdb->get_row(
                 $wpdb->prepare(
                     "SELECT * FROM $mods_table WHERE external_id = %s AND edit_action = 'update' AND team_id = %d LIMIT 1",
@@ -492,17 +508,26 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
             );
 
             if ( $existing_mod ) {
-                $existing_fields          = json_decode( $existing_mod['edit_data'], true ) ?: array();
-                $existing_fields[ $field ] = $value;
-                $wpdb->update(
-                    $mods_table,
-                    array(
-                        'edit_data'  => wp_json_encode( $existing_fields ),
-                        'updated_at' => current_time( 'mysql' ),
-                    ),
-                    array( 'id' => $existing_mod['id'] )
-                );
-            } else {
+                $existing_fields = json_decode( $existing_mod['edit_data'], true ) ?: array();
+                if ( $is_override ) {
+                    $existing_fields[ $field ] = $value;
+                } else {
+                    unset( $existing_fields[ $field ] );
+                }
+
+                if ( empty( array_diff( array_keys( $existing_fields ), array( 'external_id' ) ) ) ) {
+                    $wpdb->delete( $mods_table, array( 'id' => $existing_mod['id'] ), array( '%d' ) );
+                } else {
+                    $wpdb->update(
+                        $mods_table,
+                        array(
+                            'edit_data'  => wp_json_encode( $existing_fields ),
+                            'updated_at' => current_time( 'mysql' ),
+                        ),
+                        array( 'id' => $existing_mod['id'] )
+                    );
+                }
+            } elseif ( $is_override ) {
                 $wpdb->insert(
                     $mods_table,
                     array(

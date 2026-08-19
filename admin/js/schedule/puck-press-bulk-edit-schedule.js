@@ -178,9 +178,9 @@
         url: ajaxurl,
         method: 'POST',
         data: {
-          action:      'pp_bulk_update_schedule_field',
-          nonce:       ppBulkSchedule.nonce,
-          schedule_id: (window.ppScheduleAdmin && window.ppScheduleAdmin.activeScheduleId) ? window.ppScheduleAdmin.activeScheduleId : 1,
+          action:   'pp_bulk_update_schedule_field',
+          nonce:    ppBulkSchedule.nonce,
+          team_id:  parseInt($('#pp-active-team-id').val(), 10) || 0,
           field,
           value,
           game_ids: JSON.stringify(ids),
@@ -208,10 +208,20 @@
             if (typeof gameScheduleInitializers !== 'undefined') {
               gameScheduleInitializers.forEach(fn => { if (typeof fn === 'function') fn(); });
             }
+          } else {
+            // Covers wp_send_json_error AND admin-ajax's bare '0'/'-1' replies
+            // (unregistered action, bad nonce) — never fake success silently.
+            const msg = (response && response.data && response.data.message)
+              ? response.data.message
+              : 'Bulk update failed — no changes were saved.';
+            alert(msg);
           }
           restoreStyles();
         },
-        error: () => restoreStyles(),
+        error: (xhr) => {
+          restoreStyles();
+          alert('Bulk update failed (' + (xhr && xhr.status ? xhr.status : 'network error') + ') — no changes were saved.');
+        },
       });
     });
 

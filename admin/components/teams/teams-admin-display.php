@@ -79,6 +79,7 @@ class Puck_Press_Teams_Admin_Display {
                                 <div class="pp-dropdown-header">Archive</div>
                                 <div class="pp-dropdown-item" id="pp-archive-all-teams-season-btn">📦 Archive All Teams Season</div>
                                 <div class="pp-dropdown-header">Database</div>
+                                <div class="pp-dropdown-item" id="pp-audit-game-mods-btn">🧹 Audit &amp; Clean Game Edits</div>
                                 <div class="pp-dropdown-item danger" id="pp-wipe-and-recreate-db-btn">Wipe &amp; Recreate Database</div>
                             </div>
                         </div>

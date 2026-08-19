@@ -1462,6 +1462,45 @@
     //                   Advanced Dropdown                        //
     //############################################################//
 
+    // Audit & clean game edit mods: auto-removes overrides identical to the
+    // source data, and lists date overrides that differ from the raw date so
+    // the admin can revert the ones caused by the old timezone bug (via the
+    // per-field ✕ on the Date cell).
+    $(document).on('click', '#pp-audit-game-mods-btn', function () {
+      $('#pp-advancedDropdown').css('display', 'none');
+
+      if (!confirm('Scan all game edits, remove overrides identical to source data, and report shifted dates?')) {
+        return;
+      }
+
+      $.post(ajaxurl, {
+        action: 'pp_audit_game_mods',
+        nonce: (typeof ppGameEdits !== 'undefined') ? ppGameEdits.nonce : '',
+      }, function (response) {
+        if (!response.success) {
+          alert('Audit failed: ' + (response.data?.message || 'Unknown error'));
+          return;
+        }
+        const d = response.data;
+        let msg = 'Audit complete.\n\n'
+          + 'Edit mods scanned: ' + d.mods_scanned + '\n'
+          + 'Spurious override keys removed: ' + d.keys_cleaned + '\n'
+          + 'Empty mods deleted: ' + d.mods_deleted + '\n'
+          + 'Teams rebuilt: ' + d.teams_rebuilt;
+        if (d.date_shifts && d.date_shifts.length) {
+          msg += '\n\nDate overrides that differ from source (' + d.date_shifts.length + '):\n';
+          d.date_shifts.forEach(function (s) {
+            msg += 'Team ' + s.team_id + ' game ' + s.game_id + ': source ' + s.raw_date + ' → edited ' + s.mod_date + '\n';
+          });
+          msg += '\nIf a shift was NOT intentional, open that team\'s schedule and click the ✕ on the highlighted Date cell to revert it.';
+        }
+        alert(msg);
+        if (d.teams_rebuilt > 0) location.reload();
+      }).fail(function () {
+        alert('Server error running the audit.');
+      });
+    });
+
     $(document).on('click', '#pp-fix-team-databases-btn', function () {
       $('#pp-advancedDropdown').css('display', 'none');
 
@@ -1494,6 +1533,34 @@
     const $editGameLoading = $('#pp-edit-game-loading');
     let   editGameId       = null;
 
+    // Dirty tracking: field name → input selector. On save, only fields whose
+    // value differs from the snapshot taken at modal-open are sent, so an
+    // untouched field can never create or destroy an override server-side.
+    const EDIT_GAME_FIELDS = {
+      game_date:         '#pp-edit-game-date',
+      game_time:         '#pp-edit-game-time',
+      home_or_away:      '#pp-edit-home-or-away',
+      game_status:       '#pp-edit-game-status',
+      target_score:      '#pp-edit-target-score',
+      opponent_score:    '#pp-edit-opponent-score',
+      venue:             '#pp-edit-venue',
+      promo_header:      '#pp-promo-header',
+      promo_text:        '#pp-promo-text',
+      promo_img_url:     '#pp-promo-img-url',
+      promo_ticket_link: '#pp-promo-ticket-link',
+      post_link:         '#pp-post-link',
+    };
+    let editGameSnapshot = {};
+
+    function snapshotEditGameFields() {
+      editGameSnapshot = {};
+      Object.entries(EDIT_GAME_FIELDS).forEach(([field, sel]) => {
+        editGameSnapshot[field] = $(sel).val() ?? '';
+      });
+    }
+
+    const gameEditsNonce = () => (typeof ppGameEdits !== 'undefined') ? ppGameEdits.nonce : '';
+
     function openEditGameModal() {
       $editGameModal.css('display', 'flex');
     }
@@ -1518,7 +1585,7 @@
       openEditGameModal();
       $editGameLoading.show();
 
-      $.post(ajaxurl, { action: 'pp_get_game_data', game_id: gameId, team_id: teamId }, function (response) {
+      $.post(ajaxurl, { action: 'pp_get_game_data', nonce: gameEditsNonce(), game_id: gameId, team_id: teamId }, function (response) {
         $editGameLoading.hide();
         if (!response.success) {
           alert('Failed to load game: ' + (response.data?.message || 'Unknown error'));
@@ -1526,10 +1593,8 @@
           return;
         }
         const g = response.data.game;
-        if (g.game_timestamp) {
-          const d = new Date(g.game_timestamp * 1000);
-          $('#pp-edit-game-date').val(d.toISOString().slice(0, 10));
-        }
+        // game_date is a plain YYYY-MM-DD site-local string — no Date()/TZ math.
+        $('#pp-edit-game-date').val(g.game_date || '');
         $('#pp-edit-game-time').val(g.game_time || '');
         $('#pp-edit-home-or-away').val(g.home_or_away || '');
         $('#pp-edit-game-status').val(g.game_status || '');
@@ -1541,6 +1606,7 @@
         $('#pp-promo-img-url').val(g.promo_img_url || '');
         $('#pp-promo-ticket-link').val(g.promo_ticket_link || '');
         $('#pp-post-link').val(g.post_link || '');
+        snapshotEditGameFields();
       }).fail(function () {
         $editGameLoading.hide();
         alert('Server error loading game data.');
@@ -1554,31 +1620,33 @@
       if (e.target === $editGameModal[0]) closeEditGameModal();
     });
 
-    // Save game edit
+    // Save game edit — sends only fields the user actually changed.
     $('#pp-confirm-edit-game').on('click', function () {
       const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
       if (!editGameId || !teamId) return;
 
+      const changed = Object.keys(EDIT_GAME_FIELDS).filter(
+        (field) => ($(EDIT_GAME_FIELDS[field]).val() ?? '') !== editGameSnapshot[field]
+      );
+
+      if (!changed.length) {
+        closeEditGameModal(); // true no-op: nothing to save
+        return;
+      }
+
       const $btn = $(this);
       $btn.prop('disabled', true).text('Saving…');
 
-      $.post(ajaxurl, {
-        action:          'pp_save_game_edit',
-        game_id:         editGameId,
-        team_id:         teamId,
-        game_date:       $('#pp-edit-game-date').val(),
-        game_time:       $('#pp-edit-game-time').val(),
-        home_or_away:    $('#pp-edit-home-or-away').val(),
-        game_status:     $('#pp-edit-game-status').val(),
-        target_score:    $('#pp-edit-target-score').val(),
-        opponent_score:  $('#pp-edit-opponent-score').val(),
-        venue:           $('#pp-edit-venue').val(),
-        promo_header:    $('#pp-promo-header').val(),
-        promo_text:      $('#pp-promo-text').val(),
-        promo_img_url:   $('#pp-promo-img-url').val(),
-        promo_ticket_link: $('#pp-promo-ticket-link').val(),
-        post_link:       $('#pp-post-link').val(),
-      }, function (response) {
+      const payload = {
+        action:         'pp_save_game_edit',
+        nonce:          gameEditsNonce(),
+        game_id:        editGameId,
+        team_id:        teamId,
+        changed_fields: JSON.stringify(changed),
+      };
+      changed.forEach((field) => { payload[field] = $(EDIT_GAME_FIELDS[field]).val(); });
+
+      $.post(ajaxurl, payload, function (response) {
         $btn.prop('disabled', false).text('Save Edit');
         if (response.success) {
           replaceGamesTable(response.data.games_table_html);
@@ -1598,7 +1666,7 @@
       const teamId   = parseInt($('#pp-active-team-id').val(), 10) || 0;
       if (!confirm('Delete this game?')) return;
 
-      $.post(ajaxurl, { action: 'pp_delete_game', game_id: gameId, team_id: teamId }, function (response) {
+      $.post(ajaxurl, { action: 'pp_delete_game', nonce: gameEditsNonce(), game_id: gameId, team_id: teamId }, function (response) {
         if (response.success) {
           replaceGamesTable(response.data.games_table_html);
         } else {
@@ -1614,7 +1682,7 @@
       const deleteModId = $(this).data('delete-mod-id');
       const teamId      = parseInt($('#pp-active-team-id').val(), 10) || 0;
 
-      $.post(ajaxurl, { action: 'pp_restore_game', delete_mod_id: deleteModId, team_id: teamId }, function (response) {
+      $.post(ajaxurl, { action: 'pp_restore_game', nonce: gameEditsNonce(), delete_mod_id: deleteModId, team_id: teamId }, function (response) {
         if (response.success) {
           replaceGamesTable(response.data.games_table_html);
         } else {
@@ -1632,7 +1700,7 @@
       const fields = String($(this).data('fields')).split(',');
       const teamId = parseInt($('#pp-active-team-id').val(), 10) || 0;
 
-      $.post(ajaxurl, { action: 'pp_revert_game_field', mod_id: modId, fields: fields, team_id: teamId }, function(response) {
+      $.post(ajaxurl, { action: 'pp_revert_game_field', nonce: gameEditsNonce(), mod_id: modId, fields: fields, team_id: teamId }, function(response) {
         if (response.success) {
           replaceGamesTable(response.data.games_table_html);
         } else {

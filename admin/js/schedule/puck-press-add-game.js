@@ -66,6 +66,7 @@
 
 			const formData = new FormData();
 			formData.append('action', 'pp_add_manual_game');
+			formData.append('nonce', (typeof ppGameEdits !== 'undefined') ? ppGameEdits.nonce : '');
 			formData.append('team_id', parseInt($('#pp-active-team-id').val(), 10) || 0);
 			formData.append('game_date', $('#pp-game-date', $modal).val());
 			formData.append('game_time', $('#pp-game-time', $modal).val());
