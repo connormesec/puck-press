@@ -91,7 +91,7 @@
 }
 .home_away_text {
   transform: translateY(100%) rotate(-90deg);
-  transform-origin: 20% 0%;
+  transform-origin: 25% 5%;
   font-weight: 700;
   font-stretch: normal;
   font-style: normal;

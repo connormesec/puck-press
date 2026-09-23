@@ -2130,14 +2130,15 @@ class Puck_Press_Admin {
 		}
 
 		// Naive site-local string, no TZ math: the modal date input needs YYYY-MM-DD verbatim.
-		$game['game_date']      = ! empty( $game['game_timestamp'] ) ? substr( $game['game_timestamp'], 0, 10 ) : '';
-		$game['game_timestamp'] = ! empty( $game['game_timestamp'] ) ? strtotime( $game['game_timestamp'] ) : null;
+		$game['game_date'] = ! empty( $game['game_timestamp'] ) ? substr( $game['game_timestamp'], 0, 10 ) : '';
 
 		// Convert game_time from 12-hour display format to HH:MM for <input type="time">.
+		// Pure clock-face reformat via createFromFormat — never strtotime()+date(), which
+		// mixes PHP's ambient default timezone with WP's site timezone and can shift the hour.
 		if ( ! empty( $game['game_time'] ) ) {
-			$parsed = strtotime( $game['game_time'] );
+			$parsed = DateTime::createFromFormat( 'g:i A', trim( $game['game_time'] ) );
 			if ( $parsed ) {
-				$game['game_time'] = date( 'H:i', $parsed );
+				$game['game_time'] = $parsed->format( 'H:i' );
 			}
 		}
 
