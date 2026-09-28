@@ -192,41 +192,37 @@ class AccordionTemplate extends PuckPressTemplate {
 
 	private function gameResultMessage( $game ) {
 		$game_result_message = '';
-		if ( $game['game_status'] == 'FINAL' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'L';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'W';
+		if ( self::has_final_score( $game ) ) {
+			if ( $game['game_status'] == 'FINAL' ) {
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'L';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'W';
+				} else {
+					$game_result_message = 'T';
+				}
+			} elseif ( $game['game_status'] == 'FINAL OT' ) {
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'OTL';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'OTW';
+				} else {
+					$game_result_message = 'OT';
+				}
 			} else {
-				$game_result_message = 'T';
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'SOL';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'SOW';
+				} else {
+					$game_result_message = 'SOT';
+				}
 			}
-		} elseif ( $game['game_status'] == 'FINAL OT' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'OTL';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'OTW';
-			} else {
-				$game_result_message = 'OT';
-			}
-		} elseif ( $game['game_status'] == 'FINAL SO' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'SOL';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'SOW';
-			} else {
-				$game_result_message = 'SOT';
-			}
-		} elseif ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'L';
-		} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-			$game_result_message = 'W';
-		} else {
-			$game_result_message = '';
 		}
 
 		$final_game_result_message = '';
 		if ( $game_result_message !== '' ) {
-			$final_game_result_message = $game_result_message . ': ' . $game['target_score'] . ' - ' . $game['opponent_score'];
+			$final_game_result_message = $game_result_message . ': ' . self::format_score( $game );
 		}
 
 		return $final_game_result_message;

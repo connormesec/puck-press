@@ -166,36 +166,32 @@ class PillTemplate extends PuckPressTemplate {
 	private function createEachGame( $game, bool $should_hide_score ) {
 		$game_result_message    = '';
 		$game_status_normalized = strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) );
-		if ( $game_status_normalized == 'FINAL' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'L';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'W';
+		if ( self::has_final_score( $game ) ) {
+			if ( $game_status_normalized == 'FINAL' ) {
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'L';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'W';
+				} else {
+					$game_result_message = 'T';
+				}
+			} elseif ( $game_status_normalized == 'FINAL OT' ) {
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'OTL';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'OTW';
+				} else {
+					$game_result_message = 'OT';
+				}
 			} else {
-				$game_result_message = 'T';
+				if ( $game['target_score'] < $game['opponent_score'] ) {
+					$game_result_message = 'SOL';
+				} elseif ( $game['target_score'] > $game['opponent_score'] ) {
+					$game_result_message = 'SOW';
+				} else {
+					$game_result_message = 'SOT';
+				}
 			}
-		} elseif ( $game_status_normalized == 'FINAL OT' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'OTL';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'OTW';
-			} else {
-				$game_result_message = 'OT';
-			}
-		} elseif ( $game_status_normalized == 'FINAL SO' ) {
-			if ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'SOL';
-			} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-				$game_result_message = 'SOW';
-			} else {
-				$game_result_message = 'SOT';
-			}
-		} elseif ( $game['target_score'] < $game['opponent_score'] ) {
-				$game_result_message = 'L';
-		} elseif ( $game['target_score'] > $game['opponent_score'] ) {
-			$game_result_message = 'W';
-		} else {
-			$game_result_message = '';
 		}
 
 		$hide          = '';
@@ -292,7 +288,7 @@ class PillTemplate extends PuckPressTemplate {
                                         ' . $game_result_message . '
                                     </span>
                                     <span class="results_text_score">
-                                        ' . $game['target_score'] . '-' . $game['opponent_score'] . '
+                                        ' . self::format_score( $game ) . '
                                     </span>
                                 </span>
                             </div>

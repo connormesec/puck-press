@@ -383,6 +383,27 @@ abstract class PuckPressTemplate {
 	}
 
 	/**
+	 * True only when the source has actually posted a final result — a
+	 * past-due game_timestamp with no game_status yet is not "scored",
+	 * even if target_score/opponent_score happen to be 0.
+	 */
+	protected static function has_final_score( array $game ): bool {
+		$status = strtoupper( str_replace( '/', ' ', $game['game_status'] ?? '' ) );
+		return in_array( $status, array( 'FINAL', 'FINAL OT', 'FINAL SO' ), true )
+			&& $game['target_score'] !== null && $game['target_score'] !== ''
+			&& $game['opponent_score'] !== null && $game['opponent_score'] !== '';
+	}
+
+	/**
+	 * Formats "X-Y" for a game with a posted final score, otherwise a placeholder.
+	 */
+	protected static function format_score( array $game, string $placeholder = '-' ): string {
+		return self::has_final_score( $game )
+			? $game['target_score'] . '-' . $game['opponent_score']
+			: $placeholder;
+	}
+
+	/**
 	 * Sort games in chronological order (ascending by default) based on game_timestamp
 	 *
 	 * @param array $games Array of games, each with a 'game_timestamp' field

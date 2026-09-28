@@ -148,7 +148,7 @@ class GameSliderTemplate extends PuckPressTemplate {
 			}
 		}
 
-		$is_unscored_past_game = isset( $game['target_score'] ) && $game['target_score'] === '-';
+		$is_unscored_past_game = ! self::has_final_score( $game );
 
 		// Default fallback logo
 		$default_logo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/TBD-W.svg/768px-TBD-W.svg.png?20200316192217'; // Adjust path as needed
