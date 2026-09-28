@@ -350,8 +350,11 @@ abstract class PuckPressTemplate {
 	public function split_games_by_time( array $games, ?DateTime $now = null ): array {
 		if ( $now === null ) {
 			$fake = defined( 'PP_FAKE_NOW' ) ? PP_FAKE_NOW : null;
-			$now  = $fake ? new DateTime( $fake ) : new DateTime();
+			$now  = is_string( $fake ) && $fake !== '' ? new DateTime( $fake ) : new DateTime();
 		}
+		// Cutoff is start-of-day, not the live time, so a game stays "upcoming"
+		// for the rest of gameday and only becomes "past" the next calendar day.
+		$today_start  = ( clone $now )->setTime( 0, 0, 0 );
 		$past_games   = array();
 		$future_games = array();
 
@@ -366,7 +369,7 @@ abstract class PuckPressTemplate {
 				continue; // Skip invalid dates
 			}
 
-			if ( $game_time < $now ) {
+			if ( $game_time < $today_start ) {
 				$past_games[] = $game;
 			} else {
 				$future_games[] = $game;

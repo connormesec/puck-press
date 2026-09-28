@@ -43,21 +43,22 @@ class Puck_Press_Data_Shortcodes {
             return self::$next_game_cache[ $schedule_id ];
         }
         global $wpdb;
-        $row = $wpdb->get_row(
+        $today_start = ( new DateTime() )->setTime( 0, 0, 0 )->format( 'Y-m-d H:i:s' );
+        $row         = $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}pp_schedule_games_display
                   WHERE schedule_id = %d
                     AND ( target_score IS NULL
                           OR game_status IS NULL
                           OR game_status = '' )
-					AND ( game_timestamp IS NULL OR game_timestamp > %s )
+					AND ( game_timestamp IS NULL OR game_timestamp >= %s )
                   ORDER BY
                     CASE WHEN game_timestamp IS NULL THEN 1 ELSE 0 END ASC,
                     game_timestamp ASC,
                     id ASC
                   LIMIT 1",
                 $schedule_id,
-                current_time( 'mysql' )
+                $today_start
             ),
             ARRAY_A
         );
