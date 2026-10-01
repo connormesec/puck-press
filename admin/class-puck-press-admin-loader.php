@@ -82,6 +82,9 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-teams-admin-standings-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-standings-admin-preview-card.php';
 
+		// Season health (warnings + rollover prompts)
+		require_once plugin_dir_path( __FILE__ ) . 'components/teams/class-puck-press-season-health.php';
+
 		// Stats Module
 		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stats-admin-preview-card.php';
 		require_once plugin_dir_path( __FILE__ ) . 'components/stats/class-puck-press-stat-leaders-admin-preview-card.php';

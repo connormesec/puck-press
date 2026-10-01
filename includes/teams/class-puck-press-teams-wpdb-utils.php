@@ -181,8 +181,10 @@ class Puck_Press_Teams_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
             penalty_minutes SMALLINT DEFAULT NULL,
             shooting_percentage DECIMAL(5,2) DEFAULT NULL,
             stat_rank SMALLINT DEFAULT NULL,
+            season_key VARCHAR(50) DEFAULT NULL,
             PRIMARY KEY (id),
-            KEY team_id (team_id)
+            KEY team_id (team_id),
+            KEY season_key (season_key)
         ",
         'pp_team_player_goalie_stats'  => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -204,8 +206,10 @@ class Puck_Press_Teams_Wpdb_Utils extends Puck_Press_Wpdb_Utils_Base {
             assists SMALLINT DEFAULT NULL,
             penalty_minutes SMALLINT DEFAULT NULL,
             stat_rank SMALLINT DEFAULT NULL,
+            season_key VARCHAR(50) DEFAULT NULL,
             PRIMARY KEY (id),
-            KEY team_id (team_id)
+            KEY team_id (team_id),
+            KEY season_key (season_key)
         ",
         'pp_team_standings_cache' => "
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,

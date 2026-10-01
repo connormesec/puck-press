@@ -344,6 +344,40 @@ class Puck_Press_Activator {
 		}
 	}
 
+	/**
+	 * Adds season_key to the live stats tables and tags existing rows with
+	 * the season of the roster source that produced them, so the live stats
+	 * view can show only the current season right after upgrading.
+	 */
+	public static function maybe_run_season_key_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '11.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-wpdb-utils-base-abstract.php';
+		require_once plugin_dir_path( __FILE__ ) . 'teams/class-puck-press-teams-wpdb-utils.php';
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-season.php';
+
+		$teams_utils = new Puck_Press_Teams_Wpdb_Utils();
+		$teams_utils->maybe_create_or_update_table( 'pp_team_player_stats' );
+		$teams_utils->maybe_create_or_update_table( 'pp_team_player_goalie_stats' );
+
+		// Only continue once both columns actually exist.
+		global $wpdb;
+		foreach ( array( 'pp_team_player_stats', 'pp_team_player_goalie_stats' ) as $table ) {
+			$col_exists = $wpdb->get_results( "SHOW COLUMNS FROM `{$wpdb->prefix}{$table}` LIKE 'season_key'" );
+			if ( empty( $col_exists ) ) {
+				return;
+			}
+		}
+
+		// Untaggable rows (unknown season) stay NULL and keep showing.
+		Puck_Press_Season::tag_untagged_stats();
+
+		update_option( 'pp_db_version', '11.0' );
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );

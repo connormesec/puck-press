@@ -281,7 +281,7 @@
     if (!confirm('Delete this entire archive? This cannot be undone.')) return;
     var $btn = $(this).prop('disabled', true);
     var seasonKey = $btn.data('season-key');
-    $.post(ajaxUrl, { action: 'pp_delete_team_archive', season_key: seasonKey }, function (res) {
+    $.post(ajaxUrl, { action: 'pp_delete_team_archive', nonce: nonce, season_key: seasonKey }, function (res) {
       if (res.success && res.data.archives_html) {
         $('#pp-team-archives-list').replaceWith($(res.data.archives_html).find('#pp-team-archives-list').addBack('#pp-team-archives-list'));
       } else {

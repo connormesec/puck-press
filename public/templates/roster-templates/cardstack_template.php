@@ -98,11 +98,13 @@ class CardStackTemplate extends PuckPressTemplate {
 		$team_ids = array_values( array_unique( array_filter( array_column( $players, 'team_id' ), 'is_numeric' ) ) );
 		if ( ! empty( $team_ids ) ) {
 			$placeholders          = implode( ', ', array_fill( 0, count( $team_ids ), '%d' ) );
+			$season_scope_s        = Puck_Press_Season::stats_scope_sql( 's' );
+			$season_scope_g        = Puck_Press_Season::stats_scope_sql( 'g' );
 			$player_ids_with_stats = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT player_id FROM {$wpdb->prefix}pp_team_player_stats WHERE team_id IN ($placeholders)
+					"SELECT s.player_id FROM {$wpdb->prefix}pp_team_player_stats s WHERE s.team_id IN ($placeholders) AND {$season_scope_s}
 					 UNION
-					 SELECT player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats WHERE team_id IN ($placeholders)",
+					 SELECT g.player_id FROM {$wpdb->prefix}pp_team_player_goalie_stats g WHERE g.team_id IN ($placeholders) AND {$season_scope_g}",
 					array_merge( $team_ids, $team_ids )
 				)
 			);

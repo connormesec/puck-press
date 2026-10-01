@@ -139,6 +139,8 @@ class Puck_Press {
 		 */
 		require_once plugin_dir_path( __DIR__ ) . 'public/class-puck-press-public.php';
 
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-season.php';
+
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-cron.php';
 
 		require_once plugin_dir_path( __DIR__ ) . 'includes/site-pulse/class-puck-press-site-pulse.php';
@@ -172,6 +174,7 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_division_standings_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_archive_roster_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_site_pulse_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_season_key_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}
@@ -212,6 +215,9 @@ class Puck_Press {
 		// admin-ajax.php fires 'init' but never fires 'admin_init', so handlers
 		// registered on 'admin_init' are invisible to unauthenticated AJAX requests.
 		$this->loader->add_action( 'init', $plugin_admin, 'register_insta_loopback_hooks' );
+
+		// Season health notice on Puck Press screens (the class loads in admin only).
+		add_action( 'admin_notices', array( 'Puck_Press_Season_Health', 'maybe_show_notice' ) );
 	}
 
 	public function register_post_types() {

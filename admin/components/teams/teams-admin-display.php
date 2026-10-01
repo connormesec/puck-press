@@ -77,7 +77,7 @@ class Puck_Press_Teams_Admin_Display {
                             </button>
                             <div class="pp-dropdown-menu" id="pp-advancedDropdown">
                                 <div class="pp-dropdown-header">Archive</div>
-                                <div class="pp-dropdown-item" id="pp-archive-all-teams-season-btn">📦 Archive All Teams Season</div>
+                                <div class="pp-dropdown-item" id="pp-archive-all-teams-season-btn">📦 Archive a Season</div>
                                 <div class="pp-dropdown-header">Database</div>
                                 <div class="pp-dropdown-item" id="pp-audit-game-mods-btn">🧹 Audit &amp; Clean Game Edits</div>
                                 <div class="pp-dropdown-item danger" id="pp-wipe-and-recreate-db-btn">Wipe &amp; Recreate Database</div>
@@ -85,6 +85,8 @@ class Puck_Press_Teams_Admin_Display {
                         </div>
                     </div>
                 </div>
+
+                <?php echo Puck_Press_Season_Health::render_panel(); ?>
 
                 <?php echo $this->render_teams_section(); ?>
 
@@ -264,32 +266,63 @@ class Puck_Press_Teams_Admin_Display {
         <div id="pp-team-archive-modal" class="pp-modal-overlay" style="display:none;">
             <div class="pp-modal">
                 <div class="pp-modal-header">
-                    <h2>Archive All Teams Season</h2>
+                    <h2>Archive a Season</h2>
                     <button class="pp-modal-close" id="pp-team-archive-modal-close">&times;</button>
                 </div>
                 <div class="pp-modal-body">
+                    <?php
+                    $archived_manager = new Puck_Press_Archive_Manager();
+                    $archived_keys    = array_column( $archived_manager->get_all_archives(), 'season_key' );
+                    $current_year     = (int) gmdate( 'Y' );
+                    $season_keys      = Puck_Press_Season::get_known_keys();
+                    for ( $y = $current_year - 1; $y >= $current_year - 11; $y-- ) {
+                        $season_keys[] = $y . '-' . ( $y + 1 );
+                    }
+                    $season_keys = array_values( array_unique( $season_keys ) );
+                    rsort( $season_keys );
+
+                    // Default to a season that is still live but no longer current,
+                    // otherwise the season before the current one.
+                    $health      = Puck_Press_Season::get_health_issues();
+                    $current_key = Puck_Press_Season::get_current_key();
+                    $default_key = $health['stale_live_seasons'][0]['season'] ?? '';
+                    if ( $default_key === '' ) {
+                        $start       = (int) substr( $current_key ?: ( ( $current_year - 1 ) . '-' . $current_year ), 0, 4 );
+                        $default_key = $current_key !== '' ? ( $start - 1 ) . '-' . $start : $start . '-' . ( $start + 1 );
+                    }
+                    $teams = ( new Puck_Press_Teams_Wpdb_Utils() )->get_all_teams();
+                    ?>
                     <div class="pp-form-group">
                         <label class="pp-form-label" for="pp-team-archive-season">Season</label>
-                        <select id="pp-team-archive-season" class="pp-form-input">
-                            <?php
-                            $current_year     = (int) gmdate( 'Y' );
-                            $default_key      = ( $current_year - 1 ) . '-' . $current_year;
-                            $archived_manager = new Puck_Press_Archive_Manager();
-                            $archived_keys    = array_column( $archived_manager->get_all_archives(), 'season_key' );
-                            for ( $y = $current_year - 1; $y >= $current_year - 11; $y-- ) {
-                                $key      = $y . '-' . ( $y + 1 );
-                                $disabled = in_array( $key, $archived_keys, true ) ? ' disabled' : '';
-                                $suffix   = $disabled ? ' (archived)' : '';
-                                $selected = $key === $default_key ? ' selected' : '';
-                                echo '<option value="' . esc_attr( $key ) . '"' . $disabled . $selected . '>' . esc_html( $key . $suffix ) . '</option>';
-                            }
-                            ?>
+                        <select id="pp-team-archive-season" class="pp-form-input" data-default="<?php echo esc_attr( $default_key ); ?>">
+                            <?php foreach ( $season_keys as $key ) : ?>
+                                <?php
+                                $suffix = array();
+                                if ( $key === $current_key ) {
+                                    $suffix[] = 'current';
+                                }
+                                if ( in_array( $key, $archived_keys, true ) ) {
+                                    $suffix[] = 'archived';
+                                }
+                                ?>
+                                <option value="<?php echo esc_attr( $key ); ?>"<?php selected( $key, $default_key ); ?>><?php echo esc_html( $key . ( $suffix ? ' (' . implode( ', ', $suffix ) . ')' : '' ) ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="pp-form-help" style="font-size:0.8rem;color:#5f6368;margin:6px 0 0;">Only this season's data is archived. Teams that already have newer-season sources keep them.</p>
+                    </div>
+                    <div class="pp-form-group">
+                        <label class="pp-form-label" for="pp-team-archive-team">Teams</label>
+                        <select id="pp-team-archive-team" class="pp-form-input">
+                            <option value="0">All teams</option>
+                            <?php foreach ( $teams as $team ) : ?>
+                                <option value="<?php echo (int) $team['id']; ?>"><?php echo esc_html( $team['name'] ); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="pp-form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
                             <input type="checkbox" id="pp-team-archive-wipe-stats">
-                            Also clear live season data for all teams after archiving
+                            Also clear this season's live data after archiving
                         </label>
                     </div>
                 </div>

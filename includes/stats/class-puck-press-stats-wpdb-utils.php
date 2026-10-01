@@ -38,7 +38,8 @@ class Puck_Press_Stats_Wpdb_Utils {
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
 			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
 		}
-		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+		$where_parts[] = Puck_Press_Season::stats_scope_sql( 's' );
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT
@@ -86,7 +87,8 @@ class Puck_Press_Stats_Wpdb_Utils {
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
 			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
 		}
-		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+		$where_parts[] = Puck_Press_Season::stats_scope_sql( 's' );
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT
@@ -133,7 +135,8 @@ class Puck_Press_Stats_Wpdb_Utils {
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
 			$where_parts[] = $wpdb->prepare( "g.team_id IN ($placeholders)", ...$teams );
 		}
-		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+		$where_parts[] = Puck_Press_Season::stats_scope_sql( 'g' );
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT
@@ -182,7 +185,8 @@ class Puck_Press_Stats_Wpdb_Utils {
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
 			$where_parts[] = $wpdb->prepare( "g.team_id IN ($placeholders)", ...$teams );
 		}
-		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
+		$where_parts[] = Puck_Press_Season::stats_scope_sql( 'g' );
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
 			"SELECT
@@ -229,12 +233,11 @@ class Puck_Press_Stats_Wpdb_Utils {
 			$placeholders  = implode( ', ', array_fill( 0, count( $teams ), '%d' ) );
 			$where_parts[] = $wpdb->prepare( "s.team_id IN ($placeholders)", ...$teams );
 		}
-		$where = $where_parts ? 'WHERE ' . implode( ' AND ', $where_parts ) : '';
-
-		$join = '';
+		$where_parts[] = Puck_Press_Season::stats_scope_sql( 's' );
+		$where = 'WHERE ' . implode( ' AND ', $where_parts );
 
 		$results = $wpdb->get_results(
-			"SELECT DISTINCT s.source FROM {$stats_table} s {$join} {$where} ORDER BY s.source ASC",
+			"SELECT DISTINCT s.source FROM {$stats_table} s {$where} ORDER BY s.source ASC",
 			ARRAY_A
 		);
 
@@ -490,7 +493,7 @@ class Puck_Press_Stats_Wpdb_Utils {
 			'column_settings'      => $col,
 			'team_names'           => $team_names,
 			'archives'             => $this->get_archive_list( $teams ),
-			'current_season_label' => get_option( 'puck_press_current_season_label', '' ),
+			'current_season_label' => Puck_Press_Season::get_label(),
 			'teams'                => $teams,
 		);
 	}

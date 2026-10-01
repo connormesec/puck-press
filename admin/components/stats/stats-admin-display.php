@@ -178,19 +178,29 @@ class Puck_Press_Stats_Admin_Display {
 						</div>
 
 						<div style="margin-top:20px;border-top:1px solid #e0e0e0;padding-top:16px;">
-							<p style="font-weight:600; margin-bottom:8px; margin-top:0;">Season Label</p>
-							<p style="font-size:0.8rem;color:#5f6368;margin:0 0 10px;">Label shown in the season dropdown for the current (live) season, e.g. <strong>2025-2026</strong>.</p>
+							<p style="font-weight:600; margin-bottom:8px; margin-top:0;">Current Season</p>
+							<p style="font-size:0.8rem;color:#5f6368;margin:0 0 10px;">Live stats show only this season. Older seasons belong under Past Seasons: archive them from Teams &rarr; Advanced &rarr; Archive a Season.</p>
+							<?php $pp_current_season = Puck_Press_Season::get_current_key(); ?>
+							<select id="pp-stats-current-season-key" name="current_season_key" style="width:200px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
+								<option value="" <?php selected( $pp_current_season, '' ); ?>>Not set (each team's newest)</option>
+								<?php foreach ( Puck_Press_Season::get_known_keys() as $pp_season_key ) : ?>
+									<option value="<?php echo esc_attr( $pp_season_key ); ?>" <?php selected( $pp_current_season, $pp_season_key ); ?>><?php echo esc_html( $pp_season_key ); ?></option>
+								<?php endforeach; ?>
+							</select>
+
+							<p style="font-weight:600; margin:16px 0 8px;">Season Label</p>
+							<p style="font-size:0.8rem;color:#5f6368;margin:0 0 10px;">Optional name for the current season in the stats dropdown. Leave empty to show the season itself, e.g. <strong>2026-2027</strong>.</p>
 							<input
 								type="text"
 								id="pp-stats-current-season-label"
 								name="current_season_label"
 								value="<?php echo esc_attr( get_option( 'puck_press_current_season_label', '' ) ); ?>"
-								placeholder="e.g. 2025-2026"
+								placeholder="<?php echo esc_attr( Puck_Press_Season::get_current_key() ?: 'e.g. 2026-2027' ); ?>"
 								style="width:200px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
 						</div>
 
 						<div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
-							<button class="pp-button pp-button-primary" id="pp-stats-save-columns">Save Column Settings</button>
+							<button class="pp-button pp-button-primary" id="pp-stats-save-columns">Save Settings</button>
 							<span id="pp-stats-columns-msg" style="display:none;font-size:0.875rem;"></span>
 						</div>
 					</div>

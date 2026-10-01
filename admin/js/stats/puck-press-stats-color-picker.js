@@ -35,6 +35,7 @@
                 action:                 'pp_save_stats_column_settings',
                 nonce:                  ppStatsTemplates.columns_nonce,
                 current_season_label:   $('#pp-stats-current-season-label').val().trim(),
+                current_season_key:     $('#pp-stats-current-season-key').val(),
                 show_team:           $('input[name="show_team"]').is(':checked') ? 1 : 0,
                 show_pim:            $('input[name="show_pim"]').is(':checked') ? 1 : 0,
                 show_ppg:            $('input[name="show_ppg"]').is(':checked') ? 1 : 0,

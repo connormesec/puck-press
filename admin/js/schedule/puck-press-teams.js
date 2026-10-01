@@ -369,8 +369,19 @@
 
     const $archiveModal = $('#pp-team-archive-modal');
 
+    // Non-blocking warnings returned when a source is saved (season mismatch,
+    // a league team ID shared with another team, …).
+    function showSeasonWarnings(data) {
+      const warnings = (data && data.season_warnings) || [];
+      if (warnings.length) {
+        alert('Source saved, but check its season setup:\n\n• ' + warnings.join('\n• '));
+      }
+    }
+
     function resetArchiveModal() {
-      $('#pp-team-archive-season option:not([disabled]):first').prop('selected', true);
+      const $season = $('#pp-team-archive-season');
+      $season.val($season.data('default'));
+      $('#pp-team-archive-team').val('0');
       $('#pp-team-archive-wipe-stats').prop('checked', false);
       $('#pp-team-archive-modal-confirm').prop('disabled', false).text('Archive Season');
     }
@@ -379,6 +390,16 @@
       resetArchiveModal();
       $archiveModal.css('display', 'flex');
     });
+
+    // Deep link from the season notice: ?pp_archive_season=2025-2026&pp_archive_team=11
+    const archiveParams = new URLSearchParams(window.location.search);
+    if (archiveParams.has('pp_archive_season') && $archiveModal.length) {
+      resetArchiveModal();
+      $('#pp-team-archive-season').val(archiveParams.get('pp_archive_season'));
+      $('#pp-team-archive-team').val(archiveParams.get('pp_archive_team') || '0');
+      $('#pp-team-archive-wipe-stats').prop('checked', true);
+      $archiveModal.css('display', 'flex');
+    }
 
     $('#pp-team-archive-modal-close, #pp-team-archive-modal-cancel').on('click', function () {
       $archiveModal.css('display', 'none');
@@ -392,14 +413,22 @@
         return;
       }
 
-      const wipe  = $('#pp-team-archive-wipe-stats').is(':checked');
-      const $btn  = $(this);
+      const wipe   = $('#pp-team-archive-wipe-stats').is(':checked');
+      const teamId = $('#pp-team-archive-team').val() || '0';
+      const $btn   = $(this);
       $btn.prop('disabled', true).text('Archiving…');
 
       $.ajax({
         url: ajaxurl,
         type: 'POST',
-        data: { action: 'pp_archive_all_teams_season', season_key: seasonKey, label: seasonKey, wipe: wipe ? 1 : 0 },
+        data: {
+          action: 'pp_archive_all_teams_season',
+          nonce: ppSeason.nonce,
+          season_key: seasonKey,
+          label: seasonKey,
+          team_id: teamId,
+          wipe: wipe ? 1 : 0,
+        },
         success: function (response) {
           if (response.success) {
             const d = response.data || {};
@@ -407,8 +436,7 @@
               window.location.reload();
               return;
             }
-            $('#pp-team-archive-season option[value="' + seasonKey + '"]')
-              .prop('disabled', true).text(seasonKey + ' (archived)');
+            $('#pp-team-archive-season option[value="' + seasonKey + '"]').text(seasonKey + ' (archived)');
             $archiveModal.css('display', 'none');
             $btn.prop('disabled', false).text('Archive Season');
             alert(d.message || 'Season archived successfully. View details on the Archives tab.');
@@ -421,29 +449,6 @@
         error: function () {
           alert('An error occurred while archiving the season.');
           $btn.prop('disabled', false).text('Archive Season');
-        }
-      });
-    });
-
-    $(document).on('click', '.pp-delete-archive-btn', function () {
-      if (!confirm('Delete this archive? This cannot be undone.')) return;
-      const $btn      = $(this).prop('disabled', true);
-      const seasonKey = $btn.data('season-key');
-      $.ajax({
-        url: ajaxurl,
-        type: 'POST',
-        data: { action: 'pp_delete_team_archive', season_key: seasonKey },
-        success: function (response) {
-          if (response.success && response.data.archives_html) {
-            $('#pp-team-archives-list').replaceWith(response.data.archives_html);
-            $('#pp-team-archive-season option[value="' + seasonKey + '"]')
-              .prop('disabled', false).text(seasonKey);
-          } else {
-            $btn.prop('disabled', false);
-          }
-        },
-        error: function () {
-          $btn.prop('disabled', false);
         }
       });
     });
@@ -543,6 +548,7 @@
           return data;
         },
         onSuccess: (response) => {
+          showSeasonWarnings(response.data);
           const type = $('#pp-source-type').val();
 
           if (type === 'achaGameScheduleUrl' || type === 'usphlGameScheduleUrl') {
@@ -1013,6 +1019,7 @@
 
       $.post(ajaxurl, data, function(response) {
         if (response.success) {
+          showSeasonWarnings(response.data);
           if (type === 'achaRosterUrl') {
             location.reload();
             return;

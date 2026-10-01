@@ -104,10 +104,10 @@ class PP_Api_Roster {
 
         $stats_row = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM $stats_table WHERE player_id = %s AND team_id = %d LIMIT 1",
+                "SELECT * FROM $stats_table s WHERE s.player_id = %s AND s.team_id = %d",
                 $player_id,
                 $p_team_id
-            ),
+            ) . ' AND ' . Puck_Press_Season::stats_scope_sql( 's' ) . ' LIMIT 1',
             ARRAY_A
         );
 

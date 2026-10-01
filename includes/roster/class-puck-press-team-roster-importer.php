@@ -9,6 +9,7 @@ class Puck_Press_Team_Roster_Importer {
     private int $team_id;
     private Puck_Press_Teams_Wpdb_Utils $teams_wpdb;
     private Puck_Press_Roster_Registry_Wpdb_Utils $registry_wpdb;
+    private string $source_season_key = '';
 
     public function __construct( int $team_id ) {
         $this->team_id      = $team_id;
@@ -47,6 +48,10 @@ class Puck_Press_Team_Roster_Importer {
         }
 
         foreach ( $active_sources as $source ) {
+            // Every stats row records its source's season so the live view can
+            // show only the current season (see Puck_Press_Season).
+            $this->source_season_key = Puck_Press_Season::roster_source_season( $source, true );
+
             try {
                 if ( $source['type'] === 'achaRosterUrl' ) {
                     $acha_other    = json_decode( $source['other_data'] ?? '{}', true );
@@ -124,36 +129,6 @@ class Puck_Press_Team_Roster_Importer {
                             }
                         } else {
                             $results['messages'][] = "Stats skipped for source: {$source['name']} — could not extract team/season from URL.";
-                        }
-                    } elseif ( ! empty( $source['stats_url'] ) ) {
-                        $acha_stats = Puck_Press_Roster_Process_Acha_Stats::from_url( $source['stats_url'] );
-                        if ( is_array( $acha_stats->raw_stats_data ) && ! isset( $acha_stats->raw_stats_data['error'] ) && ! empty( $acha_stats->raw_stats_data ) ) {
-                            foreach ( $acha_stats->raw_stats_data as &$stat_row ) {
-                                $stat_row['source']  = $stat_period;
-                                $stat_row['team_id'] = $this->team_id;
-                            }
-                            unset( $stat_row );
-                            $this->insert_player_stat_rows( $acha_stats->raw_stats_data );
-                            $results['messages'][] = "Imported skater stats for source: {$source['name']}";
-                        } else {
-                            $results['messages'][] = "Skater stats import skipped for source: {$source['name']} — " . ( $acha_stats->raw_stats_data['error'] ?? 'unknown error or empty' );
-                        }
-
-                        if ( ! empty( $source['goalie_stats_url'] ) ) {
-                            $acha_goalie_stats = Puck_Press_Roster_Process_Acha_Stats::from_url( $source['goalie_stats_url'], true );
-                            if ( is_array( $acha_goalie_stats->raw_goalie_stats_data ) && ! isset( $acha_goalie_stats->raw_goalie_stats_data['error'] ) && ! empty( $acha_goalie_stats->raw_goalie_stats_data ) ) {
-                                foreach ( $acha_goalie_stats->raw_goalie_stats_data as &$stat_row ) {
-                                    $stat_row['source']  = $stat_period;
-                                    $stat_row['team_id'] = $this->team_id;
-                                }
-                                unset( $stat_row );
-                                $this->insert_player_goalie_stat_rows( $acha_goalie_stats->raw_goalie_stats_data );
-                                $results['messages'][] = "Imported goalie stats for source: {$source['name']}";
-                            } else {
-                                $results['messages'][] = "Goalie stats import skipped for source: {$source['name']} — " . ( $acha_goalie_stats->raw_goalie_stats_data['error'] ?? 'unknown error or empty' );
-                            }
-                        } else {
-                            $results['messages'][] = "Goalie stats skipped for source: {$source['name']} — no Goalie Stats URL configured.";
                         }
                     } else {
                         $results['messages'][] = "Stats skipped for source: {$source['name']} — Include Stats not enabled.";
@@ -520,6 +495,9 @@ class Puck_Press_Team_Roster_Importer {
         foreach ( $rows as $row ) {
             $filtered = array_intersect_key( $row, array_flip( $allowed_fields ) );
             $filtered['team_id'] = $this->team_id;
+            if ( $this->source_season_key !== '' ) {
+                $filtered['season_key'] = $this->source_season_key;
+            }
             $wpdb->insert( $table, $filtered );
         }
     }
@@ -536,6 +514,9 @@ class Puck_Press_Team_Roster_Importer {
         foreach ( $rows as $row ) {
             $filtered = array_intersect_key( $row, array_flip( $allowed_fields ) );
             $filtered['team_id'] = $this->team_id;
+            if ( $this->source_season_key !== '' ) {
+                $filtered['season_key'] = $this->source_season_key;
+            }
             $wpdb->insert( $table, $filtered );
         }
     }

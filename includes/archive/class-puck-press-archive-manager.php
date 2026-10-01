@@ -162,13 +162,125 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
     }
 
     /**
+     * Works out which of a team's live rows belong to $season_key.
+     *
+     * If the team has no source from a different known season (the normal
+     * end-of-season case), everything live belongs to it, as before. If
+     * newer-season sources were added before archiving, only the rows tied to
+     * $season_key do: stats by season_key, games and players by the name of a
+     * source from that season.
+     *
+     * @return array{all: bool, roster_ids: int[], roster_names: string[], schedule_ids: int[], schedule_names: string[]}
+     */
+    private function get_team_season_scope( int $team_id, string $season_key ): array {
+        global $wpdb;
+
+        Puck_Press_Season::tag_untagged_stats( $team_id );
+
+        $scope = array(
+            'all'            => true,
+            'roster_ids'     => array(),
+            'roster_names'   => array(),
+            'schedule_ids'   => array(),
+            'schedule_names' => array(),
+        );
+
+        // A free-form archive key can't be matched to sources: keep the
+        // archive-everything behavior.
+        if ( Puck_Press_Season::normalize_key( $season_key ) !== $season_key ) {
+            return $scope;
+        }
+
+        $roster = $wpdb->get_results(
+            $wpdb->prepare( "SELECT id, name, type, season_year, other_data FROM {$wpdb->prefix}pp_team_roster_sources WHERE team_id = %d", $team_id ),
+            ARRAY_A
+        ) ?: array();
+        foreach ( $roster as $src ) {
+            $key = Puck_Press_Season::roster_source_season( $src, true );
+            if ( $key === $season_key ) {
+                $scope['roster_ids'][]   = (int) $src['id'];
+                $scope['roster_names'][] = $src['name'];
+            } elseif ( $key !== '' ) {
+                $scope['all'] = false;
+            }
+        }
+
+        $schedule = $wpdb->get_results(
+            $wpdb->prepare( "SELECT id, name, type, season, other_data FROM {$wpdb->prefix}pp_team_sources WHERE team_id = %d", $team_id ),
+            ARRAY_A
+        ) ?: array();
+        foreach ( $schedule as $src ) {
+            $key = Puck_Press_Season::schedule_source_season( $src, true );
+            if ( $key === $season_key ) {
+                $scope['schedule_ids'][]   = (int) $src['id'];
+                $scope['schedule_names'][] = $src['name'];
+            } elseif ( $key !== '' ) {
+                $scope['all'] = false;
+            }
+        }
+
+        return $scope;
+    }
+
+    /**
+     * Games condition for a season scope: games from the season's schedule
+     * sources, plus manually added games dated within that season
+     * (Aug 1 to Aug 1, as in derive_season_year()).
+     */
+    private static function season_games_sql( array $scope, string $season_key ): string {
+        global $wpdb;
+        $start = (int) substr( $season_key, 0, 4 );
+        return '( ' . self::in_list_sql( 'source', $scope['schedule_names'] )
+            . $wpdb->prepare(
+                " OR ( source_type = 'manual' AND game_timestamp >= %s AND game_timestamp < %s ) )",
+                $start . '-08-01 00:00:00',
+                ( $start + 1 ) . '-08-01 00:00:00'
+            );
+    }
+
+    /**
+     * SQL condition matching $column against a list of strings, or never
+     * matching when the list is empty.
+     */
+    private static function in_list_sql( string $column, array $values ): string {
+        global $wpdb;
+        if ( empty( $values ) ) {
+            return '0=1';
+        }
+        $placeholders = implode( ', ', array_fill( 0, count( $values ), '%s' ) );
+        return $wpdb->prepare( "{$column} IN ($placeholders)", ...$values );
+    }
+
+    /**
      * Archive one team's games and stats under the given season_key.
      * If a season row for season_key already exists, its archive_id is reused
      * so multiple teams accumulate under a single archive.
-     * Live tables are NOT cleared here — call clear_all_teams_season_data() for that.
+     * Live tables are NOT cleared here — call clear_teams_season_data() for that.
      */
     private function archive_team_season( int $team_id, string $season_key, string $label = '' ): array {
         global $wpdb;
+
+        $scope = $this->get_team_season_scope( $team_id, $season_key );
+        if ( $scope['all'] ) {
+            $games_where   = '1=1';
+            $sources_where = "status = 'active'";
+            $roster_where  = '1=1';
+            $skater_where  = '1=1';
+            $goalie_where  = '1=1';
+            $players_where = '1=1';
+        } else {
+            $games_where   = self::season_games_sql( $scope, $season_key );
+            $sources_where = self::in_list_sql( 'id', array_map( 'strval', $scope['schedule_ids'] ) );
+            $roster_where  = self::in_list_sql( 'id', array_map( 'strval', $scope['roster_ids'] ) );
+            $skater_where  = $wpdb->prepare( 's.season_key = %s', $season_key );
+            $goalie_where  = $wpdb->prepare( 'g.season_key = %s', $season_key );
+            // Returning players' live rows point at the new season's source, so
+            // match the old roster by the players its source imported.
+            $players_where = $wpdb->prepare(
+                "d.player_id IN ( SELECT r.player_id FROM {$wpdb->prefix}pp_team_players_raw r WHERE r.team_id = %d AND " . self::in_list_sql( 'r.source', $scope['roster_names'] ) . ' )',
+                $team_id
+            );
+        }
 
         // Look up the admin-given team name — stored on archive rows as the stable identifier.
         $team_name = (string) $wpdb->get_var(
@@ -245,7 +357,7 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
                        promo_header, promo_text, promo_img_url, promo_ticket_link, post_link,
                        game_date_day, game_time, game_timestamp, home_or_away, venue
                 FROM {$wpdb->prefix}pp_team_games_display
-                WHERE team_id = %d",
+                WHERE team_id = %d AND {$games_where}",
                 $archive_id,
                 $season_key,
                 $team_name,
@@ -262,8 +374,23 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
                     (archive_id, season_key, team_id, name, type, season, source_url_or_path, other_data)
                 SELECT %d, %s, team_id, name, type, season, source_url_or_path, other_data
                 FROM {$wpdb->prefix}pp_team_sources
-                WHERE team_id = %d AND status = 'active'",
+                WHERE team_id = %d AND {$sources_where}",
                 $archive_id,
+                $season_key,
+                $team_id
+            )
+        );
+
+        // Copy roster sources (the sources archive's `type` tells them apart).
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT INTO {$wpdb->prefix}pp_team_sources_archive
+                    (archive_id, season_key, team_id, name, type, season, source_url_or_path, other_data)
+                SELECT %d, %s, team_id, name, type, %s, source_url_or_path, other_data
+                FROM {$wpdb->prefix}pp_team_roster_sources
+                WHERE team_id = %d AND {$roster_where}",
+                $archive_id,
+                $season_key,
                 $season_key,
                 $team_id
             )
@@ -288,7 +415,7 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
                     ON d.player_id = s.player_id AND d.team_id = s.team_id
                 INNER JOIN {$wpdb->prefix}pp_teams t
                     ON t.id = s.team_id
-                WHERE s.team_id = %d",
+                WHERE s.team_id = %d AND {$skater_where}",
                 $archive_id,
                 $season_key,
                 $team_id
@@ -316,7 +443,7 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
                     ON d.player_id = g.player_id AND d.team_id = g.team_id
                 INNER JOIN {$wpdb->prefix}pp_teams t
                     ON t.id = g.team_id
-                WHERE g.team_id = %d",
+                WHERE g.team_id = %d AND {$goalie_where}",
                 $archive_id,
                 $season_key,
                 $team_id
@@ -337,7 +464,7 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
                        d.major, d.hero_image_url, d.api_team_id, d.api_team_name, d.source
                 FROM {$wpdb->prefix}pp_team_players_display d
                 INNER JOIN {$wpdb->prefix}pp_teams t ON t.id = d.team_id
-                WHERE d.team_id = %d",
+                WHERE d.team_id = %d AND {$players_where}",
                 $archive_id,
                 $season_key,
                 $team_id
@@ -365,13 +492,15 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
     /**
      * Archive all teams for the given season under one shared archive_id.
      */
-    public function archive_all_teams_season( string $season_key, string $label = '' ): array {
+    public function archive_all_teams_season( string $season_key, string $label = '', int $only_team_id = 0 ): array {
         global $wpdb;
 
         $this->maybe_create_or_update_tables();
 
         $teams = $wpdb->get_results(
-            "SELECT id, name FROM {$wpdb->prefix}pp_teams ORDER BY id ASC",
+            $only_team_id > 0
+                ? $wpdb->prepare( "SELECT id, name FROM {$wpdb->prefix}pp_teams WHERE id = %d", $only_team_id )
+                : "SELECT id, name FROM {$wpdb->prefix}pp_teams ORDER BY id ASC",
             ARRAY_A
         ) ?? array();
 
@@ -433,19 +562,58 @@ class Puck_Press_Archive_Manager extends Puck_Press_Wpdb_Utils_Base {
     }
 
     /**
-     * Clear all live game and roster data for every team.
+     * Clear the live data of an archived season, for every team or one team.
      * Called as the wipe step after archiving.
+     *
+     * A team with no source from another season loses all its live game and
+     * roster data, as before. A team that already has newer-season sources
+     * loses only the archived season's sources, games, players and stats, so
+     * the new season keeps running.
      */
-    public function clear_all_teams_season_data(): void {
+    public function clear_teams_season_data( string $season_key, int $only_team_id = 0 ): void {
         global $wpdb;
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_player_stats" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_player_goalie_stats" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_players_display" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_roster_sources" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_game_mods" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_games_raw" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_games_display" );
-        $wpdb->query( "DELETE FROM {$wpdb->prefix}pp_team_sources" );
+        $p = $wpdb->prefix;
+
+        $team_ids = $only_team_id > 0
+            ? array( $only_team_id )
+            : array_map( 'intval', $wpdb->get_col( "SELECT id FROM {$p}pp_teams" ) ?: array() );
+
+        foreach ( $team_ids as $team_id ) {
+            $scope = $this->get_team_season_scope( $team_id, $season_key );
+
+            if ( $scope['all'] ) {
+                foreach ( array( 'pp_team_player_stats', 'pp_team_player_goalie_stats', 'pp_team_players_display', 'pp_team_roster_sources', 'pp_team_game_mods', 'pp_team_games_raw', 'pp_team_games_display', 'pp_team_sources' ) as $table ) {
+                    $wpdb->delete( $p . $table, array( 'team_id' => $team_id ), array( '%d' ) );
+                }
+                continue;
+            }
+
+            $team = $wpdb->prepare( 'team_id = %d', $team_id );
+
+            $wpdb->query( $wpdb->prepare( "DELETE FROM {$p}pp_team_player_stats WHERE {$team} AND season_key = %s", $season_key ) );
+            $wpdb->query( $wpdb->prepare( "DELETE FROM {$p}pp_team_player_goalie_stats WHERE {$team} AND season_key = %s", $season_key ) );
+
+            $players = self::in_list_sql( 'source', $scope['roster_names'] );
+            $wpdb->query( "DELETE FROM {$p}pp_team_players_raw WHERE {$team} AND {$players}" );
+            $wpdb->query( "DELETE FROM {$p}pp_team_roster_sources WHERE {$team} AND " . self::in_list_sql( 'id', array_map( 'strval', $scope['roster_ids'] ) ) );
+
+            // Manual games live in game mods, and edits to imported games are
+            // mods too: remove both for the archived games, or the next
+            // rebuild would bring them back.
+            $games    = self::season_games_sql( $scope, $season_key );
+            $game_ids = $wpdb->get_col( "SELECT game_id FROM {$p}pp_team_games_display WHERE {$team} AND {$games}" ) ?: array();
+            if ( $game_ids ) {
+                $wpdb->query( "DELETE FROM {$p}pp_team_game_mods WHERE {$team} AND " . self::in_list_sql( 'external_id', $game_ids ) );
+            }
+            $wpdb->query( "DELETE FROM {$p}pp_team_games_raw WHERE {$team} AND " . self::in_list_sql( 'source', $scope['schedule_names'] ) );
+            $wpdb->query( "DELETE FROM {$p}pp_team_games_display WHERE {$team} AND {$games}" );
+            $wpdb->query( "DELETE FROM {$p}pp_team_sources WHERE {$team} AND " . self::in_list_sql( 'id', array_map( 'strval', $scope['schedule_ids'] ) ) );
+
+            // Rebuild the roster from the remaining (current-season) raw rows,
+            // keeping returning players and admin edits. No API calls.
+            require_once plugin_dir_path( __DIR__ ) . 'roster/class-puck-press-team-roster-importer.php';
+            ( new Puck_Press_Team_Roster_Importer( $team_id ) )->rebuild_display_from_mods();
+        }
     }
 
     public function get_player_skater_archives( string $player_id ): array {

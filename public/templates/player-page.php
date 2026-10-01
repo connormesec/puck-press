@@ -38,10 +38,10 @@ $stats_table = $is_goalie
 
 $current_stats_rows = $wpdb->get_results(
 	$wpdb->prepare(
-		"SELECT * FROM {$stats_table} WHERE player_id = %s AND team_id = %d ORDER BY source ASC",
+		"SELECT * FROM {$stats_table} s WHERE s.player_id = %s AND s.team_id = %d",
 		$player['player_id'],
 		$team_id
-	),
+	) . ' AND ' . Puck_Press_Season::stats_scope_sql( 's' ) . ' ORDER BY s.source ASC',
 	ARRAY_A
 ) ?? array();
 
