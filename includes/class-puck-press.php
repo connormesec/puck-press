@@ -156,6 +156,11 @@ class Puck_Press {
 		Puck_Press_Seo_Yoast::init();
 		Puck_Press_Seo_Avatar::init();
 
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			require_once plugin_dir_path( __DIR__ ) . 'includes/instagram-post-importer/class-puck-press-instagram-cli.php';
+			WP_CLI::add_command( 'puck-press', 'Puck_Press_Instagram_CLI' );
+		}
+
 		require_once plugin_dir_path( __DIR__ ) . 'includes/class-puck-press-activator.php';
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_migrations' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_roster_group_migration' ) );

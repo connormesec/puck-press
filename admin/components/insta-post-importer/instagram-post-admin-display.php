@@ -134,6 +134,17 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display {
 				</div>
 			<?php endif; ?>
 
+			<h2 style="margin-top: 30px;">Repair Featured Images</h2>
+			<p class="description" style="max-width: 700px;">
+				Finds Instagram posts that are missing their featured image or some image sizes, links each post's own image, and generates the missing sizes.
+				Posts with no saved image are listed but not changed. The daily import also repairs a few posts per run automatically.
+			</p>
+			<div style="display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap;">
+				<button class="button button-secondary" id="pp-insta-repair-check">Check (dry run)</button>
+				<button class="button button-primary" id="pp-insta-repair-run">Repair</button>
+			</div>
+			<div id="pp-insta-repair-result"></div>
+
 			<style>
 				.pp-post-item {
 					border: 1px solid #ddd;
@@ -227,6 +238,32 @@ class Puck_Press_Admin_Instagram_Post_Importer_Display {
 		} else {
 			wp_send_json_error( $result['message'] );
 		}
+	}
+
+	public function ajax_repair_insta_images() {
+		check_ajax_referer( 'pp_insta_post_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions.' );
+			return;
+		}
+
+		$dry_run = ! empty( $_POST['dry_run'] );
+
+		require_once plugin_dir_path( __FILE__ ) . '../../../includes/instagram-post-importer/class-puck-press-instagram-post-importer.php';
+
+		// Each request repairs a small batch so it stays well inside the PHP
+		// time limit; the browser calls again until nothing is deferred.
+		@set_time_limit( 120 ); // phpcs:ignore
+		$importer = new Puck_Press_Instagram_Post_Importer();
+		$report   = $importer->repair_post_images( $dry_run ? 0 : 10, $dry_run );
+
+		wp_send_json_success(
+			array(
+				'report'  => $report,
+				'summary' => Puck_Press_Instagram_Post_Importer::format_repair_report( $report, $dry_run ),
+			)
+		);
 	}
 
 	public function ajax_create_team_insta_post() {

@@ -3100,6 +3100,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_save_team_handle', array( $insta_post_display, 'ajax_save_team_handle' ) );
 		add_action( 'wp_ajax_pp_get_team_example_posts', array( $insta_post_display, 'ajax_get_team_example_posts' ) );
 		add_action( 'wp_ajax_pp_create_team_insta_post', array( $insta_post_display, 'ajax_create_team_insta_post' ) );
+		add_action( 'wp_ajax_pp_repair_insta_images', array( $insta_post_display, 'ajax_repair_insta_images' ) );
 
 		$site_pulse_display = new Puck_Press_Site_Pulse_Admin_Display();
 		add_action( 'wp_ajax_pp_site_pulse_preview', array( $site_pulse_display, 'ajax_preview' ) );

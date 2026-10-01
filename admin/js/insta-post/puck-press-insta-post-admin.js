@@ -164,6 +164,74 @@ jQuery(document).ready(function ($) {
     });
   }
 
+  // ── Repair featured images ──────────────────────────────────────────────────
+
+  $('#pp-insta-repair-check').on('click', function () {
+    runRepair(true);
+  });
+
+  $('#pp-insta-repair-run').on('click', function () {
+    runRepair(false);
+  });
+
+  function runRepair(dryRun) {
+    const $buttons = $('#pp-insta-repair-check, #pp-insta-repair-run');
+    const $result  = $('#pp-insta-repair-result');
+    const totals   = { relinked: 0, regenerated: 0, errors: 0 };
+
+    $buttons.prop('disabled', true);
+    $result.html('<span class="pp-loading">' + (dryRun ? 'Checking…' : 'Repairing…') + '</span>');
+
+    const step = () => {
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+          action:  'pp_repair_insta_images',
+          nonce:   ppInstaPost.nonce,
+          dry_run: dryRun ? 1 : 0,
+        },
+        success: (response) => {
+          if (!response.success) {
+            $result.html('<span class="pp-error">✗ ' + escapeHtml(response.data) + '</span>');
+            $buttons.prop('disabled', false);
+            return;
+          }
+
+          const report = response.data.report;
+          totals.relinked    += report.relinked;
+          totals.regenerated += report.regenerated;
+          totals.errors      += report.errors;
+
+          // Keep going while the batch made progress and posts are left over.
+          const progressed = report.relinked + report.regenerated > 0;
+          if (!dryRun && report.deferred > 0 && progressed) {
+            $result.html(
+              '<span class="pp-loading">Repairing… ' + (totals.relinked + totals.regenerated) +
+              ' fixed so far, ' + report.deferred + ' left</span>'
+            );
+            step();
+            return;
+          }
+
+          let html = '<span class="' + (report.errors ? 'pp-error' : 'pp-success') + '">' + escapeHtml(response.data.summary) + '</span>';
+          if (!dryRun) {
+            html += '<br>Total this session: relinked ' + totals.relinked + ', regenerated sizes for ' + totals.regenerated +
+              (totals.errors ? ', ' + totals.errors + ' failed' : '') + '.';
+          }
+          $result.html(html);
+          $buttons.prop('disabled', false);
+        },
+        error: () => {
+          $result.html('<span class="pp-error">✗ Request failed</span>');
+          $buttons.prop('disabled', false);
+        },
+      });
+    };
+
+    step();
+  }
+
   // ── Utility ──────────────────────────────────────────────────────────────────
 
   function escapeHtml(str) {
