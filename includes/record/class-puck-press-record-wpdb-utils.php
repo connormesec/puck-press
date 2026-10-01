@@ -152,9 +152,7 @@ class Puck_Press_Record_Wpdb_Utils {
 			ARRAY_A
 		);
 
-		if ( empty( $games ) ) {
-			return array();
-		}
+		$games = $games ?: array();
 
 		// First pass: identify all conference teams (those with their own data source).
 		$target_keys = array();
@@ -166,7 +164,13 @@ class Puck_Press_Record_Wpdb_Utils {
 			$target_keys[ $k ] = true;
 		}
 
+		// Division tables list every member team, even before it has played a
+		// division game (or any game), so seed a zero row for each member.
 		$teams = array();
+		if ( $division_only ) {
+			$teams       = $this->seed_member_rows( $schedule_id, $this->empty_stats() );
+			$target_keys = array_fill_keys( array_keys( $teams ), true ) + $target_keys;
+		}
 
 		// Second pass: accumulate stats, optionally skipping non-conference games.
 		foreach ( $games as $game ) {
@@ -248,6 +252,47 @@ class Puck_Press_Record_Wpdb_Utils {
 		);
 
 		return array_values( $teams );
+	}
+
+	/**
+	 * Returns a zero-stat row for every team in the schedule, keyed like the
+	 * accumulation rows. Membership comes from all of the schedule's games,
+	 * played or not, so a team with no completed games still counts.
+	 * (pp_schedule_teams can't be used: its team_id is the internal pp_teams
+	 * id, while games carry the league's external team id.)
+	 */
+	private function seed_member_rows( int $schedule_id, array $empty ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'pp_schedule_games_display';
+
+		$members = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT DISTINCT target_team_id, target_team_name, target_team_logo
+                   FROM {$table}
+                  WHERE schedule_id = %d
+                  ORDER BY target_team_name",
+				$schedule_id
+			),
+			ARRAY_A
+		);
+
+		$rows = array();
+		foreach ( $members ?: array() as $member ) {
+			$tid = $member['target_team_id'] ?? '';
+			$k   = ( $tid && $tid !== '0' )
+				? "id:{$tid}"
+				: 'name:' . strtolower( trim( (string) $member['target_team_name'] ) );
+
+			if ( ! isset( $rows[ $k ] ) ) {
+				$rows[ $k ]              = $empty;
+				$rows[ $k ]['team_name'] = $member['target_team_name'];
+				$rows[ $k ]['team_logo'] = $member['target_team_logo'] ?: null;
+			} elseif ( empty( $rows[ $k ]['team_logo'] ) && ! empty( $member['target_team_logo'] ) ) {
+				$rows[ $k ]['team_logo'] = $member['target_team_logo'];
+			}
+		}
+
+		return $rows;
 	}
 
 	private function apply_game_to_team(
@@ -339,9 +384,7 @@ class Puck_Press_Record_Wpdb_Utils {
 			ARRAY_A
 		);
 
-		if ( empty( $games ) ) {
-			return array();
-		}
+		$games = $games ?: array();
 
 		// First pass: identify all conference teams (those with their own data source).
 		$conf_keys   = array();
@@ -355,7 +398,15 @@ class Puck_Press_Record_Wpdb_Utils {
 			$target_keys[ $k ] = true;
 		}
 
+		// Division tables list every member team, even before it has played a
+		// division game (or any game). Seeded rows start at zero; the loop below
+		// still adds each team's overall record from non-division games.
 		$teams = array();
+		if ( $division_only ) {
+			$teams       = $this->seed_member_rows( $schedule_id, $this->empty_stats_with_overall() );
+			$conf_keys   = array_fill_keys( array_keys( $teams ), true ) + $conf_keys;
+			$target_keys = $conf_keys;
+		}
 
 		foreach ( $games as $game ) {
 			$ts      = (int) $game['target_score'];
