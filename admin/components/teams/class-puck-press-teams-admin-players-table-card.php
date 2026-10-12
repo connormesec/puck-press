@@ -455,6 +455,10 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
         $value      = sanitize_text_field( $_POST['value'] ?? '' );
         $player_ids = json_decode( stripslashes( $_POST['player_ids'] ?? '[]' ), true );
 
+        // Optional per-player values (player_id => URL), used by the headshot
+        // folder match. When present, players missing from the map are skipped.
+        $values = isset( $_POST['values'] ) ? json_decode( stripslashes( $_POST['values'] ), true ) : null;
+
         $allowed_fields = array( 'hero_image_url', 'headshot_link' );
 
         if ( ! $team_id || ! in_array( $field, $allowed_fields, true ) || ! is_array( $player_ids ) ) {
@@ -480,6 +484,13 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
 
             if ( $is_deleted ) {
                 continue;
+            }
+
+            if ( is_array( $values ) ) {
+                $value = esc_url_raw( (string) ( $values[ $player_id ] ?? '' ) );
+                if ( '' === $value ) {
+                    continue;
+                }
             }
 
             // Diff against source: a value equal to raw (or empty, for fields
@@ -544,6 +555,69 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
 
         $table_html = $this->rebuild_and_get_table_html( $team_id );
         wp_send_json_success( array( 'roster_table_html' => $table_html ) );
+    }
+
+    /**
+     * Uploads one headshot image to the Media Library and returns its URL.
+     * The bulk edit modal matches a local folder to players in the browser and
+     * sends only the matched images here, one per request.
+     */
+    public function ajax_upload_team_player_headshot_callback(): void {
+        if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'upload_files' ) ) {
+            wp_send_json_error( array( 'message' => 'Insufficient permissions.' ) );
+        }
+
+        check_ajax_referer( 'pp_team_players_nonce', 'nonce' );
+
+        $tmp_name = $_FILES['file']['tmp_name'] ?? '';
+        if ( ! $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
+            wp_send_json_error( array( 'message' => 'No file received. It may be larger than the server upload limit (' . size_format( wp_max_upload_size() ) . ').' ) );
+        }
+
+        $filetype = wp_check_filetype_and_ext( $tmp_name, $_FILES['file']['name'] ?? '' );
+        if ( empty( $filetype['type'] ) || 0 !== strpos( $filetype['type'], 'image/' ) ) {
+            wp_send_json_error( array( 'message' => 'Not a supported image file.' ) );
+        }
+
+        // Reuse an identical image uploaded earlier so re-running a folder
+        // doesn't pile duplicates into the Media Library.
+        $hash     = md5_file( $tmp_name );
+        $existing = get_posts(
+            array(
+                'post_type'      => 'attachment',
+                'post_status'    => 'inherit',
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+                'meta_key'       => '_pp_headshot_md5',
+                'meta_value'     => $hash,
+            )
+        );
+
+        if ( ! empty( $existing ) ) {
+            $attachment_id = (int) $existing[0];
+        } else {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+
+            $player_name = sanitize_text_field( wp_unslash( $_POST['player_name'] ?? '' ) );
+            $post_data   = $player_name ? array( 'post_title' => $player_name ) : array();
+
+            $attachment_id = media_handle_upload( 'file', 0, $post_data );
+            if ( is_wp_error( $attachment_id ) ) {
+                wp_send_json_error( array( 'message' => $attachment_id->get_error_message() ) );
+            }
+            update_post_meta( $attachment_id, '_pp_headshot_md5', $hash );
+        }
+
+        // Prefer the resized copy: originals straight off a camera are far
+        // larger than any roster template displays.
+        $url = wp_get_attachment_image_url( $attachment_id, 'large' ) ?: wp_get_attachment_url( $attachment_id );
+        if ( ! $url ) {
+            wp_send_json_error( array( 'message' => 'Upload succeeded but no URL was returned.' ) );
+        }
+
+        wp_send_json_success( array( 'url' => $url ) );
     }
 
     public function ajax_bulk_revert_team_player_edits_callback(): void {

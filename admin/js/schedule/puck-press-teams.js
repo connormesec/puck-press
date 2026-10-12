@@ -1329,8 +1329,9 @@
     // ── Bulk Edit modal ───────────────────────────────────────────────────────────
     const BULK_FIELDS = {
       hero_image_url: { label: 'Hero Image URL', type: 'url', placeholder: 'https://...' },
-      headshot_link:  { label: 'Headshot URL',   type: 'url', placeholder: 'https://...' },
+      headshot_link:  { label: 'Headshot',       type: 'url', placeholder: 'https://...' },
     };
+    const BULK_MATCH_LABELS = { matched: 'Matched', check: 'Check', manual: 'Chosen', none: 'No match' };
     const POS_GROUPS_TEAM = {
       forwards: ['f', 'c', 'lw', 'rw'],
       defense:  ['d', 'ld', 'rd'],
@@ -1345,6 +1346,27 @@
       return 'other';
     }
 
+    // Headshot folder match: the picked folder's images and which one each
+    // player gets. Files stay in the browser until Apply.
+    let bulkPlayers   = [];
+    let bulkFolder    = null;
+    let bulkUploading = false;
+
+    const isBulkFolderMode = () => $('#pp-bulk-roster-field').val() === 'headshot_link' &&
+                                   $('input[name="pp-bulk-roster-source"]:checked').val() === 'folder';
+
+    function clearBulkFolder() {
+      if (bulkFolder) bulkFolder.urls.forEach(url => { if (url) URL.revokeObjectURL(url); });
+      bulkFolder = null;
+      $('#pp-bulk-roster-folder-name').text('');
+      $('#pp-bulk-roster-match-summary').hide().empty();
+    }
+
+    function bulkFileUrl(idx) {
+      if (!bulkFolder.urls[idx]) bulkFolder.urls[idx] = URL.createObjectURL(bulkFolder.files[idx]);
+      return bulkFolder.urls[idx];
+    }
+
     let bulkFieldsPopulated = false;
     $(document).on('click', '#pp-bulk-edit-team-players-btn', function() {
       if (!bulkFieldsPopulated) {
@@ -1357,31 +1379,139 @@
         $sel.trigger('change');
         bulkFieldsPopulated = true;
       }
-      $('#pp-bulk-roster-error').hide();
+      $('#pp-bulk-roster-error, #pp-bulk-roster-progress').hide();
       $('#pp-bulk-roster-value').val('');
+      clearBulkFolder();
+      $('input[name="pp-bulk-roster-source"][value="url"]').prop('checked', true);
       buildTeamBulkList();
+      syncBulkSourceUi();
       applyTeamBulkFilters();
       $('#pp-bulk-roster-modal').css('display', 'flex');
     });
 
-    $('#pp-bulk-roster-field').on('change', function() {
-      const isRemove = this.value === '__remove_edits__';
-      $('#pp-bulk-roster-value').toggle(!isRemove);
-      $('.pp-bulk-edit-clear-hint').toggle(!isRemove);
+    function syncBulkSourceUi() {
+      const field    = $('#pp-bulk-roster-field').val();
+      const isRemove = field === '__remove_edits__';
+      const isFolder = isBulkFolderMode();
+      $('#pp-bulk-roster-value').toggle(!isRemove && !isFolder);
+      $('.pp-bulk-edit-clear-hint').toggle(!isRemove && !isFolder);
+      $('#pp-bulk-roster-source').toggle(field === 'headshot_link');
+      $('#pp-bulk-roster-folder').toggle(isFolder);
       if (!isRemove) {
-        const cfg = BULK_FIELDS[this.value];
+        const cfg = BULK_FIELDS[field];
         if (cfg) $('#pp-bulk-roster-value').attr('type', cfg.type).attr('placeholder', cfg.placeholder);
       }
+      renderBulkMatches();
+    }
+
+    $('#pp-bulk-roster-field').on('change', syncBulkSourceUi);
+    $(document).on('change', 'input[name="pp-bulk-roster-source"]', syncBulkSourceUi);
+
+    $(document).on('click', '#pp-bulk-roster-folder-btn', function() {
+      $('#pp-bulk-roster-folder-input').trigger('click');
+    });
+
+    $(document).on('change', '#pp-bulk-roster-folder-input', function() {
+      const all = Array.from(this.files || []).filter(f => f.name.charAt(0) !== '.');
+      const folderName = all.length ? (all[0].webkitRelativePath || '').split('/')[0] : '';
+      this.value = '';
+      if (!all.length) return;
+
+      const images = all.filter(f => ppHeadshotMatcher.isImageFile(f.name)).sort((a, b) => a.name.localeCompare(b.name));
+      const result = ppHeadshotMatcher.match(bulkPlayers, images.map(f => f.name));
+
+      clearBulkFolder();
+      bulkFolder = { files: images, urls: [], assign: {}, status: {}, skipped: all.length - images.length };
+      bulkPlayers.forEach(function(p) {
+        bulkFolder.assign[p.id] = result.assignments[p.id].file;
+        bulkFolder.status[p.id] = result.assignments[p.id].status;
+      });
+      $('#pp-bulk-roster-folder-name').text(folderName);
+      $('#pp-bulk-roster-error').hide();
+      renderBulkMatches();
+    });
+
+    // Adds the thumbnail / image picker / status badge to each player row.
+    function renderBulkMatches() {
+      const $rows = $('#pp-bulk-roster-list .pp-bulk-edit-row');
+      $rows.removeClass('pp-bulk-edit-row--match pp-bulk-edit-row--check pp-bulk-edit-row--none').find('.pp-bulk-match').remove();
+      const active = isBulkFolderMode() && bulkFolder;
+      $('#pp-bulk-roster-match-summary').toggle(!!active);
+      if (!active) { updateTeamBulkCount(); return; }
+
+      $rows.each(function() {
+        const $row   = $(this);
+        const pid    = $row.attr('data-player-id');
+        const idx    = bulkFolder.assign[pid];
+        const status = idx >= 0 ? bulkFolder.status[pid] : 'none';
+
+        const $select = $('<select class="pp-input pp-bulk-match__select"></select>').append($('<option value="-1"></option>').text('No image'));
+        bulkFolder.files.forEach((file, i) => $select.append($('<option></option>').val(i).text(file.name)));
+        $select.val(String(idx));
+
+        const $thumb = $('<img class="pp-bulk-match__thumb" alt="" loading="lazy">');
+        if (idx >= 0) $thumb.attr('src', bulkFileUrl(idx));
+
+        $row.addClass('pp-bulk-edit-row--match')
+            .toggleClass('pp-bulk-edit-row--check', status === 'check')
+            .toggleClass('pp-bulk-edit-row--none', status === 'none')
+            .append($('<div class="pp-bulk-match"></div>').append($thumb, $select, $('<span class="pp-bulk-match__badge"></span>').text(BULK_MATCH_LABELS[status])));
+      });
+
+      renderBulkMatchSummary();
+      updateTeamBulkCount();
+    }
+
+    function renderBulkMatchSummary() {
+      const $summary = $('#pp-bulk-roster-match-summary').empty();
+      if (!bulkFolder.files.length) {
+        $summary.append($('<p></p>').text('No JPG, PNG, WebP or GIF images found in that folder.'));
+        return;
+      }
+      const counts  = { matched: 0, check: 0, none: 0 };
+      const noMatch = [];
+      const used    = {};
+      bulkPlayers.forEach(function(p) {
+        const idx = bulkFolder.assign[p.id];
+        if (idx < 0) { counts.none++; noMatch.push(p.name); return; }
+        used[idx] = true;
+        counts[bulkFolder.status[p.id] === 'check' ? 'check' : 'matched']++;
+      });
+      const unused = bulkFolder.files.filter((f, i) => !used[i]).map(f => f.name);
+
+      $summary.append($('<p></p>').append(
+        $('<strong></strong>').text(counts.matched + ' matched · ' + counts.check + ' to check · ' + counts.none + ' no match · ' + unused.length + ' unused image' + (unused.length !== 1 ? 's' : ''))
+      ));
+      if (noMatch.length) $summary.append($('<p></p>').text('No match: ' + noMatch.join(', ')));
+      if (unused.length)  $summary.append($('<p></p>').text('Unused images: ' + unused.join(', ')));
+      if (bulkFolder.skipped) $summary.append($('<p></p>').text(bulkFolder.skipped + ' other file' + (bulkFolder.skipped !== 1 ? 's' : '') + ' in the folder skipped (not a JPG, PNG, WebP or GIF).'));
+    }
+
+    $(document).on('change', '#pp-bulk-roster-list .pp-bulk-match__select', function() {
+      const pid = $(this).closest('.pp-bulk-edit-row').attr('data-player-id');
+      const idx = parseInt(this.value, 10);
+      // An image belongs to one player: taking it leaves its previous owner unmatched.
+      if (idx >= 0) {
+        Object.keys(bulkFolder.assign).forEach(function(other) {
+          if (other !== pid && bulkFolder.assign[other] === idx) { bulkFolder.assign[other] = -1; bulkFolder.status[other] = 'none'; }
+        });
+      }
+      bulkFolder.assign[pid] = idx;
+      bulkFolder.status[pid] = idx >= 0 ? 'manual' : 'none';
+      renderBulkMatches();
+      $('#pp-bulk-roster-list .pp-bulk-edit-row').filter(function() { return $(this).attr('data-player-id') === pid; }).find('.pp-bulk-match__select').trigger('focus');
     });
 
     function buildTeamBulkList() {
       const $list = $('#pp-bulk-roster-list');
       $list.empty();
+      bulkPlayers = [];
       $(TABLE_SEL + ' tbody tr:not(.pp-row-deleted)').each(function() {
         const $tr  = $(this);
         const id   = $tr.attr('data-player-id') || '';
         const pos  = $tr.attr('data-pos') || '';
         const name = $tr.attr('data-name') || '';
+        bulkPlayers.push({ id: id, name: name, number: $tr.find('td[data-field="number"]').clone().children().remove().end().text().trim() });
         $list.append(
           `<li class="pp-bulk-edit-row" data-player-id="${id}" data-pos="${pos.toLowerCase()}" data-pos-group="${getTeamPosGroup(pos)}" data-name="${name.toLowerCase()}">
             <label class="pp-bulk-edit-row__label">
@@ -1419,8 +1549,17 @@
     $(document).on('change', '#pp-bulk-roster-list .pp-bulk-edit-cb', updateTeamBulkCount);
 
     function updateTeamBulkCount() {
-      const n = $('#pp-bulk-roster-list .pp-bulk-edit-cb:checked').length;
+      const $checked = $('#pp-bulk-roster-list .pp-bulk-edit-cb:checked');
+      const n = $checked.length;
       $('#pp-bulk-roster-count').text(n + ' player' + (n !== 1 ? 's' : '') + ' selected');
+      if (isBulkFolderMode()) {
+        // Only selected players with an image get anything applied.
+        const m = !bulkFolder ? 0 : $checked.filter(function() {
+          return bulkFolder.assign[$(this).closest('.pp-bulk-edit-row').attr('data-player-id')] >= 0;
+        }).length;
+        $('#pp-bulk-roster-apply').text('Upload & Apply to ' + m + ' Player' + (m !== 1 ? 's' : ''));
+        return;
+      }
       $('#pp-bulk-roster-apply').text('Apply to ' + n + ' Player' + (n !== 1 ? 's' : ''));
     }
 
@@ -1428,8 +1567,70 @@
       $('#pp-bulk-roster-modal').css('display', 'none');
     });
     $(document).on('click', '#pp-bulk-roster-modal', function(e) {
-      if (e.target === this) $('#pp-bulk-roster-modal').css('display', 'none');
+      if (e.target === this && !bulkUploading) $('#pp-bulk-roster-modal').css('display', 'none');
     });
+
+    // Uploads each selected player's matched image, then saves all the
+    // resulting URLs as headshot overrides in one request.
+    function applyBulkFolderHeadshots(ids, nonce) {
+      const $error = $('#pp-bulk-roster-error');
+      if (!bulkFolder) { $error.text('Choose a folder first.').show(); return; }
+
+      const names = {};
+      bulkPlayers.forEach(p => { names[p.id] = p.name; });
+      const jobs = ids.filter(id => bulkFolder.assign[id] >= 0).map(id => ({ id: id, file: bulkFolder.files[bulkFolder.assign[id]] }));
+      if (!jobs.length) { $error.text('None of the selected players has a matched image.').show(); return; }
+
+      const unsure = ids.filter(id => bulkFolder.assign[id] >= 0 && bulkFolder.status[id] === 'check').length;
+      if (unsure && !confirm(unsure + ' selected match' + (unsure !== 1 ? 'es are' : ' is') + ' still marked "Check". Apply anyway?')) return;
+
+      const $modal    = $('#pp-bulk-roster-modal');
+      const $controls = $modal.find('button, input, select').not(':disabled').prop('disabled', true);
+      const $progress = $('#pp-bulk-roster-progress');
+      const values    = {};
+      const failed    = [];
+      let i = 0;
+      bulkUploading = true;
+
+      function finish() {
+        bulkUploading = false;
+        $controls.prop('disabled', false);
+        $progress.hide();
+        if (failed.length) {
+          $error.text('Could not upload: ' + failed.join('; ')).show();
+        } else {
+          $modal.css('display', 'none');
+          clearBulkFolder();
+        }
+        const done = Object.keys(values);
+        if (done.length) {
+          doWithTeamPlayerUpdate({ data: { action: 'pp_bulk_update_team_player_field', nonce: nonce, field: 'headshot_link', values: JSON.stringify(values), player_ids: JSON.stringify(done), team_id: getTeamId() } });
+        }
+      }
+
+      function next() {
+        if (i >= jobs.length) { finish(); return; }
+        const job = jobs[i++];
+        $progress.text('Uploading ' + i + ' of ' + jobs.length + '…').show();
+        const formData = new FormData();
+        formData.append('action', 'pp_upload_team_player_headshot');
+        formData.append('nonce', nonce);
+        formData.append('team_id', getTeamId());
+        formData.append('player_name', names[job.id] || '');
+        formData.append('file', job.file, job.file.name);
+        $.ajax({ url: ajaxurl, method: 'POST', data: formData, processData: false, contentType: false })
+          .done(function(response) {
+            if (response && response.success && response.data && response.data.url) {
+              values[job.id] = response.data.url;
+            } else {
+              failed.push((names[job.id] || job.file.name) + ' (' + ((response && response.data && response.data.message) || 'upload failed') + ')');
+            }
+          })
+          .fail(function() { failed.push((names[job.id] || job.file.name) + ' (upload failed)'); })
+          .always(next);
+      }
+      next();
+    }
 
     $(document).on('click', '#pp-bulk-roster-apply', function() {
       $('#pp-bulk-roster-error').hide();
@@ -1446,6 +1647,7 @@
         doWithTeamPlayerUpdate({ data: { action: 'pp_bulk_revert_team_player_edits', nonce: nonce, player_ids: JSON.stringify(ids), team_id: getTeamId() } });
         return;
       }
+      if (isBulkFolderMode()) { applyBulkFolderHeadshots(ids.map(String), nonce); return; }
       const value = $('#pp-bulk-roster-value').val().trim();
       if (value && !value.startsWith('http')) { $('#pp-bulk-roster-error').text('Please enter a valid URL starting with http.').show(); return; }
       if (!value && !confirm('Clear "' + (BULK_FIELDS[field] ? BULK_FIELDS[field].label : field) + '" on ' + ids.length + ' player(s)?')) return;

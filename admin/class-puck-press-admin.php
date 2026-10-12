@@ -712,7 +712,8 @@ class Puck_Press_Admin {
 				);
 				break;
 			case 'teams':
-				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-headshot-matcher', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-headshot-matcher.js', array(), $this->version, false );
+				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery', 'puck-press-headshot-matcher' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-add-game', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-add-game.js', array( 'jquery', 'puck-press-admin-shared', 'select2-js' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-schedule', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-bulk-edit-schedule.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-standings-admin', plugin_dir_url( __FILE__ ) . 'js/standings/puck-press-standings.js', array( 'jquery' ), $this->version, false );
@@ -886,7 +887,8 @@ class Puck_Press_Admin {
 				wp_enqueue_script( 'puck-press-slider-color-picker', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-slider-color-picker.js', array( 'jquery', 'puck-press-color-picker-shared' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-schedule-preview', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-schedule-preview.js', array( 'jquery' ), $this->version, false );
 				wp_enqueue_script( 'puck-press-bulk-edit-schedule', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-bulk-edit-schedule.js', array( 'jquery', 'puck-press-admin-shared' ), $this->version, false );
-				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery' ), $this->version, false );
+				wp_enqueue_script( 'puck-press-headshot-matcher', plugin_dir_url( __FILE__ ) . 'js/roster/puck-press-headshot-matcher.js', array(), $this->version, false );
+				wp_enqueue_script( 'puck-press-teams', plugin_dir_url( __FILE__ ) . 'js/schedule/puck-press-teams.js', array( 'jquery', 'puck-press-headshot-matcher' ), $this->version, false );
 				break;
 		}
 	}
@@ -3217,6 +3219,7 @@ class Puck_Press_Admin {
 		add_action( 'wp_ajax_pp_reset_all_team_player_edits', array( $players_card, 'ajax_reset_all_team_player_edits_callback' ) );
 		add_action( 'wp_ajax_pp_bulk_update_team_player_field', array( $players_card, 'ajax_bulk_update_team_player_field_callback' ) );
 		add_action( 'wp_ajax_pp_bulk_revert_team_player_edits', array( $players_card, 'ajax_bulk_revert_team_player_edits_callback' ) );
+		add_action( 'wp_ajax_pp_upload_team_player_headshot', array( $players_card, 'ajax_upload_team_player_headshot_callback' ) );
 
 		// DB management
 		add_action( 'wp_ajax_pp_wipe_and_recreate_db', array( self::class, 'pp_ajax_wipe_and_recreate_db' ) );

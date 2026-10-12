@@ -1248,6 +1248,125 @@ input[type="file"]#pp-schedule-fileInput {
   text-overflow: ellipsis;
 }
 
+/* Headshot folder match (roster) */
+#pp-bulk-roster-source {
+  margin-top: 0.5rem;
+}
+
+.pp-bulk-edit-folder {
+  margin-top: 0.5rem;
+}
+
+.pp-bulk-edit-folder__pick {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pp-bulk-edit-folder__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.pp-bulk-edit-folder__hint {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted, #6b7280);
+  margin: 0.35rem 0 0;
+}
+
+.pp-bulk-edit-match-summary {
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8125rem;
+  background: var(--pp-surface-2, #f9fafb);
+  border: 1px solid var(--pp-border-color, #e1e5eb);
+  border-radius: 6px;
+}
+
+.pp-bulk-edit-match-summary p {
+  margin: 0;
+}
+
+.pp-bulk-edit-match-summary p + p {
+  margin-top: 0.3rem;
+  color: var(--pp-text-muted, #6b7280);
+  overflow-wrap: anywhere;
+}
+
+.pp-bulk-edit-row--match {
+  display: flex;
+  align-items: center;
+}
+
+.pp-bulk-edit-row--match .pp-bulk-edit-row__label {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.pp-bulk-edit-row--check {
+  background: #fffbeb;
+}
+
+.pp-bulk-edit-row--none {
+  background: #fef2f2;
+}
+
+.pp-bulk-match {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  padding-right: 0.75rem;
+}
+
+.pp-bulk-match__thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--pp-surface-2, #e5e7eb);
+  flex-shrink: 0;
+}
+
+.pp-bulk-match__thumb:not([src]) {
+  visibility: hidden;
+}
+
+.pp-bulk-match__select {
+  width: 220px;
+  max-width: 34vw;
+  font-size: 0.8125rem;
+}
+
+.pp-bulk-match__badge {
+  display: inline-block;
+  min-width: 4.6rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pp-bulk-edit-row--check .pp-bulk-match__badge {
+  background: #fde68a;
+  color: #92400e;
+}
+
+.pp-bulk-edit-row--none .pp-bulk-match__badge {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.pp-bulk-edit-progress {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
 /* Error message */
 .pp-bulk-edit-error {
   color: #dc2626;

@@ -22,6 +22,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<input class="pp-input pp-bulk-edit-value-input" type="url" id="pp-bulk-roster-value" placeholder="">
 				</div>
 				<p class="pp-bulk-edit-clear-hint">Leave blank to clear the field on selected players.</p>
+
+				<!-- Headshot source (headshot field only) -->
+				<div class="pp-bulk-edit-radios" id="pp-bulk-roster-source" style="display:none;">
+					<label><input type="radio" name="pp-bulk-roster-source" value="url" checked> Same URL for all</label>
+					<label><input type="radio" name="pp-bulk-roster-source" value="folder"> Match images from a folder</label>
+				</div>
+				<div class="pp-bulk-edit-folder" id="pp-bulk-roster-folder" style="display:none;">
+					<div class="pp-bulk-edit-folder__pick">
+						<button type="button" class="pp-button pp-button-secondary" id="pp-bulk-roster-folder-btn">Choose Folder&hellip;</button>
+						<input type="file" id="pp-bulk-roster-folder-input" webkitdirectory multiple style="display:none;">
+						<span class="pp-bulk-edit-folder__name" id="pp-bulk-roster-folder-name"></span>
+					</div>
+					<p class="pp-bulk-edit-folder__hint">Each player is matched to the image whose filename is closest to their name. Nothing is uploaded until you apply, and only the matched images are uploaded.</p>
+					<div class="pp-bulk-edit-match-summary" id="pp-bulk-roster-match-summary" style="display:none;"></div>
+				</div>
 			</div>
 
 			<!-- Filters -->
@@ -53,6 +68,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<ul class="pp-bulk-edit-item-list" id="pp-bulk-roster-list"></ul>
 
 			<!-- Error message -->
+			<p class="pp-bulk-edit-progress" id="pp-bulk-roster-progress" style="display:none;"></p>
 			<p class="pp-bulk-edit-error" id="pp-bulk-roster-error" style="display:none;"></p>
 
 		</div>
