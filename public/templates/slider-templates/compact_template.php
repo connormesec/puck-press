@@ -136,9 +136,8 @@ class CompactTemplate extends PuckPressTemplate {
 			}
 		}
 
-		$ts          = $game['target_score'] ?? null;
-		$is_unscored = ( $ts === null || $ts === '' || $ts === '-' );
-		$has_score   = ! $is_future && ! $is_unscored;
+		$has_score   = ! $is_future && self::has_final_score( $game );
+		$show_dash   = ! $is_future && ! $has_score;
 
 		if ( ! empty( $game['game_status'] ) ) {
 			$status_label = $game['game_status'];
@@ -180,6 +179,8 @@ class CompactTemplate extends PuckPressTemplate {
 					<span class="pp-cs-name"><?php echo esc_html( $target_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-cs-score<?php echo $target_wins ? ' pp-cs-score--w' : ''; ?>"><?php echo esc_html( $game['target_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-cs-score">-</span>
 					<?php endif; ?>
 				</div>
 				<div class="pp-cs-team-row">
@@ -187,6 +188,8 @@ class CompactTemplate extends PuckPressTemplate {
 					<span class="pp-cs-name"><?php echo esc_html( $opponent_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-cs-score<?php echo $opponent_wins ? ' pp-cs-score--w' : ''; ?>"><?php echo esc_html( $game['opponent_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-cs-score">-</span>
 					<?php endif; ?>
 				</div>
 			</div>

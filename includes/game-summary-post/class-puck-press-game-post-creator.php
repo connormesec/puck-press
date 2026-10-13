@@ -59,6 +59,12 @@ class Puck_Press_Game_Post_Creator {
 				continue;
 			}
 
+			// The schedule can show a result before the score sheet is final.
+			if ( ( $summary['highLevelStats']['details']['simpleStatus'] ?? '' ) !== 'completed' ) {
+				$messages[] = "Game {$game->game_id} is not final in the game center yet. Skipping.";
+				continue;
+			}
+
 			try {
 				$data['image'] = $initiator->getImageFromImageAPI( $summary );
 				$messages[]    = 'Image generated successfully.';

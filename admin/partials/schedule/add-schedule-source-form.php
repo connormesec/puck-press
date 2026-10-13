@@ -48,6 +48,14 @@ $season_options = $this->get_season_options_array();
 			<label for="pp-usphl-season-id" class="pp-form-label">Season ID</label>
 			<input type="text" id="pp-usphl-season-id" class="pp-form-input" placeholder="e.g. 65" required>
 		</div>
+		<div class="pp-form-group">
+			<label for="pp-usphl-season-year" class="pp-form-label">Season Year</label>
+			<select id="pp-usphl-season-year" class="pp-form-select" required>
+				<option value="<?php echo esc_attr( $season_options[2] ); ?>"><?php echo esc_html( $season_options[2] ); ?></option>
+				<option value="<?php echo esc_attr( $season_options[1] ); ?>" selected><?php echo esc_html( $season_options[1] ); ?></option>
+				<option value="<?php echo esc_attr( $season_options[0] ); ?>"><?php echo esc_html( $season_options[0] ); ?></option>
+			</select>
+		</div>
 	</div>
 	<!-- CSV Upload Section -->
 	<div class="pp-form-group pp-dynamic-source-group-csv">

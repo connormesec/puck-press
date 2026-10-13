@@ -408,4 +408,39 @@ class Puck_Press_Season {
 		self::$team_newest_cache = null;
 		return $tagged;
 	}
+
+	/**
+	 * Sets the season on USPHL schedule sources saved before the add-source
+	 * form asked for one, using the date of the source's earliest game.
+	 * Sources with no dated games are left for the admin to re-add.
+	 */
+	public static function backfill_schedule_source_seasons(): int {
+		global $wpdb;
+		$p = $wpdb->prefix;
+
+		require_once plugin_dir_path( __FILE__ ) . 'schedule/class-puck-press-acha-season-discoverer.php';
+
+		$sources = $wpdb->get_results(
+			"SELECT id, team_id, name FROM {$p}pp_team_sources
+             WHERE type = 'usphlGameScheduleUrl' AND ( season IS NULL OR season = '' )",
+			ARRAY_A
+		) ?: array();
+
+		$filled = 0;
+		foreach ( $sources as $src ) {
+			$first = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT MIN(game_timestamp) FROM {$p}pp_team_games_raw WHERE team_id = %d AND source = %s AND game_timestamp IS NOT NULL",
+					(int) $src['team_id'],
+					$src['name']
+				)
+			);
+			$key = $first ? self::normalize_key( Puck_Press_Acha_Season_Discoverer::derive_season_year( (string) $first ) ) : '';
+			if ( $key === '' ) {
+				continue;
+			}
+			$filled += (int) $wpdb->update( "{$p}pp_team_sources", array( 'season' => $key ), array( 'id' => (int) $src['id'] ) );
+		}
+		return $filled;
+	}
 }

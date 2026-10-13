@@ -460,7 +460,7 @@
     // Show/hide source-type-specific fields in the add-source modal
     const sourceTypeConfig = {
       achaGameScheduleUrl:   { required: ['#pp-acha-team-id', '#pp-acha-season-id'] },
-      usphlGameScheduleUrl:  { required: ['#pp-usphl-team-id', '#pp-usphl-season-id'] },
+      usphlGameScheduleUrl:  { required: ['#pp-usphl-team-id', '#pp-usphl-season-id', '#pp-usphl-season-year'] },
       csv:                   { required: ['#pp-schedule-fileInput'] },
     };
 
@@ -540,6 +540,7 @@
             data.team_id_url = $('#pp-usphl-team-id').val();
             const seasonId = $('#pp-usphl-season-id').val();
             if (seasonId) data.season_id = seasonId;
+            data.season_year = $('#pp-usphl-season-year').val();
           } else if (type === 'csv') {
             const file = $('#pp-schedule-fileInput')[0].files[0];
             if (!file) throw new Error('Please select a CSV file.');

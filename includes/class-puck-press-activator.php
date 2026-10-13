@@ -378,6 +378,23 @@ class Puck_Press_Activator {
 		update_option( 'pp_db_version', '11.0' );
 	}
 
+	/**
+	 * Gives existing USPHL schedule sources a season. They were saved without
+	 * one, which the season health panel flags and admins could not fix.
+	 */
+	public static function maybe_run_schedule_source_season_migration(): void {
+		$db_version = get_option( 'pp_db_version', '1.0' );
+		if ( version_compare( $db_version, '11.0', '<' ) || version_compare( $db_version, '12.0', '>=' ) ) {
+			return;
+		}
+
+		require_once plugin_dir_path( __FILE__ ) . 'class-puck-press-season.php';
+
+		Puck_Press_Season::backfill_schedule_source_seasons();
+
+		update_option( 'pp_db_version', '12.0' );
+	}
+
 	public static function activate() {
 		if ( ! get_option( 'pp_insta_loopback_secret' ) ) {
 			update_option( 'pp_insta_loopback_secret', wp_generate_password( 32, false ) );

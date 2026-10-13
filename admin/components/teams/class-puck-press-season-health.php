@@ -91,7 +91,9 @@ class Puck_Press_Season_Health {
 
 		foreach ( $issues['unknown_season_sources'] as $src ) {
 			$messages[] = sprintf(
-				'<strong>%s</strong>: %s source "%s" has no season, so its stats show in every season. Delete it and add it again with a Season Year.',
+				$src['kind'] === 'schedule'
+					? '<strong>%s</strong>: %s source "%s" has no season, so its games can\'t be matched to a season when archiving. Delete it and add it again with a Season Year.'
+					: '<strong>%s</strong>: %s source "%s" has no season, so its stats show in every season. Delete it and add it again with a Season Year.',
 				esc_html( $src['team_name'] ),
 				esc_html( $src['kind'] ),
 				esc_html( $src['source'] )

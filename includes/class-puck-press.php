@@ -175,6 +175,7 @@ class Puck_Press {
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_archive_roster_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_site_pulse_migration' ) );
 		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_season_key_migration' ) );
+		add_action( 'plugins_loaded', array( 'Puck_Press_Activator', 'maybe_run_schedule_source_season_migration' ) );
 
 		$this->loader = new Puck_Press_Loader();
 	}

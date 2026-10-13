@@ -1485,6 +1485,11 @@ class Puck_Press_Admin {
 				if ( empty( $season_id ) ) {
 					wp_send_json_error( array( 'message' => 'Season ID is required for USPHL sources.' ) );
 				}
+				// USPHL season IDs can't be mapped to a year, so the admin picks it.
+				$season = Puck_Press_Season::normalize_key( sanitize_text_field( $_POST['season_year'] ?? '' ) );
+				if ( $season === '' ) {
+					wp_send_json_error( array( 'message' => 'Season Year is required for USPHL sources.' ) );
+				}
 				$other_data = wp_json_encode( array( 'season_id' => $season_id ) );
 				break;
 

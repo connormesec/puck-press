@@ -152,9 +152,8 @@ class ScorestripTemplate extends PuckPressTemplate {
 			}
 		}
 
-		$ts          = $game['target_score'] ?? null;
-		$is_unscored = ( $ts === null || $ts === '' || $ts === '-' );
-		$has_score   = ! $is_future && ! $is_unscored;
+		$has_score   = ! $is_future && self::has_final_score( $game );
+		$show_dash   = ! $is_future && ! $has_score;
 
 		$post_link  = ! $is_future ? ( $game['post_link'] ?? '' ) : '';
 		$has_recap  = ! empty( $post_link );
@@ -204,6 +203,8 @@ class ScorestripTemplate extends PuckPressTemplate {
 					<span class="pp-ss-team"><?php echo esc_html( $target_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-ss-pts"><?php echo esc_html( $game['target_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-ss-pts">-</span>
 					<?php endif; ?>
 				</div>
 				<div class="pp-ss-row<?php echo $o_row_class; ?>">
@@ -211,6 +212,8 @@ class ScorestripTemplate extends PuckPressTemplate {
 					<span class="pp-ss-team"><?php echo esc_html( $opponent_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-ss-pts"><?php echo esc_html( $game['opponent_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-ss-pts">-</span>
 					<?php endif; ?>
 				</div>
 			</div>

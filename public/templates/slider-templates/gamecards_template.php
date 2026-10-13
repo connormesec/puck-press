@@ -232,8 +232,8 @@ class GameCardsTemplate extends PuckPressTemplate {
 		$ts = $game['target_score'] ?? null;
 		$os = $game['opponent_score'] ?? null;
 
-		$has_score = $ts !== null && $ts !== '' && $ts !== '-'
-			&& $os !== null && $os !== '' && $os !== '-';
+		// A stale 0/0 on a past game with no FINAL status is not a result.
+		$has_score = self::has_final_score( $game );
 
 		$post_link = $game['post_link'] ?? '';
 
@@ -268,6 +268,9 @@ class GameCardsTemplate extends PuckPressTemplate {
 					<span class="pp-game-score"><?php echo esc_html( $ts_i . '–' . $os_i ); ?></span>
 				</div>
 			<?php else : ?>
+				<div class="pp-game-result">
+					<span class="pp-game-score">-</span>
+				</div>
 				<div class="pp-game-meta">
 					<?php if ( ! empty( $game['venue'] ) ) : ?><span class="pp-game-venue"><?php echo esc_html( $game['venue'] ); ?></span><?php endif; ?>
 				</div>

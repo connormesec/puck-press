@@ -147,10 +147,9 @@ class ScoreboardTemplate extends PuckPressTemplate {
 			}
 		}
 
-		// A game is unscored when target_score is null, empty, or the placeholder '-'
-		$ts          = $game['target_score'] ?? null;
-		$is_unscored = ( $ts === null || $ts === '' || $ts === '-' );
-		$has_score   = ! $is_future && ! $is_unscored;
+		// Past games with no posted final result show a '-' placeholder rather than a misleading 0-0.
+		$has_score   = ! $is_future && self::has_final_score( $game );
+		$show_dash   = ! $is_future && ! $has_score;
 
 		// Header status/time label
 		if ( ! empty( $game['game_status'] ) ) {
@@ -188,6 +187,8 @@ class ScoreboardTemplate extends PuckPressTemplate {
 					<span class="pp-sb-name"><?php echo esc_html( $target_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-sb-score<?php echo $target_wins ? ' pp-sb-score--w' : ''; ?>"><?php echo esc_html( $game['target_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-sb-score">-</span>
 					<?php endif; ?>
 				</div>
 				<div class="pp-sb-team-row">
@@ -195,6 +196,8 @@ class ScoreboardTemplate extends PuckPressTemplate {
 					<span class="pp-sb-name"><?php echo esc_html( $opponent_name ); ?></span>
 					<?php if ( $has_score ) : ?>
 						<span class="pp-sb-score<?php echo $opponent_wins ? ' pp-sb-score--w' : ''; ?>"><?php echo esc_html( $game['opponent_score'] ); ?></span>
+					<?php elseif ( $show_dash ) : ?>
+						<span class="pp-sb-score">-</span>
 					<?php endif; ?>
 				</div>
 			</div>

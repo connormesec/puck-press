@@ -35,7 +35,8 @@ class Parse_Usphl_Score_Sheet {
 		$awayGoals = intval( $live['goal_summary']['away_goals']['total'] ?? 0 );
 		$homeShots = intval( $live['shot_summary']['home_shots']['total'] ?? 0 );
 		$awayShots = intval( $live['shot_summary']['away_shots']['total'] ?? 0 );
-		$status    = ( $info['status'] === 'Final' ) ? 'completed' : 'scheduled';
+		// Overtime and shootout games report "Final/OT", "Final/SO" etc.
+		$status    = preg_match( '/^Final/i', trim( (string) ( $info['status'] ?? '' ) ) ) ? 'completed' : 'scheduled';
 
 		return array(
 			'date'        => $info['formatted_date'],
