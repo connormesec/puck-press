@@ -1333,6 +1333,27 @@ input[type="file"]#pp-schedule-fileInput {
   visibility: hidden;
 }
 
+/* Background images: a banner-shaped thumb previews the wide crop. */
+.pp-bulk-edit-item-list--hero .pp-bulk-match__thumb {
+  width: 64px;
+  height: 26px;
+}
+
+.pp-bulk-match__warn {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: #fde68a;
+  color: #92400e;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.pp-bulk-edit-match-summary p.pp-bulk-edit-match-summary__warn {
+  color: #92400e;
+}
+
 .pp-bulk-match__select {
   width: 220px;
   max-width: 34vw;

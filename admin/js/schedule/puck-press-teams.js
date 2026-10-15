@@ -1329,9 +1329,12 @@
 
     // ── Bulk Edit modal ───────────────────────────────────────────────────────────
     const BULK_FIELDS = {
-      hero_image_url: { label: 'Hero Image URL', type: 'url', placeholder: 'https://...' },
-      headshot_link:  { label: 'Headshot',       type: 'url', placeholder: 'https://...' },
+      hero_image_url: { label: 'Background Image', type: 'url', placeholder: 'https://...', folder: true },
+      headshot_link:  { label: 'Headshot',         type: 'url', placeholder: 'https://...', folder: true },
     };
+    // The player page banner is 1080px wide; narrower or portrait images get
+    // stretched or cropped hard by background-size: cover.
+    const HERO_MIN_WIDTH = 1080;
     const BULK_MATCH_LABELS = { matched: 'Matched', check: 'Check', manual: 'Chosen', none: 'No match' };
     const POS_GROUPS_TEAM = {
       forwards: ['f', 'c', 'lw', 'rw'],
@@ -1347,14 +1350,15 @@
       return 'other';
     }
 
-    // Headshot folder match: the picked folder's images and which one each
-    // player gets. Files stay in the browser until Apply.
+    // Folder match (headshots or backgrounds): the picked folder's images and
+    // which one each player gets. Files stay in the browser until Apply.
     let bulkPlayers   = [];
     let bulkFolder    = null;
     let bulkUploading = false;
 
-    const isBulkFolderMode = () => $('#pp-bulk-roster-field').val() === 'headshot_link' &&
-                                   $('input[name="pp-bulk-roster-source"]:checked').val() === 'folder';
+    const isBulkFolderField = field => !!(BULK_FIELDS[field] && BULK_FIELDS[field].folder);
+    const isBulkFolderMode  = () => isBulkFolderField($('#pp-bulk-roster-field').val()) &&
+                                    $('input[name="pp-bulk-roster-source"]:checked').val() === 'folder';
 
     function clearBulkFolder() {
       if (bulkFolder) bulkFolder.urls.forEach(url => { if (url) URL.revokeObjectURL(url); });
@@ -1396,7 +1400,7 @@
       const isFolder = isBulkFolderMode();
       $('#pp-bulk-roster-value').toggle(!isRemove && !isFolder);
       $('.pp-bulk-edit-clear-hint').toggle(!isRemove && !isFolder);
-      $('#pp-bulk-roster-source').toggle(field === 'headshot_link');
+      $('#pp-bulk-roster-source').toggle(isBulkFolderField(field));
       $('#pp-bulk-roster-folder').toggle(isFolder);
       if (!isRemove) {
         const cfg = BULK_FIELDS[field];
@@ -1422,7 +1426,7 @@
       const result = ppHeadshotMatcher.match(bulkPlayers, images.map(f => f.name));
 
       clearBulkFolder();
-      bulkFolder = { files: images, urls: [], assign: {}, status: {}, skipped: all.length - images.length };
+      bulkFolder = { files: images, urls: [], sizes: [], assign: {}, status: {}, skipped: all.length - images.length };
       bulkPlayers.forEach(function(p) {
         bulkFolder.assign[p.id] = result.assignments[p.id].file;
         bulkFolder.status[p.id] = result.assignments[p.id].status;
@@ -1430,7 +1434,37 @@
       $('#pp-bulk-roster-folder-name').text(folderName);
       $('#pp-bulk-roster-error').hide();
       renderBulkMatches();
+      loadBulkImageSizes(bulkFolder);
     });
+
+    // Reads each image's pixel size in the background so background-image
+    // rows can warn about low-res or portrait files before anything uploads.
+    function loadBulkImageSizes(folder) {
+      folder.files.forEach(function(file, idx) {
+        const img = new Image();
+        img.onload = function() {
+          if (bulkFolder !== folder) return;
+          folder.sizes[idx] = { w: img.naturalWidth, h: img.naturalHeight };
+          if (folder.sizes.filter(Boolean).length === folder.files.length) renderBulkMatches();
+        };
+        img.onerror = function() {
+          if (bulkFolder !== folder) return;
+          folder.sizes[idx] = { w: 0, h: 0 };
+          if (folder.sizes.filter(Boolean).length === folder.files.length) renderBulkMatches();
+        };
+        img.src = bulkFileUrl(idx);
+      });
+    }
+
+    // Background-image sizing problem for a folder image, or '' if it's fine.
+    function bulkSizeWarning(idx) {
+      if ($('#pp-bulk-roster-field').val() !== 'hero_image_url') return '';
+      const size = bulkFolder.sizes[idx];
+      if (!size || !size.w) return '';
+      if (size.h > size.w) return 'Portrait';
+      if (size.w < HERO_MIN_WIDTH) return 'Low res';
+      return '';
+    }
 
     // Adds the thumbnail / image picker / status badge to each player row.
     function renderBulkMatches() {
@@ -1438,6 +1472,7 @@
       $rows.removeClass('pp-bulk-edit-row--match pp-bulk-edit-row--check pp-bulk-edit-row--none').find('.pp-bulk-match').remove();
       const active = isBulkFolderMode() && bulkFolder;
       $('#pp-bulk-roster-match-summary').toggle(!!active);
+      $('#pp-bulk-roster-list').toggleClass('pp-bulk-edit-item-list--hero', $('#pp-bulk-roster-field').val() === 'hero_image_url');
       if (!active) { updateTeamBulkCount(); return; }
 
       $rows.each(function() {
@@ -1453,10 +1488,19 @@
         const $thumb = $('<img class="pp-bulk-match__thumb" alt="" loading="lazy">');
         if (idx >= 0) $thumb.attr('src', bulkFileUrl(idx));
 
+        const warning = idx >= 0 ? bulkSizeWarning(idx) : '';
+        const $warn   = $('<span class="pp-bulk-match__warn"></span>').text(warning).toggle(!!warning);
+        if (warning) {
+          const size = bulkFolder.sizes[idx];
+          $warn.attr('title', size.w + '×' + size.h + 'px. ' + (warning === 'Portrait'
+            ? 'The banner is wide, so most of a portrait image is cropped off.'
+            : 'Narrower than the ' + HERO_MIN_WIDTH + 'px banner, so it will look blurry.'));
+        }
+
         $row.addClass('pp-bulk-edit-row--match')
             .toggleClass('pp-bulk-edit-row--check', status === 'check')
             .toggleClass('pp-bulk-edit-row--none', status === 'none')
-            .append($('<div class="pp-bulk-match"></div>').append($thumb, $select, $('<span class="pp-bulk-match__badge"></span>').text(BULK_MATCH_LABELS[status])));
+            .append($('<div class="pp-bulk-match"></div>').append($thumb, $select, $warn, $('<span class="pp-bulk-match__badge"></span>').text(BULK_MATCH_LABELS[status])));
       });
 
       renderBulkMatchSummary();
@@ -1471,11 +1515,14 @@
       }
       const counts  = { matched: 0, check: 0, none: 0 };
       const noMatch = [];
+      const sizing  = [];
       const used    = {};
       bulkPlayers.forEach(function(p) {
         const idx = bulkFolder.assign[p.id];
         if (idx < 0) { counts.none++; noMatch.push(p.name); return; }
         used[idx] = true;
+        const warning = bulkSizeWarning(idx);
+        if (warning) sizing.push(p.name + ' (' + warning.toLowerCase() + ')');
         counts[bulkFolder.status[p.id] === 'check' ? 'check' : 'matched']++;
       });
       const unused = bulkFolder.files.filter((f, i) => !used[i]).map(f => f.name);
@@ -1484,6 +1531,7 @@
         $('<strong></strong>').text(counts.matched + ' matched · ' + counts.check + ' to check · ' + counts.none + ' no match · ' + unused.length + ' unused image' + (unused.length !== 1 ? 's' : ''))
       ));
       if (noMatch.length) $summary.append($('<p></p>').text('No match: ' + noMatch.join(', ')));
+      if (sizing.length)  $summary.append($('<p class="pp-bulk-edit-match-summary__warn"></p>').text('Sizing: ' + sizing.join(', ') + '. Backgrounds look best landscape and at least ' + HERO_MIN_WIDTH + 'px wide.'));
       if (unused.length)  $summary.append($('<p></p>').text('Unused images: ' + unused.join(', ')));
       if (bulkFolder.skipped) $summary.append($('<p></p>').text(bulkFolder.skipped + ' other file' + (bulkFolder.skipped !== 1 ? 's' : '') + ' in the folder skipped (not a JPG, PNG, WebP or GIF).'));
     }
@@ -1572,8 +1620,8 @@
     });
 
     // Uploads each selected player's matched image, then saves all the
-    // resulting URLs as headshot overrides in one request.
-    function applyBulkFolderHeadshots(ids, nonce) {
+    // resulting URLs as overrides of `field` in one request.
+    function applyBulkFolderImages(field, ids, nonce) {
       const $error = $('#pp-bulk-roster-error');
       if (!bulkFolder) { $error.text('Choose a folder first.').show(); return; }
 
@@ -1605,7 +1653,7 @@
         }
         const done = Object.keys(values);
         if (done.length) {
-          doWithTeamPlayerUpdate({ data: { action: 'pp_bulk_update_team_player_field', nonce: nonce, field: 'headshot_link', values: JSON.stringify(values), player_ids: JSON.stringify(done), team_id: getTeamId() } });
+          doWithTeamPlayerUpdate({ data: { action: 'pp_bulk_update_team_player_field', nonce: nonce, field: field, values: JSON.stringify(values), player_ids: JSON.stringify(done), team_id: getTeamId() } });
         }
       }
 
@@ -1617,6 +1665,7 @@
         formData.append('action', 'pp_upload_team_player_headshot');
         formData.append('nonce', nonce);
         formData.append('team_id', getTeamId());
+        formData.append('field', field);
         formData.append('player_name', names[job.id] || '');
         formData.append('file', job.file, job.file.name);
         $.ajax({ url: ajaxurl, method: 'POST', data: formData, processData: false, contentType: false })
@@ -1648,7 +1697,7 @@
         doWithTeamPlayerUpdate({ data: { action: 'pp_bulk_revert_team_player_edits', nonce: nonce, player_ids: JSON.stringify(ids), team_id: getTeamId() } });
         return;
       }
-      if (isBulkFolderMode()) { applyBulkFolderHeadshots(ids.map(String), nonce); return; }
+      if (isBulkFolderMode()) { applyBulkFolderImages(field, ids.map(String), nonce); return; }
       const value = $('#pp-bulk-roster-value').val().trim();
       if (value && !value.startsWith('http')) { $('#pp-bulk-roster-error').text('Please enter a valid URL starting with http.').show(); return; }
       if (!value && !confirm('Clear "' + (BULK_FIELDS[field] ? BULK_FIELDS[field].label : field) + '" on ' + ids.length + ' player(s)?')) return;

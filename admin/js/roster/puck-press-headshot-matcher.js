@@ -8,7 +8,7 @@
   'use strict';
 
   const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-  const NOISE = ['headshot', 'headshots', 'head', 'shot', 'photo', 'pic', 'picture', 'img', 'image', 'copy', 'scaled', 'final', 'edit', 'edited', 'web', 'crop', 'cropped', 'roster', 'player'];
+  const NOISE = ['headshot', 'headshots', 'head', 'shot', 'photo', 'pic', 'picture', 'img', 'image', 'copy', 'scaled', 'final', 'edit', 'edited', 'web', 'crop', 'cropped', 'roster', 'player', 'hero', 'background', 'backgrounds', 'bg', 'banner', 'header', 'cover', 'action', 'wallpaper'];
   const SUFFIXES = ['jr', 'sr', 'ii', 'iii', 'iv'];
 
   const MATCHED_MIN   = 0.9;

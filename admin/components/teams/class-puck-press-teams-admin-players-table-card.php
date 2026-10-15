@@ -558,9 +558,10 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
     }
 
     /**
-     * Uploads one headshot image to the Media Library and returns its URL.
-     * The bulk edit modal matches a local folder to players in the browser and
-     * sends only the matched images here, one per request.
+     * Uploads one headshot or player page background image to the Media
+     * Library and returns its URL. The bulk edit modal matches a local folder
+     * to players in the browser and sends only the matched images here, one
+     * per request.
      */
     public function ajax_upload_team_player_headshot_callback(): void {
         if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'upload_files' ) ) {
@@ -568,6 +569,12 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
         }
 
         check_ajax_referer( 'pp_team_players_nonce', 'nonce' );
+
+        $field = sanitize_key( $_POST['field'] ?? 'headshot_link' );
+        if ( ! in_array( $field, array( 'headshot_link', 'hero_image_url' ), true ) ) {
+            wp_send_json_error( array( 'message' => 'Invalid field.' ) );
+        }
+        $is_hero = ( 'hero_image_url' === $field );
 
         $tmp_name = $_FILES['file']['tmp_name'] ?? '';
         if ( ! $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
@@ -580,7 +587,9 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
         }
 
         // Reuse an identical image uploaded earlier so re-running a folder
-        // doesn't pile duplicates into the Media Library.
+        // doesn't pile duplicates into the Media Library. The hash is of the
+        // file alone, so a photo used as both headshot and background is
+        // stored once.
         $hash     = md5_file( $tmp_name );
         $existing = get_posts(
             array(
@@ -601,7 +610,7 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
             require_once ABSPATH . 'wp-admin/includes/media.php';
 
             $player_name = sanitize_text_field( wp_unslash( $_POST['player_name'] ?? '' ) );
-            $post_data   = $player_name ? array( 'post_title' => $player_name ) : array();
+            $post_data   = $player_name ? array( 'post_title' => $player_name . ( $is_hero ? ' – Background' : '' ) ) : array();
 
             $attachment_id = media_handle_upload( 'file', 0, $post_data );
             if ( is_wp_error( $attachment_id ) ) {
@@ -610,9 +619,11 @@ class Puck_Press_Teams_Admin_Players_Table_Card extends Puck_Press_Admin_Card_Ab
             update_post_meta( $attachment_id, '_pp_headshot_md5', $hash );
         }
 
-        // Prefer the resized copy: originals straight off a camera are far
-        // larger than any roster template displays.
-        $url = wp_get_attachment_image_url( $attachment_id, 'large' ) ?: wp_get_attachment_url( $attachment_id );
+        // Prefer a resized copy: originals straight off a camera are far
+        // larger than any template displays. Backgrounds fill a 1080px-wide
+        // banner, so they take the 2048px size to stay sharp on retina.
+        $url = $is_hero ? wp_get_attachment_image_url( $attachment_id, '2048x2048' ) : false;
+        $url = $url ?: wp_get_attachment_image_url( $attachment_id, 'large' ) ?: wp_get_attachment_url( $attachment_id );
         if ( ! $url ) {
             wp_send_json_error( array( 'message' => 'Upload succeeded but no URL was returned.' ) );
         }
