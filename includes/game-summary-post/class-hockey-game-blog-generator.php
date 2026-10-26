@@ -68,6 +68,9 @@
 
 class Class_Hockey_Game_Blog_Generator {
 
+	// OpenAI model for game summaries (gpt-4 was shut down Oct 23, 2026).
+	const MODEL = 'gpt-6-luna';
+
 	private $openaiApiKey;
 	private array $promptPlayers = array();
 
@@ -108,7 +111,7 @@ class Class_Hockey_Game_Blog_Generator {
 		$url = 'https://api.openai.com/v1/chat/completions';
 
 		$data = array(
-			'model'       => 'gpt-4',
+			'model'                 => self::MODEL,
 			'messages'    => array(
 				array(
 					'role'    => 'system',
@@ -124,8 +127,9 @@ Replace the bracketed title with your actual title. The very first character of 
 					'content' => $prompt,
 				),
 			),
-			'temperature' => 0.50,
-			'max_tokens'  => 700,
+			// Reasoning models reject max_tokens and custom temperature.
+			'reasoning_effort'      => 'none',
+			'max_completion_tokens' => 1000,
 		);
 
 		$headers = array(
@@ -144,11 +148,12 @@ Replace the bracketed title with your actual title. The very first character of 
 		$httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 		curl_close( $ch );
 
-		if ( $httpCode !== 200 ) {
-			throw new Exception( 'OpenAI API request failed with status: ' . $httpCode );
-		}
-
 		$responseData = json_decode( $response, true );
+
+		if ( $httpCode !== 200 ) {
+			$detail = $responseData['error']['message'] ?? '';
+			throw new Exception( 'OpenAI API request failed with status: ' . $httpCode . ( $detail ? ' - ' . $detail : '' ) );
+		}
 
 		if ( ! isset( $responseData['choices'][0]['message']['content'] ) ) {
 			throw new Exception( 'Invalid response from OpenAI API' );

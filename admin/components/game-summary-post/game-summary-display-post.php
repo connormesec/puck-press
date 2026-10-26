@@ -255,6 +255,8 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 			wp_send_json_error( 'OpenAI API key not set.' );
 		}
 
+		include_once plugin_dir_path( __DIR__ ) . '../../includes/game-summary-post/class-hockey-game-blog-generator.php';
+
 		$response = wp_remote_post(
 			'https://api.openai.com/v1/chat/completions',
 			array(
@@ -264,16 +266,18 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 				),
 				'body'    => wp_json_encode(
 					array(
-						'model'      => 'gpt-4o-mini',
-						'messages'   => array(
+						'model'                 => Class_Hockey_Game_Blog_Generator::MODEL,
+						'messages'              => array(
 							array(
 								'role'    => 'user',
 								'content' => 'Write a short sample hockey game summary.',
 							),
 						),
-						'max_tokens' => 100,
+						'reasoning_effort'      => 'none',
+						'max_completion_tokens' => 150,
 					)
 				),
+				'timeout' => 30,
 			)
 		);
 
@@ -282,11 +286,11 @@ class Puck_Press_Admin_Game_Summary_Post_Display {
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
-		if ( $code !== 200 ) {
-			wp_send_json_error( 'OpenAI API returned status: ' . $code );
-		}
-
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( $code !== 200 ) {
+			$detail = $body['error']['message'] ?? '';
+			wp_send_json_error( 'OpenAI API returned status: ' . $code . ( $detail ? ' - ' . $detail : '' ) );
+		}
 		$text = $body['choices'][0]['message']['content'] ?? 'No content returned';
 
 		wp_send_json_success( $text );

@@ -23,7 +23,7 @@ When told to "trigger a release" or "release X.Y.Z":
   6. Push branch and tag:         git push && git push --tags
 
 The GitHub update mechanism (includes/update.php / PDUpdater) polls
-https://api.github.com/repos/connormesec/puck-press/releases and compares
+https://api.github.com/repos/connormesec/puck-press/releases/latest and compares
 the latest tag against the installed PUCK_PRESS_VERSION. Once the tag is
 pushed, WordPress sites with the plugin will see an available update.
 
@@ -150,4 +150,6 @@ GitHub remote:
 
 Update mechanism:
   includes/update.php (PDUpdater class)
-  Polls: https://api.github.com/repos/connormesec/puck-press/releases
+  Polls: https://api.github.com/repos/connormesec/puck-press/releases/latest (cached 6h)
+  Runs on every request, so WP auto-updates and WP-CLI work.
+  Update all sites: site-manager update-pp all  (auto-updates: site-manager auto-pp all on)

@@ -110,7 +110,5 @@ class Puck_Press_Admin_Loader {
 		require_once plugin_dir_path( __DIR__ ) . 'includes/awards/class-puck-press-awards-wpdb-utils.php';
 		require_once plugin_dir_path( __DIR__ ) . 'public/templates/class-puck-press-awards-template-manager.php';
 
-		// update checker
-		require_once plugin_dir_path( __DIR__ ) . 'includes/update.php';
 	}
 }

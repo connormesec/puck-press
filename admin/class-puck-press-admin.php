@@ -53,7 +53,6 @@ class Puck_Press_Admin {
 		$this->version     = $version;
 
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-		$this->check_for_updates();
 	}
 
 	// Add Admin Menu Page
@@ -1125,20 +1124,6 @@ class Puck_Press_Admin {
 		wp_localize_script( 'puck-press-awards-color-picker', 'ppAwardsTemplates', $awards_templates_data );
 	}
 
-	/**
-	 * The code that runs to check for updates
-	 * This action is documented in includes/update.php
-	 */
-	function check_for_updates() {
-		/**
-		 * The class responsible for updating the plugin
-		 */
-		$updater = new PDUpdater( PLUGIN_DIR_PATH . '/puck-press.php' );
-		$updater->set_username( 'connormesec' );
-		$updater->set_repository( 'puck-press' );
-
-		$updater->initialize();
-	}
 
 
 

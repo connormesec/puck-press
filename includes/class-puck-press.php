@@ -91,6 +91,19 @@ class Puck_Press {
 		add_action( 'init', array( $this, 'define_cron_hooks' ) );
 		add_action( 'init', array( $this, 'define_site_pulse_hooks' ) );
 		add_action( 'init', array( $this, 'register_post_types' ) );
+		$this->define_update_hooks();
+	}
+
+	/**
+	 * Checks GitHub for new releases. Runs on every request (not only
+	 * wp-admin) so WordPress auto-updates and WP-CLI can update the plugin.
+	 */
+	private function define_update_hooks() {
+		require_once plugin_dir_path( __DIR__ ) . 'includes/update.php';
+		$updater = new PDUpdater( plugin_dir_path( __DIR__ ) . 'puck-press.php' );
+		$updater->set_username( 'connormesec' );
+		$updater->set_repository( 'puck-press' );
+		$updater->initialize();
 	}
 
 	/**
